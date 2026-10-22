@@ -12432,6 +12432,11 @@ h2{font-size:1rem;margin-bottom:12px;color:var(--pri);border-bottom:2px solid va
 .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 @media(max-width:520px){.grid{grid-template-columns:1fr}}
 .full{grid-column:1/-1}
+.na-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:4px}
+.na-head>label:first-child{margin:0}
+.na-check{display:flex;align-items:center;gap:4px;margin:0;color:var(--mut);font-size:.72rem;font-weight:500;white-space:nowrap}
+.na-check input{width:auto;margin:0}
+.na-field .na-value[hidden]{display:none}
 label{font-size:.78rem;font-weight:600;color:var(--mut);display:block;margin-bottom:4px}
 input,select,textarea{width:100%;padding:9px 10px;border:1px solid var(--line);border-radius:8px;font-size:.92rem;background:var(--field);color:var(--tx)}
 input:focus,select:focus{outline:none;border-color:var(--pri);box-shadow:0 0 0 3px rgba(91,134,255,.2)}
@@ -12457,6 +12462,7 @@ td.l{text-align:left}
 .tag{font-size:.68rem;border-radius:10px;padding:2px 8px;font-weight:700}
 .t1{background:var(--okbg);color:var(--ok)}.t2{background:var(--wnbg);color:var(--wn)}
 .ic{background:none;padding:3px 6px;font-size:1rem}
+input.row-select{width:18px;height:18px;padding:0;vertical-align:middle;accent-color:var(--pri);cursor:pointer}
 .empty{padding:22px;text-align:center;color:var(--mut);font-size:.85rem}
 #qrBox{display:flex;justify-content:center;align-items:center;min-height:240px;padding:14px;background:#fff;border:1px dashed var(--line);border-radius:10px;color:#8a94a6;font-size:.85rem;text-align:center}
 .d{display:flex;gap:8px;padding:5px 0;font-size:.86rem;border-bottom:1px solid var(--line)}
@@ -12563,35 +12569,22 @@ body.ficha>#login{display:none!important}
     <form id="f" autocomplete="off">
       <input type="hidden" id="editIndex">
       <div class="grid">
-        <div><label for="codigo">Número de código *</label>
-          <div class="row"><input type="text" id="codigo" required placeholder="MAT-0001"><button type="button" class="bs" id="btnAuto" title="Siguiente código">Auto</button></div></div>
-        <div><label for="descripcion">Descripción *</label><input type="text" id="descripcion" required placeholder="Barra de acero inox. 304"></div>
-        <div><label for="lote">Lote / Colada</label><input type="text" id="lote" placeholder="Ej. L-24581"></div>
-        <div><label for="proveedor">Proveedor</label><input type="text" id="proveedor" placeholder="Opcional"></div>
-        <div><label for="um">Unidad de medida *</label>
-          <select id="um"><option value="PZ">PZ · Pieza</option><option value="KG">KG · Kilogramo</option><option value="LB">LB · Libra</option><option value="M">M · Metro</option><option value="L">L · Litro</option><option value="CJ">CJ · Caja</option><option value="GAL">GAL · Galón</option></select></div>
-        <div><label for="cantidad">Cantidad *</label><input type="number" id="cantidad" min="0" step="any" required placeholder="0"></div>
-        <div><label for="ubicacion">Ubicación *</label><input type="text" id="ubicacion" required placeholder="Almacén A · Estante 3"></div>
+        <div><label for="ubicacion">Ubicación *</label><input type="text" id="ubicacion" required></div>
+        <div><label for="codigo">Código *</label><div class="row"><input type="text" id="codigo" required placeholder="MAT-0001"><button type="button" class="bs" id="btnAuto" title="Siguiente código">Auto</button></div></div>
+        <div class="na-field"><div class="na-head"><label for="tipoMaterial">Tipo material</label><label class="na-check"><input type="checkbox" data-na="tipoMaterial"> No aplica</label></div><input class="na-value" id="tipoMaterial" type="text"></div>
+        <div><label for="descripcion">Descripción *</label><input type="text" id="descripcion" required></div>
+        <div class="na-field"><div class="na-head"><label for="especificacionMedida">Especificación medida</label><label class="na-check"><input type="checkbox" data-na="especificacionMedida"> No aplica</label></div><input class="na-value" id="especificacionMedida" type="text"></div>
+        <div class="na-field"><div class="na-head"><label for="manufactura">Manufactura</label><label class="na-check"><input type="checkbox" data-na="manufactura"> No aplica</label></div><input class="na-value" id="manufactura" type="text"></div>
+        <div class="na-field"><div class="na-head"><label for="numeroHeat">N.º Heat</label><label class="na-check"><input type="checkbox" data-na="numeroHeat"> No aplica</label></div><input class="na-value" id="numeroHeat" type="text"></div>
+        <div class="na-field"><div class="na-head"><label for="numeroLoteMP">N.º lote MP</label><label class="na-check"><input type="checkbox" data-na="numeroLoteMP"> No aplica</label></div><input class="na-value" id="numeroLoteMP" type="text"></div>
+        <div class="na-field"><div class="na-head"><label for="numeroCertificado">N.º cert.</label><label class="na-check"><input type="checkbox" data-na="numeroCertificado"> No aplica</label></div><input class="na-value" id="numeroCertificado" type="text"></div>
+        <div class="na-field"><div class="na-head"><label for="totalMM">Total mm</label><label class="na-check"><input type="checkbox" data-na="totalMM"> No aplica</label></div><input class="na-value" id="totalMM" type="number" min="0" step="any"></div>
         <div><label for="fechaRecibo">Fecha de recibo *</label><input type="date" id="fechaRecibo" required></div>
-        <div class="full"><label>¿Es materia prima?</label>
-          <div class="radios"><label><input type="radio" name="esMP" value="no" checked> No (material general)</label><label><input type="radio" name="esMP" value="si"> Sí, materia prima</label></div></div>
-        <div class="full mp" id="mp" hidden>
-          <div class="grid">
-            <div><label for="peso">Peso</label><div class="row"><input type="number" id="peso" min="0" step="any" placeholder="0.00"><select id="pesoU"><option>KG</option><option>LB</option></select></div></div>
-            <div><label for="longitud">Longitud</label><div class="row"><input type="number" id="longitud" min="0" step="any" placeholder="0.00"><select id="longU"><option>mm</option><option>cm</option><option>m</option><option>in</option></select></div></div>
-            <div class="full"><label for="longTotal">Longitud total (cantidad × longitud)</label><input type="text" id="longTotal" readonly placeholder="Se calcula automáticamente (solo UM = PZ)" style="font-weight:700"></div>
-            <div><label>Sección</label><div class="radios"><label><input type="radio" name="seccion" value="redondo" checked> Redondo</label><label><input type="radio" name="seccion" value="cuadrado"> Cuadrado</label></div></div>
-            <div><label for="secU">Unidad de sección</label><select id="secU"><option>mm</option><option>cm</option><option>in</option></select></div>
-            <div id="cRed" class="full"><label for="diametro">Diámetro</label><input type="number" id="diametro" min="0" step="any" placeholder="0.00"></div>
-            <div id="cCua" class="full grid" hidden><div><label for="alto">Alto</label><input type="number" id="alto" min="0" step="any" placeholder="0.00"></div><div><label for="ancho">Ancho</label><input type="number" id="ancho" min="0" step="any" placeholder="0.00"></div></div>
-            <div class="full" style="border-top:1px dashed var(--line);padding-top:10px">
-              <label>🔁 Conversor pulgadas ⇄ milímetros</label>
-              <div class="row"><input type="text" id="cvIn" inputmode="decimal" placeholder="Pulgadas (ej. 1 1/2)"><input type="number" id="cvMm" step="any" placeholder="Milímetros"></div>
-              <div id="cvHint" style="font-size:.76rem;color:var(--mut);margin:4px 0 6px;min-height:1em"></div>
-              <div class="row"><select id="cvDest" style="max-width:none"><option value="diametro">Aplicar a Diámetro</option><option value="alto">Aplicar a Alto</option><option value="ancho">Aplicar a Ancho</option><option value="longitud">Aplicar a Longitud</option></select><button type="button" class="bs" id="cvAplicar">Aplicar</button></div>
-            </div>
-          </div>
-        </div>
+        <div><label for="cantidad">Cantidad (PZ) *</label><input type="number" id="cantidad" min="0" step="any" required></div>
+        <div class="na-field"><div class="na-head"><label for="peso">Peso</label><label class="na-check"><input type="checkbox" data-na="peso"> No aplica</label></div><div class="na-value-wrap row"><input class="na-value" id="peso" type="number" min="0" step="any"><select id="pesoU" aria-label="Unidad de peso"><option value="LB">LB</option><option value="KG">KG</option></select></div></div>
+        <div><label for="um">UM de cantidad</label><input type="text" value="PZ · Pieza" readonly aria-label="Unidad de cantidad fija: piezas"><input type="hidden" id="um" value="PZ"></div>
+        <div class="na-field"><div class="na-head"><label for="ordenMaterial">Orden</label><label class="na-check"><input type="checkbox" data-na="ordenMaterial"> No aplica</label></div><input class="na-value" id="ordenMaterial" type="text"></div>
+        <div class="na-field"><div class="na-head"><label for="poNumber">PO number</label><label class="na-check"><input type="checkbox" data-na="poNumber"> No aplica</label></div><input class="na-value" id="poNumber" type="text"></div>
       </div>
       <div class="acts">
         <button type="submit" class="bp" id="btnGuardar">💾 Guardar y generar QR</button>
@@ -12607,14 +12600,21 @@ body.ficha>#login{display:none!important}
       <select id="ftipo"><option value="">Todos</option><option value="mp">Materia prima</option><option value="gen">General</option></select>
     </div>
     <div class="tw"><table>
-      <thead><tr><th data-k="codigo">Código ⇅</th><th data-k="descripcion">Descripción ⇅</th><th>UM</th><th data-k="cantidad">Ctd. ⇅</th><th>Existencia</th><th>Tipo</th><th data-k="ubicacion">Ubicación ⇅</th><th data-k="fechaRecibo">Recibo ⇅</th><th>Acciones</th></tr></thead>
+      <thead><tr><th><input type="checkbox" class="row-select" id="selectAll" aria-label="Seleccionar todos los resultados visibles" title="Seleccionar todos los resultados visibles"></th><th data-k="codigo">Código ⇅</th><th data-k="descripcion">Descripción ⇅</th><th>UM cantidad</th><th data-k="cantidad">Ctd. ⇅</th><th>Existencia</th><th>Tipo</th><th data-k="ubicacion">Ubicación ⇅</th><th data-k="fechaRecibo">Recibo ⇅</th><th>Acciones</th></tr></thead>
       <tbody id="tbody"></tbody></table>
       <div class="empty" id="vacio" hidden>Sin resultados</div></div>
+    <div class="acts" style="align-items:center">
+      <span id="seleccionInfo" style="font-size:.84rem;color:var(--mut);align-self:center">0 seleccionados</span>
+      <button type="button" class="bd" id="bDelSel" disabled>🗑️ Eliminar seleccionados</button>
+      <button type="button" class="bd" id="bDelAll" disabled>🗑️ Eliminar todos</button>
+    </div>
     <div class="acts">
       <button type="button" class="bs" id="bJson">⬇️ JSON</button>
       <button type="button" class="bs" id="bCsv">⬇️ CSV (Excel)</button>
       <button type="button" class="bs" id="bImp">⬆️ Importar JSON</button>
+      <button type="button" class="bs" id="bExcel">📊 Importar Excel</button>
       <input type="file" id="fileImp" accept=".json,application/json" hidden>
+      <input type="file" id="fileExcel" accept=".xlsx,.xls,.csv" hidden>
     </div>
   </section>
 </div>
@@ -12624,9 +12624,6 @@ body.ficha>#login{display:none!important}
   <div id="qrBox">Guarde o seleccione un material para generar su QR</div>
   <div id="ficha" style="margin-top:12px"></div>
   <label style="display:flex;gap:8px;align-items:center;color:var(--tx);font-weight:500;margin-top:12px"><input type="checkbox" id="qrCompacto" style="width:auto"> QR compacto (solo el código; la ficha se consulta en línea y siempre muestra lo actual)</label>
-  <label for="etqFmt" style="margin-top:12px">Etiqueta Brother QL-800 (rollo DK)</label>
-  <select id="etqFmt"></select>
-  <div id="etqHint" style="font-size:.74rem;color:var(--mut);margin-top:4px"></div>
   <div class="acts">
     <button type="button" class="bp" id="bPrint" disabled>🖨️ Imprimir etiqueta</button>
     <button type="button" class="bs" id="bPng" disabled>🖼️ Descargar PNG</button>
@@ -12672,25 +12669,24 @@ body.ficha>#login{display:none!important}
 <div class="toast" id="toast"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.4/dist/umd/supabase.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script>
 const $=id=>document.getElementById(id);
 const K="trazabilidad_materiales_v2";
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const hoy=()=>new Date(Date.now()-new Date().getTimezoneOffset()*6e4).toISOString().slice(0,10);
-const radio=n=>document.querySelector(`input[name="${n}"]:checked`).value;
 const fmt=n=>Number(n).toLocaleString("es-MX",{maximumFractionDigits:3});
 function totalTxt(m){return m.esMP&&m.um==="PZ"&&m.cantidad>0&&m.longitud>0?`${fmt(m.cantidad*m.longitud)} ${m.longU||m.longitudUnidad||"mm"}`:""}
-function calcTotal(){
-  const mp=radio("esMP")==="si",c=parseFloat($("cantidad").value)||0,l=parseFloat($("longitud").value)||0;
-  $("longTotal").value=mp&&$("um").value==="PZ"&&c>0&&l>0?`${c} pz × ${l} ${$("longU").value} = ${fmt(c*l)} ${$("longU").value}`:"";
-}
-["cantidad","longitud"].forEach(i=>$(i).addEventListener("input",calcTotal));
-["um","longU"].forEach(i=>$(i).addEventListener("change",calcTotal));
 let mats=[],actual=null,orden={k:null,asc:true},esStaff=false;
+const seleccionados=new Set();
 
 // --- Supabase ---
 const SB_URL="https://olbcepxgzqtmiqdqpbha.supabase.co",SB_KEY="sb_publishable_kdySoe6yEpOSmx4-zEOk-w_EHIMnaEC";
 const sb=window.supabase?window.supabase.createClient(SB_URL,SB_KEY):null;
+function normalizarMaterial(m){
+  const pesoU=m.pesoU||m.pesoUnidad||(["LB","KG"].includes(m.um)?m.um:m.peso!=null?"LB":null);
+  return{...m,um:"PZ",pesoU};
+}
 const matData=m=>{const{despachos,...r}=m;return r};
 const desData=d=>{const{t,piezas,...r}=d;return r};
 const desFila=(codigo,d)=>({codigo,t:d.t,data:desData(d),piezas:d.piezas||[]});
@@ -12707,7 +12703,7 @@ async function cargar(){
   const selCod=sel!=null&&mats[sel]?mats[sel].codigo:null,antes=selCod?existTxt(mats[sel]):"";
   const edI=$("editIndex").value,edCod=edI!==""&&mats[+edI]?mats[+edI].codigo:null;
   const act=actual,actAntes=act?JSON.stringify(act):"";
-  mats=A.map(r=>({...r.data,codigo:r.codigo,despachos:por[r.codigo]||[]}));
+  mats=A.map(r=>({...normalizarMaterial(r.data),codigo:r.codigo,despachos:por[r.codigo]||[]}));
   sel=selCod?mats.findIndex(x=>x.codigo===selCod):null;if(sel!=null&&sel<0)sel=null;
   if(edCod){const i=mats.findIndex(x=>x.codigo===edCod);if(i<0)resetForm();else $("editIndex").value=i}
   pzPend=sel!=null?pzPend.filter(n=>!piezasSurt(mats[sel]).has(n)):[];
@@ -12741,7 +12737,7 @@ async function migrarLocal(){
   let loc=[];try{if(localStorage.getItem(K+"_migrado"))return;loc=JSON.parse(localStorage.getItem(K)||localStorage.getItem("materiales_v1")||"[]")}catch{}
   loc=(Array.isArray(loc)?loc:[]).filter(m=>m&&m.codigo);if(!loc.length)return;
   if(!confirm(`Se encontraron ${loc.length} registro(s) guardados en este navegador (de antes de usar Supabase).\n\n¿Subirlos ahora a la base de datos compartida?`)){try{sessionStorage.setItem("mig_omitido","1")}catch{}return}
-  loc.forEach(m=>{m.codigo=String(m.codigo);m.esMP=!!m.esMP;m.cantidad=Number(m.cantidad)||0;m.despachos=Array.isArray(m.despachos)?m.despachos.filter(d=>d&&typeof d==="object"&&d.t!=null):[]});
+  loc.forEach(m=>{Object.assign(m,normalizarMaterial(m));m.codigo=String(m.codigo);m.esMP=!!m.esMP;m.cantidad=Number(m.cantidad)||0;m.despachos=Array.isArray(m.despachos)?m.despachos.filter(d=>d&&typeof d==="object"&&d.t!=null):[]});
   try{await subirLista(loc,loc.flatMap(m=>m.despachos.map(d=>({codigo:m.codigo,d}))));try{localStorage.setItem(K+"_migrado","1")}catch{}await cargar();toast(`${loc.length} registro(s) subidos a Supabase ✔`)}
   catch(e){errDB(e,"No se pudo subir")}
 }
@@ -12765,30 +12761,37 @@ async function arrancar(){
 function toast(msg,err){const t=$("toast");t.textContent=msg;t.classList.toggle("err",!!err);t.classList.add("show");clearTimeout(toast.h);toast.h=setTimeout(()=>t.classList.remove("show"),2400)}
 
 // --- Formulario ---
-document.querySelectorAll('input[name="esMP"]').forEach(r=>r.addEventListener("change",()=>{$("mp").hidden=radio("esMP")!=="si";calcTotal()}));
-document.querySelectorAll('input[name="seccion"]').forEach(r=>r.addEventListener("change",()=>{const c=radio("seccion")==="cuadrado";$("cRed").hidden=c;$("cCua").hidden=!c}));
+const CAMPOS_EXTRA=[["tipoMaterial","tipoMaterial"],["especificacionMedida","especificacionMedida"],["manufactura","manufactura"],["numeroHeat","numeroHeat"],["numeroLoteMP","numeroLoteMP"],["numeroCertificado","numeroCertificado"],["totalMM","totalMM"],["peso","peso"],["ordenMaterial","ordenMaterial"],["poNumber","poNumber"]];
+document.querySelectorAll("[data-na]").forEach(c=>c.addEventListener("change",()=>{
+  const input=$(c.dataset.na),wrap=input.closest(".na-field").querySelector(".na-value-wrap")||input;
+  wrap.hidden=c.checked;if(c.checked)input.value="";
+}));
 $("btnAuto").onclick=()=>{let n=0;mats.forEach(m=>{const x=/^MAT-(\d+)$/i.exec(m.codigo);if(x)n=Math.max(n,+x[1])});$("codigo").value="MAT-"+String(n+1).padStart(4,"0")};
 
-function resetForm(){$("f").reset();$("editIndex").value="";$("mp").hidden=true;$("cRed").hidden=false;$("cCua").hidden=true;$("fechaRecibo").value=hoy();calcTotal();$("tituloForm").textContent="Registro de material";$("btnGuardar").textContent="💾 Guardar y generar QR";$("btnCancelar").hidden=true}
+function resetForm(){$("f").reset();CAMPOS_EXTRA.forEach(([,id])=>$(id).hidden=false);$("editIndex").value="";$("fechaRecibo").value=hoy();$("tituloForm").textContent="Registro de material";$("btnGuardar").textContent="💾 Guardar y generar QR";$("btnCancelar").hidden=true}
 
 $("f").addEventListener("submit",async e=>{
   e.preventDefault();
-  const mp=radio("esMP")==="si",sec=radio("seccion"),n=id=>parseFloat($(id).value)||0,idx=$("editIndex").value;
-  const m={codigo:$("codigo").value.trim(),descripcion:$("descripcion").value.trim(),lote:$("lote").value.trim(),proveedor:$("proveedor").value.trim(),
+  const idx=$("editIndex").value;
+  const noAplica=Object.fromEntries(CAMPOS_EXTRA.map(([key,id])=>[key,document.querySelector(`input[data-na="${id}"]`).checked]));
+  const extra=Object.fromEntries(CAMPOS_EXTRA.map(([key,id])=>[key,noAplica[key]?"":(["totalMM","peso"].includes(key)?($(id).value===""?null:Number($(id).value)):$(id).value.trim())]));
+  const tipoMaterial=noAplica.tipoMaterial?"":$("tipoMaterial").value.trim();
+  const anterior=idx!==""?mats[idx]:null;
+  const m={codigo:$("codigo").value.trim(),descripcion:$("descripcion").value.trim(),lote:extra.numeroLoteMP||"",proveedor:"",
     um:$("um").value,cantidad:parseFloat($("cantidad").value),ubicacion:$("ubicacion").value.trim(),fechaRecibo:$("fechaRecibo").value,
-    fechaModificacion:new Date().toLocaleString("es-MX"),esMP:mp,
-    peso:mp?n("peso"):null,pesoU:mp?$("pesoU").value:null,longitud:mp?n("longitud"):null,longU:mp?$("longU").value:null,
-    seccion:mp?sec:null,secU:mp?$("secU").value:null,diametro:mp&&sec==="redondo"?n("diametro"):null,
-    alto:mp&&sec==="cuadrado"?n("alto"):null,ancho:mp&&sec==="cuadrado"?n("ancho"):null};
-  m.despachos=idx!==""?(mats[idx].despachos||[]):[];let conv=false;
-  if(idx!==""){const o=mats[idx],ou=o.longU||o.longitudUnidad;if(m.longU&&ou&&ou!==m.longU&&okU(ou)&&okU(m.longU))m.despachos.forEach(d=>{if(d.modo==="longitud"){d.longitud=r4(d.longitud*FAC[ou]/FAC[m.longU]);d.unidad=m.longU;conv=true}})}
+    fechaModificacion:new Date().toLocaleString("es-MX"),esMP:/materia\s*prima|^mp$/i.test(tipoMaterial),
+    peso:extra.peso,pesoU:extra.peso==null?null:$("pesoU").value,
+    longitud:anterior?.longitud??null,longU:anterior?.longU||anterior?.longitudUnidad||null,
+    seccion:anterior?.seccion||null,secU:anterior?.secU||anterior?.diametroUnidad||null,
+    diametro:anterior?.diametro??null,alto:anterior?.alto??null,ancho:anterior?.ancho??null,
+    ...extra,noAplica};
+  m.despachos=anterior?(anterior.despachos||[]):[];
   const dup=mats.findIndex(x=>x.codigo.toLowerCase()===m.codigo.toLowerCase());
   if(dup!==-1&&String(dup)!==idx){toast("⚠ El código ya existe, use otro.",1);return}
   const oldCod=idx!==""?mats[idx].codigo:null;$("btnGuardar").disabled=true;
   try{
     if(idx!==""){
       const{error}=await sb.from("materiales").update({codigo:m.codigo,data:matData(m)}).eq("codigo",oldCod);if(error)throw error;
-      if(conv)for(const d of m.despachos)if(d.modo==="longitud"){const{error:e2}=await sb.from("despachos").update({data:desData(d)}).eq("codigo",m.codigo).eq("t",d.t);if(e2)throw e2}
     }else{const{error}=await sb.from("materiales").insert({codigo:m.codigo,data:matData(m)});if(error)throw error}
   }catch(err){errDB(err,"No se pudo guardar");$("btnGuardar").disabled=false;await cargar().catch(()=>{});return}
   $("btnGuardar").disabled=false;await cargar().catch(()=>{});
@@ -12807,8 +12810,13 @@ const BASE="https://shardd89.github.io/TrazabilidadQR/";
 const b64e=t=>btoa(encodeURIComponent(t).replace(/%([0-9A-F]{2})/g,(_,h)=>String.fromCharCode(parseInt(h,16)))).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,"");
 const b64d=t=>{t=t.replace(/-/g,"+").replace(/_/g,"/");while(t.length%4)t+="=";return decodeURIComponent(Array.from(atob(t),c=>"%"+c.charCodeAt(0).toString(16).padStart(2,"0")).join(""))};
 function payload(m){
-  const o={c:m.codigo,d:m.descripcion,l:m.lote,p:m.proveedor,u:m.um,q:m.cantidad,m:m.esMP?1:0,ub:m.ubicacion,fr:m.fechaRecibo,fm:m.fechaModificacion};
-  if(m.esMP)Object.assign(o,{pe:m.peso,pu:m.pesoU||m.pesoUnidad,lo:m.longitud,lu:m.longU||m.longitudUnidad,s:m.seccion,su:m.secU||m.diametroUnidad,di:m.diametro,al:m.alto,an:m.ancho});
+  const o={c:m.codigo,d:m.descripcion,l:m.lote,p:m.proveedor,u:"PZ",q:m.cantidad,m:m.esMP?1:0,ub:m.ubicacion,fr:m.fechaRecibo,fm:m.fechaModificacion};
+  if(m.esMP)Object.assign(o,{lo:m.longitud,lu:m.longU||m.longitudUnidad,s:m.seccion,su:m.secU||m.diametroUnidad,di:m.diametro,al:m.alto,an:m.ancho});
+  if(m.peso!=null){o.pe=m.peso;o.pu=m.pesoU||m.pesoUnidad}
+  const extras={tipoMaterial:"tm",especificacionMedida:"em",manufactura:"mf",numeroHeat:"nh",numeroLoteMP:"nl",numeroCertificado:"nc",totalMM:"tmm",ordenMaterial:"ord",poNumber:"po"};
+  Object.entries(extras).forEach(([key,short])=>{if(m[key])o[short]=m[key]});
+  if(m.peso!=null)o.pe=m.peso;
+  if(m.noAplica&&Object.values(m.noAplica).some(Boolean))o.na=m.noAplica;
   Object.keys(o).forEach(k=>{if(o[k]===""||o[k]==null)delete o[k]});return o}
 // Master + piezas individuales: según la cantidad (entera, 1 a MAX_IND), sin importar la UM
 const MAX_IND=100;
@@ -12849,9 +12857,11 @@ function mostrar(m){
   const txt=qrTexto(m);
   const c=dibujarQR(txt);
   if(c)box.appendChild(c);else{box.textContent="No se pudo generar el QR: los datos son demasiado largos. Acorte descripción o ubicación.";actual=null}
-  const rows=[["Código",m.codigo],["Descripción",m.descripcion],["Lote / Colada",m.lote],["Proveedor",m.proveedor],["UM / Cantidad",`${m.um} / ${m.cantidad}`],
+  const rows=[["Código",m.codigo],["Ubicación",m.ubicacion],["Tipo material",m.tipoMaterial],["Descripción",m.descripcion],
+    ["Especificación medida",m.especificacionMedida],["Manufactura",m.manufactura],["N.º Heat",m.numeroHeat],["N.º lote MP",m.numeroLoteMP||m.lote],["N.º cert.",m.numeroCertificado],["Total mm",m.totalMM],["Fecha de recibo",m.fechaRecibo],["Cantidad",`${m.cantidad} ${m.um}`],
     ["Etiqueta",`MASTER · ${m.cantidad} ${m.um}`+(esIndividual(m)?` (+ ${m.cantidad} QR individuales)`:` (sin QR individuales: la cantidad debe ser entera y de 1 a ${MAX_IND})`)],
-    ["Tipo",m.esMP?"Materia prima":"Material general"],["Peso",m.esMP?`${m.peso} ${m.pesoU||m.pesoUnidad}`:""],["Dimensiones",dimsTxt(m)],["Longitud total",totalTxt(m)],["Existencia",existTxt(m)],
+    ["Peso",m.peso!=null?`${m.peso}${m.pesoU||m.pesoUnidad?" "+(m.pesoU||m.pesoUnidad):""}`:""],["UM",m.um],["Orden",m.ordenMaterial],["PO number",m.poNumber],
+    ["Tipo",m.esMP?"Materia prima":"Material general"],["Dimensiones",dimsTxt(m)],["Longitud total",totalTxt(m)],["Existencia",existTxt(m)],
     ["Ubicación",m.ubicacion],["Fecha recibo",m.fechaRecibo],["Últ. modificación",m.fechaModificacion]];
   $("ficha").innerHTML=rows.filter(r=>r[1]).map(r=>`<div class="d"><b>${r[0]}</b><span>${esc(r[1])}</span></div>`).join("");
   $("bPrint").disabled=$("bPng").disabled=!actual;
@@ -12865,37 +12875,20 @@ $("pzDet").addEventListener("toggle",()=>{
   for(let n=1;n<=m.cantidad;n++){const c=qrPieza(m,n);if(!c)continue;c.style.cssText="width:96px;height:96px;image-rendering:pixelated";
     const d=document.createElement("div");d.className="pzi";d.dataset.n=n;d.style.cursor="pointer";d.title="Clic para descargar este PNG";d.appendChild(c);const t=document.createElement("div");t.textContent=`${n} / ${m.cantidad}`;d.appendChild(t);g.appendChild(d)}
 });
-// --- Impresión en Brother QL-800: 1 etiqueta por página, página = tamaño de la etiqueta ---
-const FMT={
-  "62x100":{n:"62 × 100 mm (DK-11202)",w:62,h:100,qr:54,row:0,lv:2,fs:11,cl:3},
-  "62c":{n:"Rollo continuo · 62 mm de ancho (largo en Brother)",w:62,qr:50,row:0,lv:2,fs:11,cl:3,continuous:true},
-  "29c":{n:"Rollo continuo · 29 mm de ancho (largo en Brother)",w:29,qr:22,row:0,lv:1,fs:7,cl:2,continuous:true},
-  "62x29":{n:"62 × 29 mm (DK-11209)",w:62,h:29,qr:25,row:1,lv:1,fs:7.5,cl:2},
-  "38x90":{n:"38 × 90 mm (DK-11208)",w:38,h:90,qr:33,row:0,lv:1,fs:8,cl:3},
-  "29x90":{n:"29 × 90 mm (DK-11201)",w:29,h:90,qr:25,row:0,lv:1,fs:7,cl:3},
-  "29x29":{n:"29 × 29 mm (DK-11221)",w:29,h:29,qr:19,row:0,lv:0,fs:6.5,cl:2}};
-function fmtSel(){try{const k=localStorage.getItem("etq_fmt");return FMT[k]?k:"29c"}catch{return"29c"}}
-$("etqFmt").innerHTML=Object.keys(FMT).map(k=>`<option value="${k}">${FMT[k].n}</option>`).join("");$("etqFmt").value=fmtSel();
-function hintEtq(){const f=FMT[fmtSel()];$("etqHint").textContent=f.continuous?`Rollo continuo de ${f.w} mm de ancho. Configure el largo en las opciones de impresión de la Brother QL-800; márgenes “Ninguno” y escala 100 %.`:f.qr<40&&!compacto()?`⚠ QR de ${f.qr} mm: con la ficha completa queda muy denso. Para esta etiqueta active “QR compacto” para que se lea bien.`:`QR de ${f.qr} mm. En la impresión elija la QL-800, este mismo tamaño de papel, márgenes “Ninguno” y escala 100 %.`}
-$("etqFmt").onchange=()=>{try{localStorage.setItem("etq_fmt",$("etqFmt").value)}catch{}hintEtq()};hintEtq();
-$("qrCompacto").addEventListener("change",hintEtq);
+// --- Impresión en Brother QL-800: 1 etiqueta por página; el papel se elige en el controlador ---
+const ETQ={qr:50,lv:2,fs:11,cl:3};
 function qrData(m,n){const c=dibujarQR(qrTexto(m,n),600);return c?c.toDataURL("image/png"):null}
 function etqHTML(m,n,src){
-  const f=FMT[fmtSel()],N=m.cantidad,tag=n?`PIEZA ${n} / ${N}`:`MASTER · ${esc(N)} ${esc(m.um)}`;
+  const f=ETQ,N=m.cantidad,tag=n?`PIEZA ${n} / ${N}`:`MASTER · ${esc(N)} ${esc(m.um)}`;
   let t=`<b class="cd">${esc(m.codigo)}</b><span class="tg">${tag}</span>`;
   if(f.lv>=1)t+=`<small class="ds">${esc(m.descripcion)}</small>`;
-  if(f.lv>=2)t+=[m.lote?"Lote: "+m.lote:"",m.esMP?dimsTxt(m):"",m.esMP&&m.peso?`Peso: ${m.peso} ${m.pesoU||m.pesoUnidad||""}`:"",m.ubicacion?"Ubic: "+m.ubicacion:"",m.fechaRecibo?"Recibo: "+m.fechaRecibo:""].filter(Boolean).map(x=>`<small>${esc(x)}</small>`).join("");
+  if(f.lv>=2)t+=[m.lote?"Lote: "+m.lote:"",m.esMP?dimsTxt(m):"",m.peso!=null?`Peso: ${m.peso}${m.pesoU||m.pesoUnidad?" "+(m.pesoU||m.pesoUnidad):""}`:"",m.ubicacion?"Ubic: "+m.ubicacion:"",m.fechaRecibo?"Recibo: "+m.fechaRecibo:""].filter(Boolean).map(x=>`<small>${esc(x)}</small>`).join("");
   return `<div class="pz${n?"":" mst"}"><img src="${src}" alt="QR"><div class="tx">${t}</div></div>`}
-function cssEtq(){const f=FMT[fmtSel()],r=f.row;
-  if(f.continuous)return `@media print{@page{size:auto;margin:0}
-#etiqueta.hoja .pz{width:${f.w}mm;height:100%;padding:1.5mm;gap:1.2mm;font-size:${f.fs}pt;flex-direction:${r?"row":"column"};align-items:center;justify-content:center;text-align:${r?"left":"center"}}
-#etiqueta.hoja .pz img{width:${f.qr}mm;height:${f.qr}mm}
+function cssEtq(){const f=ETQ;
+  return `@media print{@page{size:auto;margin:0}
+#etiqueta.hoja .pz{width:100%;height:100%;padding:1.5mm;gap:1.2mm;font-size:${f.fs}pt;flex-direction:column;align-items:center;justify-content:center;text-align:center}
+#etiqueta.hoja .pz img{width:min(${f.qr}mm, 80vw);height:auto;aspect-ratio:1}
 #etiqueta.hoja .pz .tx{width:100%;align-items:center}
-#etiqueta.hoja .pz .ds{-webkit-line-clamp:${f.cl}}}`;
-  return `@media print{@page{size:${f.w}mm ${f.h}mm;margin:0}
-#etiqueta.hoja .pz{width:${f.w}mm;height:${f.h}mm;padding:1.5mm;gap:1.2mm;font-size:${f.fs}pt;flex-direction:${r?"row":"column"};align-items:center;justify-content:${r?"flex-start":"center"};text-align:${r?"left":"center"}}
-#etiqueta.hoja .pz img{width:${f.qr}mm;height:${f.qr}mm}
-#etiqueta.hoja .pz .tx{${r?"flex:1":"width:100%;align-items:center"}}
 #etiqueta.hoja .pz .ds{-webkit-line-clamp:${f.cl}}}`}
 function limpiarEtqCss(){const st=$("etqCss");if(st)st.textContent=""}
 function imprimirEtq(lista){
@@ -12947,10 +12940,12 @@ $("bPrint").onclick=()=>{if(!actual)return;const u=qrData(actual,0);if(!u){toast
 
 // --- Tabla ---
 function render(){
+  const codigos=new Set(mats.map(m=>m.codigo));seleccionados.forEach(c=>{if(!codigos.has(c))seleccionados.delete(c)});
   const q=$("buscar").value.toLowerCase().trim(),t=$("ftipo").value;
-  let lista=mats.map((m,i)=>({m,i})).filter(({m})=>(!t||(t==="mp")===!!m.esMP)&&(!q||[m.codigo,m.descripcion,m.lote,m.proveedor,m.ubicacion].join(" ").toLowerCase().includes(q)));
+  let lista=mats.map((m,i)=>({m,i})).filter(({m})=>(!t||(t==="mp")===!!m.esMP)&&(!q||[m.codigo,m.descripcion,m.lote,m.proveedor,m.ubicacion,m.tipoMaterial,m.especificacionMedida,m.manufactura,m.numeroHeat,m.numeroLoteMP,m.numeroCertificado,m.totalMM,m.tipoMoneda,m.ordenMaterial,m.poNumber].join(" ").toLowerCase().includes(q)));
   if(orden.k)lista.sort((a,b)=>{const x=a.m[orden.k],y=b.m[orden.k];const r=typeof x==="number"?x-y:String(x??"").localeCompare(String(y??""),"es",{numeric:true});return orden.asc?r:-r});
   $("tbody").innerHTML=lista.map(({m,i})=>`<tr>
+    <td><input type="checkbox" class="row-select" data-select="${esc(m.codigo)}" aria-label="Seleccionar ${esc(m.codigo)}" ${seleccionados.has(m.codigo)?"checked":""}></td>
     <td><b>${esc(m.codigo)}</b></td><td class="l">${esc(m.descripcion)}</td><td>${esc(m.um)}</td><td>${esc(m.cantidad)}</td><td>${esc(existTxt(m))}</td>
     <td>${m.esMP?'<span class="tag t1">M. PRIMA</span>':'<span class="tag t2">GENERAL</span>'}</td>
     <td>${esc(m.ubicacion)}</td><td>${esc(m.fechaRecibo)}</td>
@@ -12958,25 +12953,68 @@ function render(){
   $("vacio").hidden=lista.length>0;
   const mp=mats.filter(m=>m.esMP).length;
   $("sTot").textContent=`${mats.length} registros`;$("sMp").textContent=`${mp} materia prima`;$("sGen").textContent=`${mats.length-mp} generales`;
+  syncBulkActions();
+}
+function syncBulkActions(){
+  const visible=[...$("tbody").querySelectorAll("[data-select]")],checked=visible.filter(c=>c.checked).length,all=$("selectAll");
+  all.checked=visible.length>0&&checked===visible.length;all.indeterminate=checked>0&&checked<visible.length;
+  $("seleccionInfo").textContent=`${seleccionados.size} seleccionados`;
+  $("bDelSel").disabled=seleccionados.size===0;$("bDelAll").disabled=mats.length===0;
 }
 $("buscar").oninput=$("ftipo").onchange=render;
 document.querySelectorAll("th[data-k]").forEach(th=>th.onclick=()=>{orden={k:th.dataset.k,asc:orden.k===th.dataset.k?!orden.asc:true};render()});
+$("selectAll").addEventListener("change",e=>{
+  $("tbody").querySelectorAll("[data-select]").forEach(c=>{c.checked=e.target.checked;if(c.checked)seleccionados.add(c.dataset.select);else seleccionados.delete(c.dataset.select)});
+  syncBulkActions();
+});
+$("tbody").addEventListener("change",e=>{
+  const c=e.target.closest("[data-select]");if(!c)return;
+  if(c.checked)seleccionados.add(c.dataset.select);else seleccionados.delete(c.dataset.select);
+  syncBulkActions();
+});
 $("tbody").addEventListener("click",async e=>{
   const b=e.target.closest("button");if(!b)return;const i=+b.dataset.i,m=mats[i];
   if(b.dataset.a==="qr")mostrar(m);
   else if(b.dataset.a==="ed")editar(i);
   else if(confirm(`¿Eliminar el material ${m.codigo}? También se borran sus surtidos.`)){try{const{error}=await sb.from("materiales").delete().eq("codigo",m.codigo);if(error)throw error;await cargar();toast("Material eliminado")}catch(err){errDB(err,"No se pudo eliminar")}}
 });
+async function eliminarEnLotes(codigos){
+ for(let i=0;i<codigos.length;i+=100){
+   const{error}=await sb.from("materiales").delete().in("codigo",codigos.slice(i,i+100));
+   if(error)throw error;
+ }
+}
+$("bDelSel").onclick=async()=>{
+ const codigos=[...seleccionados].filter(c=>mats.some(m=>m.codigo===c));
+ if(!codigos.length){seleccionados.clear();render();return}
+ if(!confirm(`¿Eliminar ${codigos.length} material(es) seleccionado(s)? También se borrarán sus surtidos.`))return;
+ $("bDelSel").disabled=$("bDelAll").disabled=true;
+ try{await eliminarEnLotes(codigos);codigos.forEach(c=>seleccionados.delete(c));toast(`${codigos.length} material(es) eliminado(s)`)}
+ catch(err){errDB(err,"No se pudieron eliminar todos los materiales")}
+ try{await cargar()}catch(err){errDB(err,"No se pudo actualizar la lista")}
+};
+$("bDelAll").onclick=async()=>{
+ const codigos=mats.map(m=>m.codigo);
+ if(!codigos.length)return;
+ if(!confirm(`¿Eliminar TODOS los ${codigos.length} materiales? También se borrarán sus surtidos. Esta acción no se puede deshacer.`))return;
+ $("bDelSel").disabled=$("bDelAll").disabled=true;
+ try{await eliminarEnLotes(codigos);seleccionados.clear();toast(`${codigos.length} material(es) eliminado(s)`)}
+ catch(err){errDB(err,"No se pudieron eliminar todos los materiales")}
+ try{await cargar()}catch(err){errDB(err,"No se pudo actualizar la lista")}
+};
 function editar(i){
   const m=mats[i];resetForm();$("editIndex").value=i;
-  ["codigo","descripcion","lote","proveedor","um","cantidad","ubicacion","fechaRecibo"].forEach(k=>$(k).value=m[k]??"");
-  document.querySelector(`input[name="esMP"][value="${m.esMP?"si":"no"}"]`).checked=true;$("mp").hidden=!m.esMP;
-  if(m.esMP){
-    $("peso").value=m.peso;$("pesoU").value=m.pesoU||m.pesoUnidad||"KG";$("longitud").value=m.longitud;$("longU").value=m.longU||m.longitudUnidad||"mm";
-    $("secU").value=m.secU||m.diametroUnidad||"mm";
-    const c=m.seccion==="cuadrado";document.querySelector(`input[name="seccion"][value="${c?"cuadrado":"redondo"}"]`).checked=true;
-    $("cRed").hidden=c;$("cCua").hidden=!c;calcTotal();$("diametro").value=m.diametro??"";$("alto").value=m.alto??"";$("ancho").value=m.ancho??"";
-  }
+  const values={codigo:m.codigo,descripcion:m.descripcion,um:m.um,cantidad:m.cantidad,ubicacion:m.ubicacion,fechaRecibo:m.fechaRecibo,
+    tipoMaterial:m.tipoMaterial??(m.esMP?"Materia prima":"Material general"),especificacionMedida:m.especificacionMedida,manufactura:m.manufactura,
+    numeroHeat:m.numeroHeat,numeroLoteMP:m.numeroLoteMP??m.lote,numeroCertificado:m.numeroCertificado,totalMM:m.totalMM,peso:m.peso,ordenMaterial:m.ordenMaterial,poNumber:m.poNumber};
+  Object.entries(values).forEach(([id,value])=>$(id).value=value??"");
+  $("um").value="PZ";
+  $("pesoU").value=m.pesoU||m.pesoUnidad||(["LB","KG"].includes(m.um)?m.um:"LB");
+  CAMPOS_EXTRA.forEach(([key,id])=>{
+    const noAplica=!!m.noAplica?.[key],checkbox=document.querySelector(`input[data-na="${id}"]`),input=$(id);
+    checkbox.checked=noAplica;input.value=values[key]??"";
+    const wrap=input.closest(".na-field").querySelector(".na-value-wrap")||input;wrap.hidden=noAplica;
+  });
   $("tituloForm").textContent=`Editando: ${m.codigo}`;$("btnGuardar").textContent="💾 Guardar cambios y regenerar QR";$("btnCancelar").hidden=false;
   window.scrollTo({top:0,behavior:"smooth"});
 }
@@ -12987,17 +13025,96 @@ async function bajar(nombre,contenido,tipo){
   const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([contenido],{type:tipo}));a.download=nombre;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}
 $("bJson").onclick=()=>{bajar("trazabilidad_materiales.json",JSON.stringify(mats,null,2),"application/json");toast("JSON exportado ⬇️")};
 $("bCsv").onclick=()=>{
-  const cols=["codigo","descripcion","lote","proveedor","um","cantidad","esMP","ubicacion","fechaRecibo","fechaModificacion","peso","pesoU","seccion","diametro","alto","ancho","secU","longitud","longU","longTotal","existencia"];
+  const cols=["UBICACION","CODIGO","TIPO MATERIAL","DESCRIPCION","ESPECIFICACION MEDIDA","MANUFACTURA","N°HEAT","N°LOTE MP","N°CERT.","TOTAL MM","FECHA DE RECIBO","CTD","PESO","UM","ORDEN","PO NUMBER"];
   const c=v=>{let t=String(v??"");if(/^[=+\-@\t\r]/.test(t))t="'"+t;return `"${t.replace(/"/g,'""')}"`};
-  bajar("trazabilidad_materiales.csv","\ufeff"+[cols.join(","),...mats.map(m=>({...m,longTotal:totalTxt(m),existencia:existTxt(m)})).map(m=>cols.map(k=>c(m[k])).join(","))].join("\r\n"),"text/csv;charset=utf-8");toast("CSV exportado ⬇️");
+  const value=(m,key,v)=>m.noAplica?.[key]?"No aplica":v;
+  const rows=mats.map(m=>[m.ubicacion,m.codigo,value(m,"tipoMaterial",m.tipoMaterial),m.descripcion,
+    value(m,"especificacionMedida",m.especificacionMedida),value(m,"manufactura",m.manufactura),value(m,"numeroHeat",m.numeroHeat),
+    value(m,"numeroLoteMP",m.numeroLoteMP||m.lote),value(m,"numeroCertificado",m.numeroCertificado),value(m,"totalMM",m.totalMM),
+    m.fechaRecibo,m.cantidad,value(m,"peso",m.peso),m.noAplica?.peso?"No aplica":m.pesoU||m.pesoUnidad||"LB",
+    value(m,"ordenMaterial",m.ordenMaterial),value(m,"poNumber",m.poNumber)]);
+  bajar("trazabilidad_materiales.csv","\ufeff"+[cols.join(","),...rows.map(row=>row.map(c).join(","))].join("\r\n"),"text/csv;charset=utf-8");toast("CSV exportado ⬇️");
 };
 $("bImp").onclick=()=>$("fileImp").click();
+$("bExcel").onclick=()=>$("fileExcel").click();
+const EXCEL_HEADERS={
+  ubicacion:["ubicacion","location"],codigo:["codigo","code"],tipoMaterial:["tipomaterial","tipo"],descripcion:["descripcion","description"],
+  especificacionMedida:["especificacionmedida","especificacion","medida"],manufactura:["manufactura","fabricacion"],
+  numeroHeat:["nheat","numeroheat","heat"],numeroLoteMP:["nlotemp","numerolotemp","lotemp"],
+  numeroCertificado:["ncert","ncertificado","numerocertificado","certificado"],totalMM:["totalmm"],
+  fechaRecibo:["fechaderecibo","fecharecibo","fecha"],cantidad:["ctd","cantidad","quantity"],
+  peso:["peso","weight"],um:["um","unidadmedida","unidad"],
+  ordenMaterial:["orden","ordenmaterial","order"],poNumber:["ponumber","po"]
+};
+function normalizarEncabezado(v){return String(v??"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/[^a-z0-9]/g,"")}
+function buscarEncabezados(rows){
+  for(let i=0;i<Math.min(rows.length,20);i++){
+    const headers=rows[i].map(normalizarEncabezado),mapped={};
+    Object.entries(EXCEL_HEADERS).forEach(([key,aliases])=>{const index=headers.findIndex(h=>aliases.includes(h));if(index>=0)mapped[key]=index});
+    if(["codigo","descripcion","ubicacion","cantidad","fechaRecibo"].every(key=>mapped[key]!=null))return{index:i,mapped};
+  }
+  throw new Error("No se encontraron los encabezados requeridos: UBICACION, CODIGO, DESCRIPCION, FECHA DE RECIBO y CTD.");
+}
+function valorCelda(row,mapped,key){return mapped[key]==null?"":row[mapped[key]]??""}
+function numeroExcel(value){
+  if(typeof value==="number")return Number.isFinite(value)?value:null;
+  let s=String(value??"").trim().replace(/\s/g,"");if(!s)return null;
+  if(s.includes(",")&&s.includes("."))s=s.lastIndexOf(",")>s.lastIndexOf(".")?s.replace(/\./g,"").replace(",","."):s.replace(/,/g,"");
+  else if(s.includes(","))s=s.replace(",",".");
+  const n=Number(s);return Number.isFinite(n)?n:null;
+}
+function fechaExcel(value){
+  if(value instanceof Date&&!isNaN(value))return value.toISOString().slice(0,10);
+  if(typeof value==="number"){const d=XLSX.SSF.parse_date_code(value);return d?`${String(d.y).padStart(4,"0")}-${String(d.m).padStart(2,"0")}-${String(d.d).padStart(2,"0")}`:""}
+  const s=String(value??"").trim();let m;
+  if(m=/^(\d{1,2})[./-](\d{1,2})[./-](\d{4})$/.exec(s))return`${m[3]}-${m[2].padStart(2,"0")}-${m[1].padStart(2,"0")}`;
+  if(m=/^(\d{4})-(\d{1,2})-(\d{1,2})$/.exec(s))return`${m[1]}-${m[2].padStart(2,"0")}-${m[3].padStart(2,"0")}`;
+  return"";
+}
+function esNoAplica(value){return["na","n/a","n.a.","no aplica","noaplica","no aplica."].includes(String(value??"").trim().toLowerCase())}
+function materialDesdeExcel(row,mapped){
+  const get=key=>valorCelda(row,mapped,key),text=key=>String(get(key)??"").trim(),raw={};
+  Object.keys(EXCEL_HEADERS).forEach(key=>raw[key]=get(key));
+  const noAplica=Object.fromEntries(CAMPOS_EXTRA.map(([key])=>[key,esNoAplica(raw[key])]));
+  if(esNoAplica(get("um")))noAplica.peso=true;
+  const stringValue=key=>noAplica[key]?"":String(raw[key]??"").trim();
+  const codigo=text("codigo"),descripcion=text("descripcion"),ubicacion=text("ubicacion");
+  const cantidad=numeroExcel(get("cantidad")),peso=numeroExcel(get("peso")),umOriginal=text("um").toUpperCase();
+  const pesoUnitMap={LB:"LB",LBS:"LB",LIBRA:"LB",LIBRAS:"LB",KG:"KG",KGS:"KG",KILOGRAM:"KG",KILOGRAMO:"KG",KILOGRAMOS:"KG"};
+  const esMP=/materia\s*prima|^mp$/.test(text("tipoMaterial").toLowerCase());
+  const fechaRecibo=fechaExcel(get("fechaRecibo"));
+  if(!codigo||!descripcion||!ubicacion||!(cantidad>0)||!fechaRecibo||(umOriginal&&!pesoUnitMap[umOriginal]&&!noAplica.peso&&!esNoAplica(get("um"))))return null;
+  const extra=Object.fromEntries(CAMPOS_EXTRA.map(([key])=>[key,noAplica[key]?["peso","totalMM"].includes(key)?null:"":["peso","totalMM"].includes(key)?numeroExcel(raw[key]):stringValue(key)]));
+  return{codigo,descripcion,lote:extra.numeroLoteMP,proveedor:"",um:"PZ",cantidad,ubicacion,fechaRecibo,
+    fechaModificacion:new Date().toLocaleString("es-MX"),esMP,peso,pesoU:extra.peso==null?null:(pesoUnitMap[umOriginal]||"LB"),longitud:null,longU:null,
+    seccion:null,secU:null,diametro:null,alto:null,ancho:null,...extra,noAplica,despachos:[]};
+}
+async function importarExcel(file){
+  if(!window.XLSX)throw new Error("No se pudo cargar el lector de Excel. Revise la conexión y recargue la página.");
+  const workbook=XLSX.read(await file.arrayBuffer(),{type:"array",cellDates:true}),sheet=workbook.Sheets[workbook.SheetNames[0]];
+  if(!sheet)throw new Error("El archivo no contiene hojas para importar.");
+  const rows=XLSX.utils.sheet_to_json(sheet,{header:1,defval:"",raw:true}),{index,mapped}=buscarEncabezados(rows);
+  let invalidos=0,duplicados=0;const codigos=new Set(mats.map(m=>m.codigo.toLowerCase())),nuevos=[];
+  rows.slice(index+1).forEach(row=>{
+    if(!row.some(v=>String(v??"").trim()))return;
+    const material=materialDesdeExcel(row,mapped);if(!material){invalidos++;return}
+    const key=material.codigo.toLowerCase();if(codigos.has(key)){duplicados++;return}
+    codigos.add(key);nuevos.push(material);
+  });
+  if(!nuevos.length){toast(`No se importaron filas. Inválidas: ${invalidos} (datos requeridos o UM no válida) · duplicadas: ${duplicados}`,1);return}
+  try{await subirLista(nuevos,[]);await cargar();renderHist();toast(`Importados: ${nuevos.length} · inválidas: ${invalidos} (datos requeridos o UM no válida) · duplicadas: ${duplicados}`)}
+  catch(err){errDB(err,"No se pudo importar el Excel");await cargar().catch(()=>{})}
+}
+$("fileExcel").onchange=async e=>{
+  const file=e.target.files[0];e.target.value="";if(!file)return;
+  try{await importarExcel(file)}catch(err){toast(err.message||"No se pudo leer el archivo de Excel",1)}
+};
 $("fileImp").onchange=e=>{
   const f=e.target.files[0];if(!f)return;const r=new FileReader();
   r.onload=async()=>{try{
     const a=JSON.parse(r.result);if(!Array.isArray(a))throw 0;let nuevos=0,omit=0,surt=0;
     const antesC=new Set(mats.map(x=>x.codigo.toLowerCase())),antesT=new Set(mats.flatMap(x=>(x.despachos||[]).map(d=>x.codigo.toLowerCase()+"|"+d.t)));
-    a.forEach(m=>{if(!m||!m.codigo){omit++;return}m.codigo=String(m.codigo);m.esMP=!!m.esMP;m.cantidad=Number(m.cantidad)||0;m.despachos=Array.isArray(m.despachos)?m.despachos.filter(d=>d&&typeof d==="object"):[];const ex=mats.find(x=>x.codigo.toLowerCase()===String(m.codigo).toLowerCase());if(ex){const ids=new Set((ex.despachos||[]).map(d=>d.t));let add=0;(m.despachos||[]).forEach(d=>{if(!ids.has(d.t)){(ex.despachos=ex.despachos||[]).push(d);add++}});if(add)surt+=add;else omit++;return}mats.push(m);nuevos++});
+    a.forEach(m=>{if(!m||!m.codigo){omit++;return}Object.assign(m,normalizarMaterial(m));m.codigo=String(m.codigo);m.esMP=!!m.esMP;m.cantidad=Number(m.cantidad)||0;m.despachos=Array.isArray(m.despachos)?m.despachos.filter(d=>d&&typeof d==="object"):[];const ex=mats.find(x=>x.codigo.toLowerCase()===String(m.codigo).toLowerCase());if(ex){const ids=new Set((ex.despachos||[]).map(d=>d.t));let add=0;(m.despachos||[]).forEach(d=>{if(!ids.has(d.t)){(ex.despachos=ex.despachos||[]).push(d);add++}});if(add)surt+=add;else omit++;return}mats.push(m);nuevos++});
     const msN=mats.filter(m=>!antesC.has(m.codigo.toLowerCase())),dsN=mats.flatMap(m=>(m.despachos||[]).filter(d=>d&&d.t!=null&&!antesT.has(m.codigo.toLowerCase()+"|"+d.t)).map(d=>({codigo:m.codigo,d})));
     try{await subirLista(msN,dsN)}catch(err){errDB(err,"No se pudo subir a Supabase");await cargar().catch(()=>{});return}
     await cargar().catch(()=>{});renderHist();toast(`Nuevos: ${nuevos} · surtidos fusionados: ${surt} · sin cambios: ${omit}`);
@@ -13005,28 +13122,8 @@ $("fileImp").onchange=e=>{
   r.readAsText(f);e.target.value="";
 };
 
-// --- Conversor pulgadas ⇄ mm ---
-const MM=25.4,FAC={mm:1,cm:10,m:1000,in:MM};
-function parseIn(s){s=s.trim().replace(",",".");let x;
-  if(x=/^(\d+)[\s-]+(\d+)\/(\d+)$/.exec(s))return +x[1]+x[2]/x[3];
-  if(x=/^(\d+)\/(\d+)$/.exec(s))return x[1]/x[2];
-  const v=parseFloat(s);return isNaN(v)?null:v}
-function fracTxt(i){if(!(i>0))return"";const t=Math.round(i*64),w=Math.floor(t/64);let n=t%64,d=64;while(n&&n%2===0){n/=2;d/=2}
-  return n?`≈ ${w?w+" ":""}${n}/${d} in`:`≈ ${w} in`}
-$("cvIn").addEventListener("input",()=>{const v=parseIn($("cvIn").value);
-  $("cvMm").value=v==null?"":+(v*MM).toFixed(3);$("cvHint").textContent=v==null?"":`${+v.toFixed(4)} in = ${+(v*MM).toFixed(3)} mm`});
-$("cvMm").addEventListener("input",()=>{const v=parseFloat($("cvMm").value);
-  $("cvIn").value=isNaN(v)?"":+(v/MM).toFixed(4);$("cvHint").textContent=isNaN(v)?"":fracTxt(v/MM)});
-$("cvAplicar").onclick=()=>{
-  const mm=parseFloat($("cvMm").value);if(!(mm>0)){toast("Escriba un valor para convertir",1);return}
-  const d=$("cvDest").value;
-  if(d!=="longitud"){const r=document.querySelector(`input[name="seccion"][value="${d==="diametro"?"redondo":"cuadrado"}"]`);r.checked=true;r.dispatchEvent(new Event("change"))}
-  const u=d==="longitud"?$("longU").value:$("secU").value;
-  $(d).value=+(mm/FAC[u]).toFixed(4);$(d).dispatchEvent(new Event("input"));
-  toast(`${+(mm/FAC[u]).toFixed(4)} ${u} aplicado a ${$("cvDest").selectedOptions[0].text.replace("Aplicar a ","")}`);
-};
-
 // --- Surtido ---
+const FAC={mm:1,cm:10,m:1000,in:25.4};
 const r4=n=>Math.round(n*1e4)/1e4;
 function okU(u){return Object.prototype.hasOwnProperty.call(FAC,u)}
 function modoLong(m){return m.esMP&&m.um==="PZ"&&m.longitud>0}
@@ -13187,14 +13284,17 @@ $("bCsvS").onclick=()=>{
 // --- Ficha: página que se abre al escanear el QR con la cámara del celular ---
 function limpiaP(o){
   const t=v=>v==null?"":String(v).slice(0,300),n=v=>v==null?null:(Number(v)||0);
-  return{codigo:t(o.c),descripcion:t(o.d),lote:t(o.l),proveedor:t(o.p),um:t(o.u),cantidad:n(o.q)??0,esMP:!!o.m,ubicacion:t(o.ub),fechaRecibo:t(o.fr),fechaModificacion:t(o.fm),
-    peso:n(o.pe),pesoU:o.pu==="LB"?"LB":"KG",longitud:n(o.lo),longU:okU(o.lu)?o.lu:"mm",seccion:o.s==="cuadrado"?"cuadrado":"redondo",
+  return{codigo:t(o.c),descripcion:t(o.d),lote:t(o.l),proveedor:t(o.p),um:"PZ",cantidad:n(o.q)??0,esMP:!!o.m,ubicacion:t(o.ub),fechaRecibo:t(o.fr),fechaModificacion:t(o.fm),
+    tipoMaterial:t(o.tm),especificacionMedida:t(o.em),manufactura:t(o.mf),numeroHeat:t(o.nh),numeroLoteMP:t(o.nl),numeroCertificado:t(o.nc),totalMM:t(o.tmm),tipoMoneda:t(o.mon),ordenMaterial:t(o.ord),poNumber:t(o.po),noAplica:o.na&&typeof o.na==="object"?o.na:{},
+    peso:n(o.pe),pesoU:o.pu==="LB"||o.pu==="KG"?o.pu:o.u==="LB"||o.u==="KG"?o.u:null,longitud:n(o.lo),longU:okU(o.lu)?o.lu:"mm",seccion:o.s==="cuadrado"?"cuadrado":"redondo",
     secU:["mm","cm","in"].includes(o.su)?o.su:"mm",diametro:n(o.di),alto:n(o.al),ancho:n(o.an),despachos:[],existSnap:t(o.x)}}
 function filasFicha(m,ex,pz){
   const et=pz?`Pieza ${pz.n} de ${pz.t||m.cantidad}`:`MASTER · ${m.cantidad} ${m.um}`;
   const st=pz&&ex?(piezasSurt(m).has(pz.n)?"⚠ SURTIDA":"En existencia"):"";
-  return[["Código",m.codigo],["Etiqueta",et],["Estado de la pieza",st],["Descripción",m.descripcion],["Lote / Colada",m.lote],["Proveedor",m.proveedor],["UM / Cantidad",`${m.um} / ${m.cantidad}`],
-    ["Tipo",m.esMP?"Materia prima":"Material general"],["Peso",m.esMP?`${m.peso} ${m.pesoU||m.pesoUnidad}`:""],["Dimensiones",dimsTxt(m)],["Longitud total",totalTxt(m)],
+  return[["Código",m.codigo],["Etiqueta",et],["Estado de la pieza",st],["Descripción",m.descripcion],["Lote / Colada",m.lote],["Proveedor",m.proveedor],
+    ["Tipo material",m.tipoMaterial],["Especificación medida",m.especificacionMedida],["Manufactura",m.manufactura],["N.º Heat",m.numeroHeat],["N.º lote MP",m.numeroLoteMP||m.lote],["N.º cert.",m.numeroCertificado],["Total mm",m.totalMM],["Fecha de recibo",m.fechaRecibo],["Cantidad",`${m.cantidad} ${m.um}`],
+    ["Peso",m.peso!=null?`${m.peso}${m.pesoU||m.pesoUnidad?" "+(m.pesoU||m.pesoUnidad):""}`:""],["UM",m.um],["Orden",m.ordenMaterial],["PO number",m.poNumber],
+    ["Tipo",m.esMP?"Materia prima":"Material general"],["Dimensiones",dimsTxt(m)],["Longitud total",totalTxt(m)],
     ["Existencia",ex?existTxt(m):""],["Existencia al imprimir la etiqueta",!ex&&m.existSnap?m.existSnap:""],["Ubicación",m.ubicacion],["Fecha recibo",m.fechaRecibo],["Últ. modificación",m.fechaModificacion]]}
 function salirFicha(){document.body.classList.remove("ficha");$("fichaView").hidden=true;document.title="Trazabilidad de Material · QR";try{history.replaceState(null,"",location.pathname+location.search)}catch{}}
 async function iniciarFicha(){
