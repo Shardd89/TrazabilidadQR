@@ -12868,14 +12868,15 @@ $("pzDet").addEventListener("toggle",()=>{
 // --- Impresión en Brother QL-800: 1 etiqueta por página, página = tamaño de la etiqueta ---
 const FMT={
   "62x100":{n:"62 × 100 mm (DK-11202)",w:62,h:100,qr:54,row:0,lv:2,fs:11,cl:3},
-  "62c":{n:"62 mm continuo (DK-22205) · largo 80 mm",w:62,h:80,qr:50,row:0,lv:2,fs:11,cl:3},
+  "62c":{n:"Rollo continuo · 62 mm de ancho (largo en Brother)",w:62,qr:50,row:0,lv:2,fs:11,cl:3,continuous:true},
+  "29c":{n:"Rollo continuo · 29 mm de ancho (largo en Brother)",w:29,qr:22,row:0,lv:1,fs:7,cl:2,continuous:true},
   "62x29":{n:"62 × 29 mm (DK-11209)",w:62,h:29,qr:25,row:1,lv:1,fs:7.5,cl:2},
   "38x90":{n:"38 × 90 mm (DK-11208)",w:38,h:90,qr:33,row:0,lv:1,fs:8,cl:3},
   "29x90":{n:"29 × 90 mm (DK-11201)",w:29,h:90,qr:25,row:0,lv:1,fs:7,cl:3},
   "29x29":{n:"29 × 29 mm (DK-11221)",w:29,h:29,qr:19,row:0,lv:0,fs:6.5,cl:2}};
-function fmtSel(){try{const k=localStorage.getItem("etq_fmt");return FMT[k]?k:"62x100"}catch{return"62x100"}}
+function fmtSel(){try{const k=localStorage.getItem("etq_fmt");return FMT[k]?k:"29c"}catch{return"29c"}}
 $("etqFmt").innerHTML=Object.keys(FMT).map(k=>`<option value="${k}">${FMT[k].n}</option>`).join("");$("etqFmt").value=fmtSel();
-function hintEtq(){const f=FMT[fmtSel()];$("etqHint").textContent=f.qr<40&&!compacto()?`⚠ QR de ${f.qr} mm: con la ficha completa queda muy denso. Para esta etiqueta active “QR compacto” para que se lea bien.`:`QR de ${f.qr} mm. En la impresión elija la QL-800, este mismo tamaño de papel, márgenes “Ninguno” y escala 100 %.`}
+function hintEtq(){const f=FMT[fmtSel()];$("etqHint").textContent=f.continuous?`Rollo continuo de ${f.w} mm de ancho. Configure el largo en las opciones de impresión de la Brother QL-800; márgenes “Ninguno” y escala 100 %.`:f.qr<40&&!compacto()?`⚠ QR de ${f.qr} mm: con la ficha completa queda muy denso. Para esta etiqueta active “QR compacto” para que se lea bien.`:`QR de ${f.qr} mm. En la impresión elija la QL-800, este mismo tamaño de papel, márgenes “Ninguno” y escala 100 %.`}
 $("etqFmt").onchange=()=>{try{localStorage.setItem("etq_fmt",$("etqFmt").value)}catch{}hintEtq()};hintEtq();
 $("qrCompacto").addEventListener("change",hintEtq);
 function qrData(m,n){const c=dibujarQR(qrTexto(m,n),600);return c?c.toDataURL("image/png"):null}
@@ -12886,6 +12887,11 @@ function etqHTML(m,n,src){
   if(f.lv>=2)t+=[m.lote?"Lote: "+m.lote:"",m.esMP?dimsTxt(m):"",m.esMP&&m.peso?`Peso: ${m.peso} ${m.pesoU||m.pesoUnidad||""}`:"",m.ubicacion?"Ubic: "+m.ubicacion:"",m.fechaRecibo?"Recibo: "+m.fechaRecibo:""].filter(Boolean).map(x=>`<small>${esc(x)}</small>`).join("");
   return `<div class="pz${n?"":" mst"}"><img src="${src}" alt="QR"><div class="tx">${t}</div></div>`}
 function cssEtq(){const f=FMT[fmtSel()],r=f.row;
+  if(f.continuous)return `@media print{@page{size:auto;margin:0}
+#etiqueta.hoja .pz{width:${f.w}mm;height:100%;padding:1.5mm;gap:1.2mm;font-size:${f.fs}pt;flex-direction:${r?"row":"column"};align-items:center;justify-content:center;text-align:${r?"left":"center"}}
+#etiqueta.hoja .pz img{width:${f.qr}mm;height:${f.qr}mm}
+#etiqueta.hoja .pz .tx{width:100%;align-items:center}
+#etiqueta.hoja .pz .ds{-webkit-line-clamp:${f.cl}}}`;
   return `@media print{@page{size:${f.w}mm ${f.h}mm;margin:0}
 #etiqueta.hoja .pz{width:${f.w}mm;height:${f.h}mm;padding:1.5mm;gap:1.2mm;font-size:${f.fs}pt;flex-direction:${r?"row":"column"};align-items:center;justify-content:${r?"flex-start":"center"};text-align:${r?"left":"center"}}
 #etiqueta.hoja .pz img{width:${f.qr}mm;height:${f.qr}mm}
