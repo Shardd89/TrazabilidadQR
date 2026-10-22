@@ -12581,7 +12581,7 @@ body.ficha>#login{display:none!important}
         <div class="na-field"><div class="na-head"><label for="totalMM">Total mm</label><label class="na-check"><input type="checkbox" data-na="totalMM"> No aplica</label></div><input class="na-value" id="totalMM" type="number" min="0" step="any"></div>
         <div><label for="fechaRecibo">Fecha de recibo *</label><input type="date" id="fechaRecibo" required></div>
         <div><label for="cantidad">Cantidad (PZ) *</label><input type="number" id="cantidad" min="0" step="any" required></div>
-        <div class="na-field"><div class="na-head"><label for="peso">Peso</label><label class="na-check"><input type="checkbox" data-na="peso"> No aplica</label></div><div class="na-value-wrap row"><input class="na-value" id="peso" type="number" min="0" step="any"><select id="pesoU" aria-label="Unidad de peso"><option value="LB">LB</option><option value="KG">KG</option></select></div></div>
+        <div class="na-field"><div class="na-head"><label for="peso">Peso</label><label class="na-check"><input type="checkbox" data-na="peso"> No aplica</label></div><div class="na-value-wrap row"><input class="na-value" id="peso" type="number" min="0" step="any"><select id="pesoU" aria-label="Unidad de peso"><option value="LB">LB</option><option value="KG">KG</option><option value="">Sin unidad</option></select></div></div>
         <div><label for="um">UM de cantidad</label><input type="text" value="PZ · Pieza" readonly aria-label="Unidad de cantidad fija: piezas"><input type="hidden" id="um" value="PZ"></div>
         <div class="na-field"><div class="na-head"><label for="ordenMaterial">Orden</label><label class="na-check"><input type="checkbox" data-na="ordenMaterial"> No aplica</label></div><input class="na-value" id="ordenMaterial" type="text"></div>
         <div class="na-field"><div class="na-head"><label for="poNumber">PO number</label><label class="na-check"><input type="checkbox" data-na="poNumber"> No aplica</label></div><input class="na-value" id="poNumber" type="text"></div>
@@ -12684,7 +12684,7 @@ const seleccionados=new Set();
 const SB_URL="https://olbcepxgzqtmiqdqpbha.supabase.co",SB_KEY="sb_publishable_kdySoe6yEpOSmx4-zEOk-w_EHIMnaEC";
 const sb=window.supabase?window.supabase.createClient(SB_URL,SB_KEY):null;
 function normalizarMaterial(m){
-  const pesoU=m.pesoU||m.pesoUnidad||(["LB","KG"].includes(m.um)?m.um:m.peso!=null?"LB":null);
+  const pesoU=m.pesoU||m.pesoUnidad||(["LB","KG"].includes(m.um)?m.um:m.peso!=null&&!m.pesoUnidadPendiente?"LB":null);
   return{...m,um:"PZ",pesoU};
 }
 const matData=m=>{const{despachos,...r}=m;return r};
@@ -12780,7 +12780,7 @@ $("f").addEventListener("submit",async e=>{
   const m={codigo:$("codigo").value.trim(),descripcion:$("descripcion").value.trim(),lote:extra.numeroLoteMP||"",proveedor:"",
     um:$("um").value,cantidad:parseFloat($("cantidad").value),ubicacion:$("ubicacion").value.trim(),fechaRecibo:$("fechaRecibo").value,
     fechaModificacion:new Date().toLocaleString("es-MX"),esMP:/materia\s*prima|^mp$/i.test(tipoMaterial),
-    peso:extra.peso,pesoU:extra.peso==null?null:$("pesoU").value,
+    peso:extra.peso,pesoU:extra.peso==null?null:$("pesoU").value,pesoUnidadPendiente:extra.peso!=null&&!$("pesoU").value,
     longitud:anterior?.longitud??null,longU:anterior?.longU||anterior?.longitudUnidad||null,
     seccion:anterior?.seccion||null,secU:anterior?.secU||anterior?.diametroUnidad||null,
     diametro:anterior?.diametro??null,alto:anterior?.alto??null,ancho:anterior?.ancho??null,
@@ -12802,7 +12802,7 @@ $("btnCancelar").onclick=()=>{resetForm();toast("Edición cancelada")};
 
 // --- QR ---
 function dimsTxt(m){
-  if(!m.esMP)return"";
+  if(!m.esMP||!(m.longitud>0))return"";
   const s=m.seccion==="cuadrado"?`CUADRADO ${m.alto} × ${m.ancho} ${m.secU||"mm"} (alto×ancho)`:`REDONDO ⌀ ${m.diametro} ${m.secU||m.diametroUnidad||"mm"}`;
   return `${s}, L: ${m.longitud} ${m.longU||m.longitudUnidad||"mm"}`;
 }
@@ -12812,10 +12812,9 @@ const b64d=t=>{t=t.replace(/-/g,"+").replace(/_/g,"/");while(t.length%4)t+="=";r
 function payload(m){
   const o={c:m.codigo,d:m.descripcion,l:m.lote,p:m.proveedor,u:"PZ",q:m.cantidad,m:m.esMP?1:0,ub:m.ubicacion,fr:m.fechaRecibo,fm:m.fechaModificacion};
   if(m.esMP)Object.assign(o,{lo:m.longitud,lu:m.longU||m.longitudUnidad,s:m.seccion,su:m.secU||m.diametroUnidad,di:m.diametro,al:m.alto,an:m.ancho});
-  if(m.peso!=null){o.pe=m.peso;o.pu=m.pesoU||m.pesoUnidad}
+  if(m.peso!=null){o.pe=m.peso;o.pu=m.pesoUnidadPendiente?"?":m.pesoU||m.pesoUnidad}
   const extras={tipoMaterial:"tm",especificacionMedida:"em",manufactura:"mf",numeroHeat:"nh",numeroLoteMP:"nl",numeroCertificado:"nc",totalMM:"tmm",ordenMaterial:"ord",poNumber:"po"};
   Object.entries(extras).forEach(([key,short])=>{if(m[key])o[short]=m[key]});
-  if(m.peso!=null)o.pe=m.peso;
   if(m.noAplica&&Object.values(m.noAplica).some(Boolean))o.na=m.noAplica;
   Object.keys(o).forEach(k=>{if(o[k]===""||o[k]==null)delete o[k]});return o}
 // Master + piezas individuales: según la cantidad (entera, 1 a MAX_IND), sin importar la UM
@@ -12860,7 +12859,7 @@ function mostrar(m){
   const rows=[["Código",m.codigo],["Ubicación",m.ubicacion],["Tipo material",m.tipoMaterial],["Descripción",m.descripcion],
     ["Especificación medida",m.especificacionMedida],["Manufactura",m.manufactura],["N.º Heat",m.numeroHeat],["N.º lote MP",m.numeroLoteMP||m.lote],["N.º cert.",m.numeroCertificado],["Total mm",m.totalMM],["Fecha de recibo",m.fechaRecibo],["Cantidad",`${m.cantidad} ${m.um}`],
     ["Etiqueta",`MASTER · ${m.cantidad} ${m.um}`+(esIndividual(m)?` (+ ${m.cantidad} QR individuales)`:` (sin QR individuales: la cantidad debe ser entera y de 1 a ${MAX_IND})`)],
-    ["Peso",m.peso!=null?`${m.peso}${m.pesoU||m.pesoUnidad?" "+(m.pesoU||m.pesoUnidad):""}`:""],["UM",m.um],["Orden",m.ordenMaterial],["PO number",m.poNumber],
+    ["Peso",m.peso!=null?`${m.peso}${m.pesoU||m.pesoUnidad?" "+(m.pesoU||m.pesoUnidad):m.pesoUnidadPendiente?" (unidad sin definir)":""}`:""],["UM",m.um],["Orden",m.ordenMaterial],["PO number",m.poNumber],
     ["Tipo",m.esMP?"Materia prima":"Material general"],["Dimensiones",dimsTxt(m)],["Longitud total",totalTxt(m)],["Existencia",existTxt(m)],
     ["Ubicación",m.ubicacion],["Fecha recibo",m.fechaRecibo],["Últ. modificación",m.fechaModificacion]];
   $("ficha").innerHTML=rows.filter(r=>r[1]).map(r=>`<div class="d"><b>${r[0]}</b><span>${esc(r[1])}</span></div>`).join("");
@@ -12882,7 +12881,7 @@ function etqHTML(m,n,src){
   const f=ETQ,N=m.cantidad,tag=n?`PIEZA ${n} / ${N}`:`MASTER · ${esc(N)} ${esc(m.um)}`;
   let t=`<b class="cd">${esc(m.codigo)}</b><span class="tg">${tag}</span>`;
   if(f.lv>=1)t+=`<small class="ds">${esc(m.descripcion)}</small>`;
-  if(f.lv>=2)t+=[m.lote?"Lote: "+m.lote:"",m.esMP?dimsTxt(m):"",m.peso!=null?`Peso: ${m.peso}${m.pesoU||m.pesoUnidad?" "+(m.pesoU||m.pesoUnidad):""}`:"",m.ubicacion?"Ubic: "+m.ubicacion:"",m.fechaRecibo?"Recibo: "+m.fechaRecibo:""].filter(Boolean).map(x=>`<small>${esc(x)}</small>`).join("");
+  if(f.lv>=2)t+=[m.lote?"Lote: "+m.lote:"",m.esMP?dimsTxt(m):"",m.peso!=null?`Peso: ${m.peso}${m.pesoU||m.pesoUnidad?" "+(m.pesoU||m.pesoUnidad):m.pesoUnidadPendiente?" (unidad sin definir)":""}`:"",m.ubicacion?"Ubic: "+m.ubicacion:"",m.fechaRecibo?"Recibo: "+m.fechaRecibo:""].filter(Boolean).map(x=>`<small>${esc(x)}</small>`).join("");
   return `<div class="pz${n?"":" mst"}"><img src="${src}" alt="QR"><div class="tx">${t}</div></div>`}
 function cssEtq(){const f=ETQ;
   return `@media print{@page{size:auto;margin:0}
@@ -12948,7 +12947,7 @@ function render(){
     <td><input type="checkbox" class="row-select" data-select="${esc(m.codigo)}" aria-label="Seleccionar ${esc(m.codigo)}" ${seleccionados.has(m.codigo)?"checked":""}></td>
     <td><b>${esc(m.codigo)}</b></td><td class="l">${esc(m.descripcion)}</td><td>${esc(m.um)}</td><td>${esc(m.cantidad)}</td><td>${esc(existTxt(m))}</td>
     <td>${m.esMP?'<span class="tag t1">M. PRIMA</span>':'<span class="tag t2">GENERAL</span>'}</td>
-    <td>${esc(m.ubicacion)}</td><td>${esc(m.fechaRecibo)}</td>
+    <td>${esc(m.ubicacion||"Sin ubicación")}</td><td>${esc(m.fechaRecibo)}</td>
     <td style="white-space:nowrap"><button type="button" class="ic" data-a="qr" data-i="${i}" title="Ver QR">🔳</button><button type="button" class="ic" data-a="ed" data-i="${i}" title="Editar">✏️</button><button type="button" class="ic" data-a="del" data-i="${i}" title="Eliminar">🗑️</button></td></tr>`).join("");
   $("vacio").hidden=lista.length>0;
   const mp=mats.filter(m=>m.esMP).length;
@@ -13009,7 +13008,7 @@ function editar(i){
     numeroHeat:m.numeroHeat,numeroLoteMP:m.numeroLoteMP??m.lote,numeroCertificado:m.numeroCertificado,totalMM:m.totalMM,peso:m.peso,ordenMaterial:m.ordenMaterial,poNumber:m.poNumber};
   Object.entries(values).forEach(([id,value])=>$(id).value=value??"");
   $("um").value="PZ";
-  $("pesoU").value=m.pesoU||m.pesoUnidad||(["LB","KG"].includes(m.um)?m.um:"LB");
+  $("pesoU").value=m.pesoU||m.pesoUnidad||(m.pesoUnidadPendiente?"":(["LB","KG"].includes(m.um)?m.um:"LB"));
   CAMPOS_EXTRA.forEach(([key,id])=>{
     const noAplica=!!m.noAplica?.[key],checkbox=document.querySelector(`input[data-na="${id}"]`),input=$(id);
     checkbox.checked=noAplica;input.value=values[key]??"";
@@ -13031,7 +13030,7 @@ $("bCsv").onclick=()=>{
   const rows=mats.map(m=>[m.ubicacion,m.codigo,value(m,"tipoMaterial",m.tipoMaterial),m.descripcion,
     value(m,"especificacionMedida",m.especificacionMedida),value(m,"manufactura",m.manufactura),value(m,"numeroHeat",m.numeroHeat),
     value(m,"numeroLoteMP",m.numeroLoteMP||m.lote),value(m,"numeroCertificado",m.numeroCertificado),value(m,"totalMM",m.totalMM),
-    m.fechaRecibo,m.cantidad,value(m,"peso",m.peso),m.noAplica?.peso?"No aplica":m.pesoU||m.pesoUnidad||"LB",
+    m.fechaRecibo,m.cantidad,value(m,"peso",m.peso),m.noAplica?.peso?"No aplica":m.pesoUnidadPendiente?"Sin especificar":m.pesoU||m.pesoUnidad||"LB",
     value(m,"ordenMaterial",m.ordenMaterial),value(m,"poNumber",m.poNumber)]);
   bajar("trazabilidad_materiales.csv","\ufeff"+[cols.join(","),...rows.map(row=>row.map(c).join(","))].join("\r\n"),"text/csv;charset=utf-8");toast("CSV exportado ⬇️");
 };
@@ -13072,7 +13071,7 @@ function fechaExcel(value){
   return"";
 }
 function esNoAplica(value){return["na","n/a","n.a.","no aplica","noaplica","no aplica."].includes(String(value??"").trim().toLowerCase())}
-function materialDesdeExcel(row,mapped){
+function materialDesdeExcel(row,mapped,esMateriaPrima=false){
   const get=key=>valorCelda(row,mapped,key),text=key=>String(get(key)??"").trim(),raw={};
   Object.keys(EXCEL_HEADERS).forEach(key=>raw[key]=get(key));
   const noAplica=Object.fromEntries(CAMPOS_EXTRA.map(([key])=>[key,esNoAplica(raw[key])]));
@@ -13081,28 +13080,66 @@ function materialDesdeExcel(row,mapped){
   const codigo=text("codigo"),descripcion=text("descripcion"),ubicacion=text("ubicacion");
   const cantidad=numeroExcel(get("cantidad")),peso=numeroExcel(get("peso")),umOriginal=text("um").toUpperCase();
   const pesoUnitMap={LB:"LB",LBS:"LB",LIBRA:"LB",LIBRAS:"LB",KG:"KG",KGS:"KG",KILOGRAM:"KG",KILOGRAMO:"KG",KILOGRAMOS:"KG"};
-  const esMP=/materia\s*prima|^mp$/.test(text("tipoMaterial").toLowerCase());
+  const umCantidad=["PZ","PZA","PIEZA","PIEZAS"].includes(umOriginal);
+  const esMP=esMateriaPrima||/materia\s*prima|^mp$/i.test(text("tipoMaterial"));
   const fechaRecibo=fechaExcel(get("fechaRecibo"));
-  if(!codigo||!descripcion||!ubicacion||!(cantidad>0)||!fechaRecibo||(umOriginal&&!pesoUnitMap[umOriginal]&&!noAplica.peso&&!esNoAplica(get("um"))))return null;
+  if(!codigo||!descripcion||cantidad==null||cantidad<0||!fechaRecibo||(umOriginal&&!pesoUnitMap[umOriginal]&&!umCantidad&&!noAplica.peso))return null;
   const extra=Object.fromEntries(CAMPOS_EXTRA.map(([key])=>[key,noAplica[key]?["peso","totalMM"].includes(key)?null:"":["peso","totalMM"].includes(key)?numeroExcel(raw[key]):stringValue(key)]));
   return{codigo,descripcion,lote:extra.numeroLoteMP,proveedor:"",um:"PZ",cantidad,ubicacion,fechaRecibo,
-    fechaModificacion:new Date().toLocaleString("es-MX"),esMP,peso,pesoU:extra.peso==null?null:(pesoUnitMap[umOriginal]||"LB"),longitud:null,longU:null,
+    fechaModificacion:new Date().toLocaleString("es-MX"),esMP,peso,pesoU:extra.peso==null?null:(pesoUnitMap[umOriginal]||null),pesoUnidadPendiente:extra.peso!=null&&umCantidad,longitud:null,longU:null,
     seccion:null,secU:null,diametro:null,alto:null,ancho:null,...extra,noAplica,despachos:[]};
+}
+function consolidarExcelPorCodigo(materiales){
+  const porCodigo=new Map();let filasAgrupadas=0;
+  const camposIguales=["tipoMaterial","especificacionMedida","manufactura","totalMM","ubicacion"];
+  const camposCombinables=["numeroHeat","numeroLoteMP","numeroCertificado"];
+  materiales.forEach(m=>{
+    const clave=m.codigo.toLocaleLowerCase(),anterior=porCodigo.get(clave);
+    if(!anterior){porCodigo.set(clave,m);return}
+    for(const campo of camposIguales){
+      const a=String(anterior[campo]??"").trim(),b=String(m[campo]??"").trim();
+      if(a&&b&&a!==b)throw new Error(`El código ${m.codigo} aparece con valores distintos en "${campo}". Corrija esas filas antes de importar.`);
+    }
+    camposCombinables.forEach(campo=>{
+      const valores=[...new Set([anterior[campo],m[campo]].flatMap(v=>String(v??"").split(" / ")).map(v=>v.trim()).filter(Boolean))];
+      anterior[campo]=valores.join(" / ");
+    });
+    anterior.lote=anterior.numeroLoteMP;
+    if(anterior.peso!=null&&m.peso!=null&&anterior.pesoU!==m.pesoU)
+      throw new Error(`El código ${m.codigo} tiene pesos con unidades distintas o sin unidad. No se pueden sumar con seguridad.`);
+    anterior.cantidad+=m.cantidad;
+    if(m.peso!=null){
+      anterior.peso=anterior.peso==null?m.peso:anterior.peso+m.peso;
+      if(!anterior.pesoU)anterior.pesoU=m.pesoU;
+    }
+    anterior.pesoUnidadPendiente=anterior.peso!=null&&!anterior.pesoU;
+    const descripciones=[...new Set([anterior.descripcion,m.descripcion].filter(Boolean))];
+    anterior.descripcion=descripciones.join(" / ");
+    anterior.fechaRecibo=[anterior.fechaRecibo,m.fechaRecibo].sort()[0];
+    const ordenes=[...new Set([anterior.ordenMaterial,m.ordenMaterial].flatMap(v=>String(v??"").split(" / ")).map(v=>v.trim()).filter(Boolean))];
+    anterior.ordenMaterial=ordenes.join(" / ");
+    filasAgrupadas++;
+  });
+  return{materiales:[...porCodigo.values()],filasAgrupadas};
 }
 async function importarExcel(file){
   if(!window.XLSX)throw new Error("No se pudo cargar el lector de Excel. Revise la conexión y recargue la página.");
-  const workbook=XLSX.read(await file.arrayBuffer(),{type:"array",cellDates:true}),sheet=workbook.Sheets[workbook.SheetNames[0]];
+  const workbook=XLSX.read(await file.arrayBuffer(),{type:"array",cellDates:true}),nombreHoja=workbook.SheetNames[0],sheet=workbook.Sheets[nombreHoja];
   if(!sheet)throw new Error("El archivo no contiene hojas para importar.");
   const rows=XLSX.utils.sheet_to_json(sheet,{header:1,defval:"",raw:true}),{index,mapped}=buscarEncabezados(rows);
-  let invalidos=0,duplicados=0;const codigos=new Set(mats.map(m=>m.codigo.toLowerCase())),nuevos=[];
+  const esMateriaPrima=/materia[\s_-]*prima|\bmp\b/i.test(`${nombreHoja} ${file.name||""}`);
+  let invalidos=0;const filas=[];
   rows.slice(index+1).forEach(row=>{
     if(!row.some(v=>String(v??"").trim()))return;
-    const material=materialDesdeExcel(row,mapped);if(!material){invalidos++;return}
-    const key=material.codigo.toLowerCase();if(codigos.has(key)){duplicados++;return}
-    codigos.add(key);nuevos.push(material);
+    const material=materialDesdeExcel(row,mapped,esMateriaPrima);if(!material){invalidos++;return}
+    filas.push(material);
   });
-  if(!nuevos.length){toast(`No se importaron filas. Inválidas: ${invalidos} (datos requeridos o UM no válida) · duplicadas: ${duplicados}`,1);return}
-  try{await subirLista(nuevos,[]);await cargar();renderHist();toast(`Importados: ${nuevos.length} · inválidas: ${invalidos} (datos requeridos o UM no válida) · duplicadas: ${duplicados}`)}
+  const{materiales:consolidados,filasAgrupadas}=consolidarExcelPorCodigo(filas);
+  const codigosExistentes=new Set(mats.map(m=>m.codigo.toLocaleLowerCase()));
+  const nuevos=consolidados.filter(m=>!codigosExistentes.has(m.codigo.toLocaleLowerCase()));
+  const existentes=consolidados.length-nuevos.length;
+  if(!nuevos.length){toast(`No se agregaron materiales. Ya existentes: ${existentes} · filas agrupadas: ${filasAgrupadas} · inválidas: ${invalidos}`,1);return}
+  try{await subirLista(nuevos,[]);await cargar();renderHist();toast(`Importados: ${nuevos.length} · filas agrupadas: ${filasAgrupadas} · ya existentes: ${existentes} · inválidas: ${invalidos}`)}
   catch(err){errDB(err,"No se pudo importar el Excel");await cargar().catch(()=>{})}
 }
 $("fileExcel").onchange=async e=>{
@@ -13286,14 +13323,14 @@ function limpiaP(o){
   const t=v=>v==null?"":String(v).slice(0,300),n=v=>v==null?null:(Number(v)||0);
   return{codigo:t(o.c),descripcion:t(o.d),lote:t(o.l),proveedor:t(o.p),um:"PZ",cantidad:n(o.q)??0,esMP:!!o.m,ubicacion:t(o.ub),fechaRecibo:t(o.fr),fechaModificacion:t(o.fm),
     tipoMaterial:t(o.tm),especificacionMedida:t(o.em),manufactura:t(o.mf),numeroHeat:t(o.nh),numeroLoteMP:t(o.nl),numeroCertificado:t(o.nc),totalMM:t(o.tmm),tipoMoneda:t(o.mon),ordenMaterial:t(o.ord),poNumber:t(o.po),noAplica:o.na&&typeof o.na==="object"?o.na:{},
-    peso:n(o.pe),pesoU:o.pu==="LB"||o.pu==="KG"?o.pu:o.u==="LB"||o.u==="KG"?o.u:null,longitud:n(o.lo),longU:okU(o.lu)?o.lu:"mm",seccion:o.s==="cuadrado"?"cuadrado":"redondo",
+    peso:n(o.pe),pesoU:o.pu==="LB"||o.pu==="KG"?o.pu:o.u==="LB"||o.u==="KG"?o.u:null,pesoUnidadPendiente:o.pu==="?",longitud:n(o.lo),longU:okU(o.lu)?o.lu:"mm",seccion:o.s==="cuadrado"?"cuadrado":"redondo",
     secU:["mm","cm","in"].includes(o.su)?o.su:"mm",diametro:n(o.di),alto:n(o.al),ancho:n(o.an),despachos:[],existSnap:t(o.x)}}
 function filasFicha(m,ex,pz){
   const et=pz?`Pieza ${pz.n} de ${pz.t||m.cantidad}`:`MASTER · ${m.cantidad} ${m.um}`;
   const st=pz&&ex?(piezasSurt(m).has(pz.n)?"⚠ SURTIDA":"En existencia"):"";
   return[["Código",m.codigo],["Etiqueta",et],["Estado de la pieza",st],["Descripción",m.descripcion],["Lote / Colada",m.lote],["Proveedor",m.proveedor],
     ["Tipo material",m.tipoMaterial],["Especificación medida",m.especificacionMedida],["Manufactura",m.manufactura],["N.º Heat",m.numeroHeat],["N.º lote MP",m.numeroLoteMP||m.lote],["N.º cert.",m.numeroCertificado],["Total mm",m.totalMM],["Fecha de recibo",m.fechaRecibo],["Cantidad",`${m.cantidad} ${m.um}`],
-    ["Peso",m.peso!=null?`${m.peso}${m.pesoU||m.pesoUnidad?" "+(m.pesoU||m.pesoUnidad):""}`:""],["UM",m.um],["Orden",m.ordenMaterial],["PO number",m.poNumber],
+    ["Peso",m.peso!=null?`${m.peso}${m.pesoU||m.pesoUnidad?" "+(m.pesoU||m.pesoUnidad):m.pesoUnidadPendiente?" (unidad sin definir)":""}`:""],["UM",m.um],["Orden",m.ordenMaterial],["PO number",m.poNumber],
     ["Tipo",m.esMP?"Materia prima":"Material general"],["Dimensiones",dimsTxt(m)],["Longitud total",totalTxt(m)],
     ["Existencia",ex?existTxt(m):""],["Existencia al imprimir la etiqueta",!ex&&m.existSnap?m.existSnap:""],["Ubicación",m.ubicacion],["Fecha recibo",m.fechaRecibo],["Últ. modificación",m.fechaModificacion]]}
 function salirFicha(){document.body.classList.remove("ficha");$("fichaView").hidden=true;document.title="Trazabilidad de Material · QR";try{history.replaceState(null,"",location.pathname+location.search)}catch{}}
