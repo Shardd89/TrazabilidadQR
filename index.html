@@ -12598,6 +12598,12 @@ body.ficha>#login{display:none!important}
 .ubicacion-fila .ubicacion-codigo{grid-column:1;grid-row:2}
 .ubicacion-detalle{padding:0 14px 14px;border-top:1px solid var(--line)}
 .ubicacion-detalle>.d{margin-top:5px}
+.ubicacion-materiales{margin-top:12px}
+.ubicacion-materiales h3{margin:0 0 7px;font-size:.9rem;color:var(--tx)}
+.ubicacion-material-list{display:grid;gap:6px}
+.ubicacion-material{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;padding:9px 10px;background:var(--soft);border-radius:7px}
+.ubicacion-material>span{display:grid;gap:2px;min-width:0;overflow-wrap:anywhere}
+.ubicacion-material>strong{flex:none;font-size:.85rem}
 .ubicacion-admin-actions{display:flex;justify-content:flex-end;margin-top:10px}
 .ubicacion-delete:disabled{opacity:.45;cursor:not-allowed}
 .ubicacion-qr{width:120px;height:120px;background:#fff}
@@ -12844,6 +12850,13 @@ body.ficha>.app-layout{display:none!important}
       <div><label for="ubiCodigo">Código de ubicación *</label><div class="row"><input id="ubiCodigo" required placeholder="UBI-001"><button type="button" class="bs" id="ubiAuto">Auto</button></div></div>
       <div class="full"><button type="submit" class="bp" id="ubiGuardar">Guardar ubicación</button></div>
     </form>
+    <div class="acts" style="margin-top:12px;flex-wrap:wrap">
+      <button type="button" class="bs" id="bUbiExcel">📥 Importar ubicaciones (Excel)</button>
+      <button type="button" class="bs" id="bUbiJson">📥 Importar ubicaciones (JSON)</button>
+      <input type="file" id="fileUbiExcel" accept=".xlsx,.xls,.csv" hidden>
+      <input type="file" id="fileUbiJson" accept=".json,application/json" hidden>
+    </div>
+    <p class="ubicaciones-ayuda">Formato Excel/CSV: columnas <b>codigo</b> o <b>ubicacion</b> y <b>almacen_codigo</b> o <b>almacen</b>. En JSON: <code>[{"codigo":"UBI-001","almacen_codigo":"ALM-MP"}]</code>. Los códigos duplicados se omiten.</p>
     <p class="ubicaciones-ayuda">Selecciona una ubicación para desplegar su código QR y las opciones para descargarlo o imprimirlo.</p>
     <div id="ubiLista"></div>
   </section>
@@ -13276,9 +13289,10 @@ function renderAlmacenes(){
   }).join("");
   lista.querySelectorAll("[data-eliminar-almacen]").forEach(btn=>btn.onclick=()=>eliminarAlmacen(btn.dataset.eliminarAlmacen));
 }
-function materialesEnUbicacion(loc){
-  return mats.filter(m=>m.ubicacionCodigo===loc.codigo||(!m.ubicacionCodigo&&String(m.ubicacion||"").trim().toLocaleLowerCase()===loc.nombre.toLocaleLowerCase()&&(!m.ubicacionAlmacenCodigo||m.ubicacionAlmacenCodigo===loc.almacen_codigo))).length;
+function listaMaterialesEnUbicacion(loc){
+  return mats.filter(m=>m.ubicacionCodigo===loc.codigo||(!m.ubicacionCodigo&&String(m.ubicacion||"").trim().toLocaleLowerCase()===loc.nombre.toLocaleLowerCase()&&(!m.ubicacionAlmacenCodigo||m.ubicacionAlmacenCodigo===loc.almacen_codigo)));
 }
+function materialesEnUbicacion(loc){return listaMaterialesEnUbicacion(loc).length}
 function movimientosDeUbicacion(loc){
   return movimientosUbicacion.filter(m=>
     m.ubicacion_anterior_codigo===loc.codigo||m.ubicacion_nueva_codigo===loc.codigo||
@@ -13354,7 +13368,13 @@ function renderUbicaciones(){
   if(!ubicacionesAlmacen.length){lista.className="ubicaciones-list";lista.innerHTML='<div class="empty">Este almacén todavía no tiene ubicaciones.</div>';return}
   const abiertas=new Set([...lista.querySelectorAll(".ubicacion-card[open]")].map(item=>item.dataset.codigo));
   lista.className="ubicaciones-list";
-  lista.innerHTML=ubicacionesAlmacen.map(loc=>{const i=ubicaciones.indexOf(loc),alm=almacenes.find(a=>a.codigo===loc.almacen_codigo),existencias=materialesEnUbicacion(loc),movimientos=movimientosDeUbicacion(loc),ocupada=existencias>0||!!movimientosError;return`<details class="ubicacion-card ubicacion-fila" data-index="${i}" data-codigo="${esc(loc.codigo)}" ${abiertas.has(loc.codigo)?"open":""}><summary><span class="ubicacion-nombre">${esc(loc.codigo)}</span><span class="ubicacion-codigo">${esc(alm?.nombre||"Sin almacén")}${loc.nombre&&loc.nombre!==loc.codigo?` · ${esc(loc.nombre)}`:""}</span></summary><div class="ubicacion-detalle"><div class="d"><b>Almacén</b><span>${esc(alm?.nombre||"Sin almacén")}</span></div><div class="d"><b>Código</b><span>${esc(loc.codigo)}</span></div><div class="d"><b>Inventario</b><span>${existencias} materiales · ${movimientos} movimientos históricos</span></div>${movimientos?`<p class="ubicaciones-ayuda">Al eliminarla, sus movimientos permanecerán en el historial con el nombre y código originales.</p>`:""}<div id="ubiQr-${i}"></div>${esAdmin?`<div class="ubicacion-admin-actions"><button type="button" class="bd ubicacion-delete" data-eliminar-ubicacion="${esc(loc.codigo)}" ${ocupada?`disabled title="${movimientosError?"No se pudo verificar el historial":"Traspasa el inventario antes de eliminar"}"`:""}>🗑️ Eliminar ubicación</button></div>`:""}</div></details>`}).join("");
+  lista.innerHTML=ubicacionesAlmacen.map(loc=>{
+    const i=ubicaciones.indexOf(loc),alm=almacenes.find(a=>a.codigo===loc.almacen_codigo),materiales=listaMaterialesEnUbicacion(loc),existencias=materiales.length,movimientos=movimientosDeUbicacion(loc),ocupada=existencias>0||!!movimientosError;
+    const materialesHtml=materiales.length
+      ?`<section class="ubicacion-materiales" aria-label="Materiales en esta ubicación"><h3>Materiales en esta ubicación</h3><div class="ubicacion-material-list">${materiales.map(m=>`<div class="ubicacion-material"><span><b>${esc(m.codigo)}</b><span>${esc(m.descripcion)}</span></span><strong>${esc(existTxt(m))}</strong></div>`).join("")}</div></section>`
+      :'<p class="ubicaciones-ayuda">No hay materiales en esta ubicación.</p>';
+    return`<details class="ubicacion-card ubicacion-fila" data-index="${i}" data-codigo="${esc(loc.codigo)}" ${abiertas.has(loc.codigo)?"open":""}><summary><span class="ubicacion-nombre">${esc(loc.codigo)}</span><span class="ubicacion-codigo">${esc(alm?.nombre||"Sin almacén")}${loc.nombre&&loc.nombre!==loc.codigo?` · ${esc(loc.nombre)}`:""}</span></summary><div class="ubicacion-detalle"><div class="d"><b>Almacén</b><span>${esc(alm?.nombre||"Sin almacén")}</span></div><div class="d"><b>Código</b><span>${esc(loc.codigo)}</span></div><div class="d"><b>Inventario</b><span>${existencias} materiales · ${movimientos} movimientos históricos</span></div>${materialesHtml}${movimientos?`<p class="ubicaciones-ayuda">Al eliminarla, sus movimientos permanecerán en el historial con el nombre y código originales.</p>`:""}<div id="ubiQr-${i}"></div>${esAdmin?`<div class="ubicacion-admin-actions"><button type="button" class="bd ubicacion-delete" data-eliminar-ubicacion="${esc(loc.codigo)}" ${ocupada?`disabled title="${movimientosError?"No se pudo verificar el historial":"Traspasa el inventario antes de eliminar"}"`:""}>🗑️ Eliminar ubicación</button></div>`:""}</div></details>`
+  }).join("");
   lista.querySelectorAll(".ubicacion-card").forEach(item=>{
     item.addEventListener("toggle",()=>{
       if(!item.open)return;
@@ -13458,6 +13478,67 @@ $("almacenForm").addEventListener("submit",async e=>{
 });
 $("ubiAuto").onclick=siguienteCodigoUbicacion;
 $("ubiAlmacen").onchange=renderUbicaciones;
+function leerTextoArchivo(f){return new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(String(r.result||""));r.onerror=rej;r.readAsText(f,"utf-8")})}
+function normalizarClave(c){return String(c||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]/g,"")}
+function buscarValorFila(obj,claves){if(!obj)return"";const mapa=new Map(Object.entries(obj).map(([k,v])=>[normalizarClave(k),v]));for(const c of claves){const k=normalizarClave(c),v=mapa.get(k);if(v!==undefined&&v!==null&&String(v).trim()!=="")return v}return""}
+function obtenerAlmacenCodigo(valor){if(!valor)return"";const v=String(valor).trim();if(!v)return"";const a=almacenes.find(x=>x.codigo.toLowerCase()===v.toLowerCase()||x.nombre.toLowerCase()===v.toLowerCase());return a?a.codigo:v}
+async function importarUbicacionesExcel(file){
+  if(!esAdmin)throw new Error("Solo el administrador puede importar ubicaciones.");
+  if(!window.XLSX)throw new Error("No se pudo cargar el lector de Excel. Revise la conexión y recargue la página.");
+  if(almacenesError||ubicacionesError)throw new Error("Corrija los errores de almacenes/ubicaciones antes de importar.");
+  const workbook=XLSX.read(await file.arrayBuffer(),{type:"array",cellDates:true}),nombreHoja=workbook.SheetNames[0],sheet=workbook.Sheets[nombreHoja];
+  if(!sheet)throw new Error("El archivo no contiene hojas para importar.");
+  const rows=XLSX.utils.sheet_to_json(sheet,{defval:"",raw:true});
+  if(!rows.length)throw new Error("No se encontraron filas para importar.");
+  const existentes=new Set(ubicaciones.map(u=>u.codigo.toLowerCase()));
+  const porAlmacen=new Map(almacenes.map(a=>[a.codigo.toLowerCase(),a.codigo]));
+  const aInsertar=[],omitidos=[],sinAlmacen=[],duplicados=[];
+  rows.forEach(row=>{
+    const codigo=String(buscarValorFila(row,["codigo","ubicacion","codigo_ubicacion","codigoubicacion","ubi","clave"])).trim();
+    if(!codigo)return;
+    if(existentes.has(codigo.toLowerCase())){duplicados.push(codigo);return}
+    const almacenValor=buscarValorFila(row,["almacen_codigo","almacencodigo","almacen","clave_almacen","almacen_id"]);
+    const almacenCodigo=obtenerAlmacenCodigo(almacenValor);
+    if(!almacenCodigo){sinAlmacen.push(codigo);return}
+    if(!porAlmacen.has(almacenCodigo.toLowerCase())){sinAlmacen.push(codigo);return}
+    aInsertar.push({codigo,nombre:codigo,almacen_codigo:almacenCodigo});
+    existentes.add(codigo.toLowerCase());
+  });
+  if(!aInsertar.length){throw new Error(`No se importaron ubicaciones. Duplicados: ${duplicados.length} · Sin almacén válido: ${sinAlmacen.length}`)}
+  const{error}=await sb.from("ubicaciones").insert(aInsertar);
+  if(error)throw error;
+  await cargarUbicaciones();
+  toast(`Ubicaciones importadas: ${aInsertar.length} · Duplicados: ${duplicados.length} · Sin almacén válido: ${sinAlmacen.length}`);
+}
+async function importarUbicacionesJson(file){
+  if(!esAdmin)throw new Error("Solo el administrador puede importar ubicaciones.");
+  if(almacenesError||ubicacionesError)throw new Error("Corrija los errores de almacenes/ubicaciones antes de importar.");
+  const texto=await leerTextoArchivo(file);
+  let data;try{data=JSON.parse(texto)}catch{throw new Error("Archivo JSON no válido")}
+  const filas=Array.isArray(data)?data:Array.isArray(data?.ubicaciones)?data.ubicaciones:Array.isArray(data?.items)?data.items:[];
+  if(!filas.length)throw new Error("No se encontraron ubicaciones en el JSON.");
+  const existentes=new Set(ubicaciones.map(u=>u.codigo.toLowerCase()));
+  const porAlmacen=new Map(almacenes.map(a=>[a.codigo.toLowerCase(),a.codigo]));
+  const aInsertar=[],duplicados=[],sinAlmacen=[];
+  filas.forEach(row=>{
+    const codigo=String(buscarValorFila(row,["codigo","ubicacion","codigo_ubicacion","ubi"])).trim();
+    if(!codigo)return;
+    if(existentes.has(codigo.toLowerCase())){duplicados.push(codigo);return}
+    const almacenCodigo=obtenerAlmacenCodigo(buscarValorFila(row,["almacen_codigo","almacencodigo","almacen","almacen_id"]));
+    if(!almacenCodigo||!porAlmacen.has(almacenCodigo.toLowerCase())){sinAlmacen.push(codigo);return}
+    aInsertar.push({codigo,nombre:codigo,almacen_codigo:almacenCodigo});
+    existentes.add(codigo.toLowerCase());
+  });
+  if(!aInsertar.length){throw new Error(`No se importaron ubicaciones. Duplicados: ${duplicados.length} · Sin almacén válido: ${sinAlmacen.length}`)}
+  const{error}=await sb.from("ubicaciones").insert(aInsertar);
+  if(error)throw error;
+  await cargarUbicaciones();
+  toast(`Ubicaciones importadas: ${aInsertar.length} · Duplicados: ${duplicados.length} · Sin almacén válido: ${sinAlmacen.length}`);
+}
+$("bUbiExcel").onclick=()=>{if(!esAdmin){toast("Solo el administrador puede importar ubicaciones.",1);return}$("fileUbiExcel").click()};
+$("bUbiJson").onclick=()=>{if(!esAdmin){toast("Solo el administrador puede importar ubicaciones.",1);return}$("fileUbiJson").click()};
+$("fileUbiExcel").onchange=async e=>{const file=e.target.files[0];e.target.value="";if(!file)return;try{await importarUbicacionesExcel(file)}catch(err){toast(err.message||"No se pudo importar ubicaciones",1)}};
+$("fileUbiJson").onchange=async e=>{const file=e.target.files[0];e.target.value="";if(!file)return;try{await importarUbicacionesJson(file)}catch(err){toast(err.message||"No se pudo importar ubicaciones",1)}};
 $("ubiForm").addEventListener("submit",async e=>{
   e.preventDefault();const codigo=$("ubiCodigo").value.trim();
   const almacenCodigo=$("ubiAlmacen").value,almacen=almacenes.find(a=>a.codigo===almacenCodigo);
