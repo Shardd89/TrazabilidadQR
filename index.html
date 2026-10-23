@@ -12980,7 +12980,7 @@ async function cargarUbicaciones(){
   resultados.forEach(resultado=>{if(resultado.status==="rejected")console.error(resultado.reason)});
   if(!$("ubiCodigo").value)siguienteCodigoUbicacion();
   if(!$("almacenCodigo").value)siguienteCodigoAlmacen();
-  renderAlmacenes();renderUbicaciones();renderHistUbicaciones();renderInventario();
+  renderAlmacenes();renderUbicaciones();renderHistUbicaciones();renderInventario();actualizarDatalistUbicaciones();
 }
 async function subirLista(ms,ds){
   if(!esAdmin)throw new Error("Solo el administrador puede restaurar información.");
@@ -13430,6 +13430,14 @@ function actualizarSelectorAlmacenes(seleccionActual){
   const predeterminado=almacenes.some(a=>a.codigo==="ALM-MP")?"ALM-MP":almacenes[0]?.codigo||"";
   selector.value=almacenes.some(a=>a.codigo===valor)?valor:predeterminado;
   $("ubiGuardar").disabled=!selector.value||!!almacenesError||!!ubicacionesError;
+}
+function actualizarDatalistUbicaciones(){
+  const dl=$("ubicacionesDatalist");if(!dl)return;
+  const opciones=[...new Map(ubicaciones.map(loc=>{
+    const label=ubicacionConCodigo(loc);
+    return [label.toLowerCase(), label];
+  })).values()].sort((a,b)=>a.localeCompare(b,"es"));
+  dl.innerHTML=opciones.map(v=>`<option value="${esc(v)}"></option>`).join("");
 }
 function normalizarCodigoUbicacion(codigo){
   const valor=String(codigo||"").trim();
