@@ -12527,7 +12527,44 @@ body.ficha>#login{display:none!important}
 #fichaView .d{padding:8px 0;font-size:.95rem}
 #fNota{font-size:.78rem;color:var(--mut);margin-top:14px;line-height:1.45}
 #fichaView .acts button{flex:1;min-width:150px}
-@media print{@page{margin:8mm}body>*:not(#etiqueta):not(#fichaView){display:none!important}
+#salidaView{display:none}
+.salida{max-width:190mm;margin:0 auto;color:#111;font-family:Arial,sans-serif;font-size:10pt}
+.salida h1{font-size:19pt;margin:0 0 4mm}
+.salida h2{font-size:12pt;color:#111;border-bottom:1px solid #555;margin:6mm 0 2mm;padding-bottom:1mm}
+.salida .salida-top{display:flex;justify-content:space-between;gap:8mm;border-bottom:2px solid #111;padding-bottom:4mm}
+.salida .folio{font-weight:700;font-size:12pt;text-align:right}
+.salida table{width:100%;min-width:0;border-collapse:collapse}
+.salida th,.salida td{border:1px solid #777;padding:2.5mm;text-align:left;vertical-align:top}
+.salida th{width:25%;background:#f0f0f0}
+.salida .renglones{font-size:8pt;table-layout:fixed;word-break:break-word}
+.salida .salida-nota{min-height:18mm;white-space:pre-wrap}
+.salida .firmas{display:grid;grid-template-columns:1fr 1fr;gap:18mm;margin-top:22mm;text-align:center}
+.salida .firma-linea{height:16mm;border-top:1px solid #111}
+.sur-groups{display:grid;gap:8px;min-width:0}
+.sur-group{border:1px solid var(--line);border-radius:8px;background:var(--card);overflow:hidden}
+.sur-group summary{display:grid;grid-template-columns:12px minmax(120px,.8fr) minmax(120px,1fr) minmax(130px,1fr);gap:10px;align-items:center;padding:10px 12px;cursor:pointer;list-style:none}
+.sur-group summary::-webkit-details-marker{display:none}
+.sur-group summary:before{content:"▶";color:var(--pri);font-size:.72rem}
+.sur-group[open] summary:before{content:"▼"}
+.sur-group .sur-order{font-weight:700;overflow-wrap:anywhere}
+.sur-group .sur-count{color:var(--mut);font-size:.82rem}
+.sur-group-body{overflow-x:auto;border-top:1px solid var(--line)}
+.sur-group-body table{width:100%;min-width:650px;border-collapse:collapse}
+.sur-group-body th,.sur-group-body td{padding:8px;border-bottom:1px solid var(--line);text-align:left;font-size:.82rem}
+.sur-group-body th{color:var(--mut);background:var(--soft)}
+@media(max-width:520px){.sur-group summary{grid-template-columns:12px minmax(0,1fr);gap:4px 8px}.sur-group .sur-date,.sur-group .sur-order,.sur-group .sur-count{grid-column:2}}
+#camWrap{position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,.86);display:flex;align-items:center;justify-content:center;padding:18px;margin:0;overflow:visible;border-radius:0}
+#camWrap[hidden]{display:none}
+#camPanel{position:relative;width:min(100%,620px);background:#111;border-radius:12px;padding:12px}
+#camWrap #video{width:100%;max-height:75vh;object-fit:contain}
+#camWrap .vf{inset:16% 14%}
+#bTorch{position:absolute;right:58px;top:8px;z-index:2}
+#bCamClose{position:absolute;right:8px;top:8px;z-index:2;background:#fff;color:#111}
+.ubicacion-card{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;align-items:center;border:1px solid var(--line);padding:12px;border-radius:8px;margin-top:8px}
+.ubicacion-qr{width:120px;height:120px;background:#fff}
+.asig-items{display:grid;gap:6px;margin-top:10px}
+.asig-item{display:flex;justify-content:space-between;gap:8px;align-items:center;background:var(--soft);padding:8px;border-radius:6px}
+@media print{@page{margin:12mm}body>*:not(#etiqueta):not(#fichaView):not(#salidaView){display:none!important}
 #etiqueta{display:block;text-align:center;font-family:Arial,sans-serif;color:#000}
 #etiqueta.hoja{display:block}
 #etiqueta .pz{display:flex;box-sizing:border-box;overflow:hidden;break-after:page;page-break-after:always;font-family:Arial,sans-serif}
@@ -12544,6 +12581,11 @@ body.ficha>#login{display:none!important}
 #fichaView .fh{border-bottom:2px solid #000;border-radius:0;padding:0 0 8px}
 #fichaView .fbody{border:0;padding:8px 0}
 #fichaView .d{border-bottom:1px solid #999}
+#salidaView{display:block!important;position:static!important}
+#salidaView .salida{max-width:none}
+#salidaView .salida th{background:#eee!important}
+#salidaView .renglones thead{display:table-header-group}
+#salidaView .renglones tr{break-inside:avoid;page-break-inside:avoid}
 .noprint{display:none!important}}
 </style>
 </head>
@@ -12558,7 +12600,7 @@ body.ficha>#login{display:none!important}
   </form></div></div>
 <header>
   <h1>📦 Trazabilidad de Material · Generador QR</h1>
-  <nav class="tabs" aria-label="Vistas"><button type="button" class="tab on" data-v="vReg">📝 Registro</button><button type="button" class="tab" data-v="vSur">📤 Surtido</button></nav>
+  <nav class="tabs" aria-label="Vistas"><button type="button" class="tab on" data-v="vReg">📝 Registro</button><button type="button" class="tab" data-v="vSur">📤 Surtido</button><button type="button" class="tab" data-v="vInv">📦 Inventario</button></nav>
   <div class="chips"><span class="chip" id="sTot">0 registros</span><span class="chip" id="sMp">0 materia prima</span><span class="chip" id="sGen">0 generales</span><button type="button" class="chip" id="bSalir" style="border:0;color:#fff;cursor:pointer" title="Cerrar sesión">⏻ Salir</button></div>
 </header>
 
@@ -12571,14 +12613,19 @@ body.ficha>#login{display:none!important}
       <div class="grid">
         <div><label for="ubicacion">Ubicación *</label><input type="text" id="ubicacion" required></div>
         <div><label for="codigo">Código *</label><div class="row"><input type="text" id="codigo" required placeholder="MAT-0001"><button type="button" class="bs" id="btnAuto" title="Siguiente código">Auto</button></div></div>
+        <div><label for="tipoRegistro">Clasificación *</label><select id="tipoRegistro" required><option value="">Seleccione…</option><option value="GENERAL">Material general</option><option value="MP">Materia prima</option></select></div>
         <div class="na-field"><div class="na-head"><label for="tipoMaterial">Tipo material</label><label class="na-check"><input type="checkbox" data-na="tipoMaterial"> No aplica</label></div><input class="na-value" id="tipoMaterial" type="text"></div>
         <div><label for="descripcion">Descripción *</label><input type="text" id="descripcion" required></div>
         <div class="na-field"><div class="na-head"><label for="especificacionMedida">Especificación medida</label><label class="na-check"><input type="checkbox" data-na="especificacionMedida"> No aplica</label></div><input class="na-value" id="especificacionMedida" type="text"></div>
+        <div><label for="seccionMaterial">Sección</label><select id="seccionMaterial"><option value="">No aplica / Sin especificar</option><option value="SQ">SQ · Barra cuadrada</option><option value="FLAT">FLAT</option><option value="RND">RND · Redonda</option></select></div>
+        <div id="dimensionesLineales" hidden><label>Dimensiones de la sección (mm)</label><div class="row"><input type="number" id="altoMaterial" min="0" step="any" placeholder="Alto (mm)" aria-label="Alto en milímetros"><input type="number" id="anchoMaterial" min="0" step="any" placeholder="Ancho (mm)" aria-label="Ancho en milímetros"></div></div>
+        <div id="dimensionRedonda" hidden><label for="diametroMaterial">Diámetro (mm)</label><input type="number" id="diametroMaterial" min="0" step="any"></div>
+        <div class="na-field"><div class="na-head"><label for="longitudIndividual">Longitud IND (mm)</label><label class="na-check"><input type="checkbox" data-na="longitudIndividual"> No aplica</label></div><input class="na-value" id="longitudIndividual" type="number" min="0" step="any"></div>
         <div class="na-field"><div class="na-head"><label for="manufactura">Manufactura</label><label class="na-check"><input type="checkbox" data-na="manufactura"> No aplica</label></div><input class="na-value" id="manufactura" type="text"></div>
         <div class="na-field"><div class="na-head"><label for="numeroHeat">N.º Heat</label><label class="na-check"><input type="checkbox" data-na="numeroHeat"> No aplica</label></div><input class="na-value" id="numeroHeat" type="text"></div>
         <div class="na-field"><div class="na-head"><label for="numeroLoteMP">N.º lote MP</label><label class="na-check"><input type="checkbox" data-na="numeroLoteMP"> No aplica</label></div><input class="na-value" id="numeroLoteMP" type="text"></div>
         <div class="na-field"><div class="na-head"><label for="numeroCertificado">N.º cert.</label><label class="na-check"><input type="checkbox" data-na="numeroCertificado"> No aplica</label></div><input class="na-value" id="numeroCertificado" type="text"></div>
-        <div class="na-field"><div class="na-head"><label for="totalMM">Total mm</label><label class="na-check"><input type="checkbox" data-na="totalMM"> No aplica</label></div><input class="na-value" id="totalMM" type="number" min="0" step="any"></div>
+        <div class="na-field"><div class="na-head"><label for="totalMM">Total mm (auto)</label><label class="na-check"><input type="checkbox" data-na="totalMM"> No aplica</label></div><input class="na-value" id="totalMM" type="number" min="0" step="any" readonly></div>
         <div><label for="fechaRecibo">Fecha de recibo *</label><input type="date" id="fechaRecibo" required></div>
         <div><label for="cantidad">Cantidad (PZ) *</label><input type="number" id="cantidad" min="0" step="any" required></div>
         <div class="na-field"><div class="na-head"><label for="peso">Peso</label><label class="na-check"><input type="checkbox" data-na="peso"> No aplica</label></div><div class="na-value-wrap row"><input class="na-value" id="peso" type="number" min="0" step="any"><select id="pesoU" aria-label="Unidad de peso"><option value="LB">LB</option><option value="KG">KG</option><option value="">Sin unidad</option></select></div></div>
@@ -12640,21 +12687,66 @@ body.ficha>#login{display:none!important}
 <main id="vSur" aria-label="Surtido" hidden>
 <div>
   <section class="card"><h2>Escaneo de QR</h2>
-    <div class="acts" style="margin:0 0 12px"><button type="button" class="bp" id="bCam">📷 Escanear con cámara</button>
-      <label class="bs" style="flex:1;display:flex;align-items:center;justify-content:center;border-radius:8px;padding:10px 14px;cursor:pointer;margin:0;font-size:.88rem;color:var(--pri)">📸 Foto del QR<input type="file" id="fotoIn" accept="image/*" capture="environment" hidden></label></div>
-    <div class="res bad" id="camAviso" hidden>⚠ La cámara en vivo requiere HTTPS (o localhost). Use “📸 Foto del QR” o aloje este archivo en un sitio con HTTPS.</div>
-    <div id="camWrap" hidden><video id="video" playsinline muted></video><div class="vf"></div><button type="button" class="bs" id="bTorch" hidden>🔦</button><canvas id="camCv" hidden></canvas></div>
+    <div class="acts" style="margin:0 0 12px"><button type="button" class="bp" id="bCam">📷 Escanear con cámara</button></div>
+    <div class="res bad" id="camAviso" hidden>⚠ La cámara en vivo requiere HTTPS (o localhost). Aloje este archivo en un sitio con HTTPS para usar el escáner.</div>
     <details id="manual"><summary style="cursor:pointer;font-size:.84rem;color:var(--mut);padding:4px 0">⌨️ Pistola lectora / código manual</summary>
       <textarea id="scanIn" rows="2" placeholder="Escanee aquí, o escriba el código y presione Enter"></textarea></details>
   </section>
   <section class="card"><h2>Surtido actual</h2>
-    <label for="orden">Orden / Solicitante</label><input type="text" id="orden" placeholder="Ej. OT-1234 · Producción" style="margin-bottom:12px">
+    <label for="orden">Orden de producción *</label><input type="text" id="orden" placeholder="Ej. OT-1234" style="margin-bottom:12px">
+    <div class="grid" style="margin-bottom:12px">
+      <div><label for="entrega">Entrega (Almacén)</label><input type="text" id="entrega"></div>
+      <div><label for="recibe">Recibe (Producción)</label><input type="text" id="recibe"></div>
+      <div><label for="maquina">Máquina / línea</label><input type="text" id="maquina"></div>
+      <div><label for="motivo">Motivo / uso</label><input type="text" id="motivo"></div>
+      <div class="full"><label for="observaciones">Observaciones</label><textarea id="observaciones" rows="2"></textarea></div>
+    </div>
     <div id="sPanel"></div></section>
 </div>
 <section class="card"><h2>Movimientos de surtido</h2>
-  <div class="tw"><table style="min-width:520px"><thead><tr><th>Fecha</th><th>Código</th><th>Surtido</th><th>Orden</th><th></th></tr></thead><tbody id="hBody"></tbody></table><div class="empty" id="hVacio">Sin surtidos</div></div>
+  <div class="tw"><div id="hBody" class="sur-groups"></div><div class="empty" id="hVacio">Sin surtidos</div></div>
   <div class="acts"><button type="button" class="bs" id="bCsvS">⬇️ CSV de surtidos</button></div>
 </section>
+</main>
+
+<main id="vInv" aria-label="Inventario" hidden>
+  <section class="card">
+    <h2>Inventario de materiales</h2>
+    <p style="color:var(--mut);margin-bottom:14px">Consulta existencias disponibles y asigna materiales a ubicaciones escaneando el QR del destino.</p>
+    <div class="tools">
+      <input type="search" id="invBuscar" placeholder="🔍 Buscar código, descripción o ubicación…">
+      <select id="invTipo"><option value="">Todas las clasificaciones</option><option value="mp">Materia prima</option><option value="gen">General</option></select>
+    </div>
+    <div class="tw"><table>
+      <thead><tr><th>Código</th><th>Clasificación</th><th>Descripción</th><th>Existencia disponible</th><th>Ubicación</th></tr></thead>
+      <tbody id="invBody"></tbody>
+    </table><div class="empty" id="invVacio" hidden>Sin materiales que coincidan.</div></div>
+  </section>
+  <section class="card">
+    <h2>Ubicaciones y códigos QR</h2>
+    <div id="ubiEstado"></div>
+    <form id="ubiForm" class="grid" autocomplete="off">
+      <div><label for="ubiCodigo">Código de ubicación *</label><div class="row"><input id="ubiCodigo" required placeholder="UBI-001"><button type="button" class="bs" id="ubiAuto">Auto</button></div></div>
+      <div><label for="ubiNombre">Nombre de ubicación *</label><input id="ubiNombre" required placeholder="Ej. Rack A · Nivel 1"></div>
+      <div class="full"><button type="submit" class="bp" id="ubiGuardar">Guardar ubicación</button></div>
+    </form>
+    <div id="ubiLista"></div>
+  </section>
+  <section class="card">
+    <h2>Asignar materiales a una ubicación</h2>
+    <p style="color:var(--mut)">Escanea primero el QR de la ubicación y después los QR de los materiales. Confirma para mover todo el inventario disponible; se conservará el historial de ubicaciones.</p>
+    <div class="acts"><button type="button" class="bp" id="bCamInv">📷 Escanear ubicación y materiales</button></div>
+    <div class="res bad" id="invCamAviso" hidden>⚠ El escáner con cámara requiere HTTPS (o localhost).</div>
+    <label for="ubiScan">Lector QR / código manual</label>
+    <textarea id="ubiScan" rows="2" placeholder="Escanea la ubicación; después escanea cada material"></textarea>
+    <div class="d"><b>Destino seleccionado</b><span id="ubiDestino">Sin seleccionar</span></div>
+    <div id="asigLista" class="asig-items"></div>
+    <div class="acts"><button type="button" class="bp" id="ubiConfirmar" disabled>✅ Confirmar asignación</button><button type="button" class="bd" id="ubiLimpiar">Limpiar</button></div>
+  </section>
+  <section class="card">
+    <h2>Historial de ubicaciones</h2>
+    <div class="tw"><table><thead><tr><th>Fecha</th><th>Folio</th><th>Código</th><th>Desde</th><th>Hacia</th><th>Existencia al mover</th></tr></thead><tbody id="ubiHistBody"></tbody></table><div class="empty" id="ubiHistVacio" hidden>Sin movimientos de ubicación.</div></div>
+  </section>
 </main>
 
 <div id="fichaView" hidden>
@@ -12665,6 +12757,8 @@ body.ficha>#login{display:none!important}
     <div class="acts noprint"><button type="button" class="bp" id="fPdf">📄 Guardar como PDF / Imprimir</button><button type="button" class="bs" id="fSur" hidden>📤 Ir a surtido</button><button type="button" class="bs" id="fApp">🏠 Abrir aplicación</button></div>
   </div>
 </div>
+<div id="salidaView" hidden></div>
+<div id="camWrap" hidden><div id="camPanel"><video id="video" playsinline muted></video><div class="vf"></div><button type="button" class="bs" id="bTorch" hidden>🔦</button><button type="button" class="bd" id="bCamClose">✕ Cerrar</button><canvas id="camCv" hidden></canvas></div></div>
 <div id="etiqueta"></div>
 <div class="toast" id="toast"></div>
 
@@ -12677,7 +12771,7 @@ const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&
 const hoy=()=>new Date(Date.now()-new Date().getTimezoneOffset()*6e4).toISOString().slice(0,10);
 const fmt=n=>Number(n).toLocaleString("es-MX",{maximumFractionDigits:3});
 function totalTxt(m){return m.esMP&&m.um==="PZ"&&m.cantidad>0&&m.longitud>0?`${fmt(m.cantidad*m.longitud)} ${m.longU||m.longitudUnidad||"mm"}`:""}
-let mats=[],actual=null,orden={k:null,asc:true},esStaff=false;
+let mats=[],actual=null,orden={k:null,asc:true},esStaff=false,ubicaciones=[],movimientosUbicacion=[],ubicacionesError="",ubicacionDestino=null,asignacionItems=[];
 const seleccionados=new Set();
 
 // --- Supabase ---
@@ -12685,7 +12779,9 @@ const SB_URL="https://olbcepxgzqtmiqdqpbha.supabase.co",SB_KEY="sb_publishable_k
 const sb=window.supabase?window.supabase.createClient(SB_URL,SB_KEY):null;
 function normalizarMaterial(m){
   const pesoU=m.pesoU||m.pesoUnidad||(["LB","KG"].includes(m.um)?m.um:m.peso!=null&&!m.pesoUnidadPendiente?"LB":null);
-  return{...m,um:"PZ",pesoU};
+  const tipoRegistro=/^(?:MP|MATERIA PRIMA)$/.test(String(m.tipoRegistro??"").toUpperCase())||m.esMP?"MP":"GENERAL";
+  const seccionMaterial=normalizarSeccion(m.seccionMaterial)||(m.seccion==="cuadrado"?"SQ":m.seccion==="redondo"?"RND":"");
+  return{...m,um:"PZ",pesoU,tipoRegistro,esMP:tipoRegistro==="MP",seccionMaterial};
 }
 const matData=m=>{const{despachos,...r}=m;return r};
 const desData=d=>{const{t,piezas,...r}=d;return r};
@@ -12696,20 +12792,37 @@ function errDB(e,msg){console.error(e);const t=String((e&&e.message)||e||"");
 async function leerTodo(tabla,cols,ord){const out=[];
   for(let i=0;;i+=1000){let q=sb.from(tabla).select(cols);ord.forEach(o=>{q=q.order(o)});const{data,error}=await q.range(i,i+999);if(error)throw error;out.push(...data);if(data.length<1000)break}
   return out}
-// Recarga todo desde la base y conserva selección / edición / QR en pantalla
+// Recarga los datos y conserva la edición, el QR y los renglones pendientes.
 async function cargar(){
   const[A,B]=await Promise.all([leerTodo("materiales","codigo,data",["codigo"]),leerTodo("despachos","codigo,t,data,piezas",["t","id"])]);
   const por={};B.forEach(r=>{(por[r.codigo]=por[r.codigo]||[]).push(desDeFila(r))});
-  const selCod=sel!=null&&mats[sel]?mats[sel].codigo:null,antes=selCod?existTxt(mats[sel]):"";
   const edI=$("editIndex").value,edCod=edI!==""&&mats[+edI]?mats[+edI].codigo:null;
   const act=actual,actAntes=act?JSON.stringify(act):"";
   mats=A.map(r=>({...normalizarMaterial(r.data),codigo:r.codigo,despachos:por[r.codigo]||[]}));
-  sel=selCod?mats.findIndex(x=>x.codigo===selCod):null;if(sel!=null&&sel<0)sel=null;
   if(edCod){const i=mats.findIndex(x=>x.codigo===edCod);if(i<0)resetForm();else $("editIndex").value=i}
-  pzPend=sel!=null?pzPend.filter(n=>!piezasSurt(mats[sel]).has(n)):[];
+  surItems=surItems.filter(item=>mats.some(x=>x.codigo.toLowerCase()===item.codigo.toLowerCase()));
+  surItems.forEach(item=>{const m=mats.find(x=>x.codigo.toLowerCase()===item.codigo.toLowerCase());if(item.piezas?.some(n=>piezasSurt(m).has(n)))item.errorPieza=true});
   render();
-  if(!$("vSur").hidden){renderHist();if((selCod&&sel==null)||(sel!=null&&existTxt(mats[sel])!==antes))renderSur()}
+  if(!$("vInv").hidden)renderInventario();
+  if(!$("vSur").hidden){renderHist();renderSur()}
   if(act){const a=mats.find(x=>x.codigo===act.codigo);if(a){if(JSON.stringify(a)!==actAntes)mostrar(a);else actual=a}}
+}
+async function cargarUbicaciones(){
+  try{
+    const[locs,movs]=await Promise.all([
+      leerTodo("ubicaciones","codigo,nombre,created_at",["nombre"]),
+      leerTodo("movimientos_ubicacion","id,folio,codigo_material,ubicacion_anterior,ubicacion_nueva,existencia,created_at",["id"])
+    ]);
+    ubicaciones=locs;movimientosUbicacion=movs;ubicacionesError="";
+    if(!$("ubiCodigo").value)siguienteCodigoUbicacion();
+    renderUbicaciones();renderHistUbicaciones();renderInventario();
+  }catch(err){
+    const msg=String(err?.message||err||"");
+    if(/PGRST205|42P01|does not exist|schema cache/i.test(msg)){
+      ubicacionesError="Falta crear las tablas de ubicaciones en Supabase. Ejecute el archivo supabase_ubicaciones.sql en el SQL Editor del proyecto y vuelva a cargar.";
+    }else{errDB(err,"No se pudieron cargar las ubicaciones");ubicacionesError="No fue posible cargar ubicaciones. Revise la conexión y los permisos."}
+    ubicaciones=[];movimientosUbicacion=[];renderUbicaciones();renderHistUbicaciones();renderInventario();
+  }
 }
 async function subirLista(ms,ds){
   for(let i=0;i<ms.length;i+=200){const{error}=await sb.from("materiales").upsert(ms.slice(i,i+200).map(m=>({codigo:m.codigo,data:matData(m)})),{onConflict:"codigo"});if(error)throw error}
@@ -12719,17 +12832,18 @@ async function subirLista(ms,ds){
 let rtT=null;
 function suscribir(){
   if(!sb)return;sb.removeAllChannels();
-  const rt=()=>{clearTimeout(rtT);rtT=setTimeout(()=>cargar().catch(()=>{}),400)};
-  sb.channel("cambios").on("postgres_changes",{event:"*",schema:"public",table:"materiales"},rt).on("postgres_changes",{event:"*",schema:"public",table:"despachos"},rt).subscribe();
+  const rt=()=>{clearTimeout(rtT);rtT=setTimeout(()=>{cargar().catch(()=>{});cargarUbicaciones()},400)};
+  sb.channel("cambios").on("postgres_changes",{event:"*",schema:"public",table:"materiales"},rt).on("postgres_changes",{event:"*",schema:"public",table:"despachos"},rt).on("postgres_changes",{event:"*",schema:"public",table:"ubicaciones"},rt).on("postgres_changes",{event:"*",schema:"public",table:"movimientos_ubicacion"},rt).subscribe();
 }
 // --- Sesión ---
 function lgMostrar(msg){$("lgCarga").hidden=true;$("lgF").hidden=false;$("lgMsg").hidden=!msg;$("lgMsg").textContent=msg||""}
-function salirUI(){esStaff=false;document.body.classList.remove("auth");if(sb)sb.removeAllChannels();mats=[];sel=null;actual=null;pzPend=[];render();lgMostrar()}
+function salirUI(){esStaff=false;document.body.classList.remove("auth");if(sb)sb.removeAllChannels();camOff();mats=[];surItems=[];ubicaciones=[];movimientosUbicacion=[];ubicacionesError="";ubicacionDestino=null;asignacionItems=[];actual=null;render();lgMostrar()}
 async function entrar(){
   const r=await sb.rpc("is_staff");
   if(r.error||r.data!==true){await sb.auth.signOut();lgMostrar("Este usuario no tiene autorización. Pida al administrador que agregue su correo.");return false}
   esStaff=true;document.body.classList.add("auth");
   try{await cargar()}catch(e){errDB(e,"No se pudo cargar los datos")}
+  await cargarUbicaciones();
   suscribir();await migrarLocal();return true}
 // Datos que el navegador tenía guardados antes de usar Supabase
 async function migrarLocal(){
@@ -12761,29 +12875,57 @@ async function arrancar(){
 function toast(msg,err){const t=$("toast");t.textContent=msg;t.classList.toggle("err",!!err);t.classList.add("show");clearTimeout(toast.h);toast.h=setTimeout(()=>t.classList.remove("show"),2400)}
 
 // --- Formulario ---
-const CAMPOS_EXTRA=[["tipoMaterial","tipoMaterial"],["especificacionMedida","especificacionMedida"],["manufactura","manufactura"],["numeroHeat","numeroHeat"],["numeroLoteMP","numeroLoteMP"],["numeroCertificado","numeroCertificado"],["totalMM","totalMM"],["peso","peso"],["ordenMaterial","ordenMaterial"],["poNumber","poNumber"]];
+const CAMPOS_EXTRA=[["tipoMaterial","tipoMaterial"],["especificacionMedida","especificacionMedida"],["longitudIndividual","longitudIndividual"],["manufactura","manufactura"],["numeroHeat","numeroHeat"],["numeroLoteMP","numeroLoteMP"],["numeroCertificado","numeroCertificado"],["totalMM","totalMM"],["peso","peso"],["ordenMaterial","ordenMaterial"],["poNumber","poNumber"]];
+const numeroCampo=id=>$(id).value===""?null:Number($(id).value);
+function recalcularTotalMM(origen){
+  const naTotal=document.querySelector('input[data-na="totalMM"]').checked;
+  if(naTotal)return;
+  const longInput=$("longitudIndividual"),qtyInput=$("cantidad");
+  if(longInput.value===""){
+    if(origen==="longitudIndividual")$("totalMM").value="";
+    return;
+  }
+  const longitud=Number(longInput.value),cantidad=Number(qtyInput.value);
+  if(Number.isFinite(longitud)&&Number.isFinite(cantidad)&&longitud>=0&&cantidad>=0)
+    $("totalMM").value=String(longitud*cantidad);
+}
 document.querySelectorAll("[data-na]").forEach(c=>c.addEventListener("change",()=>{
   const input=$(c.dataset.na),wrap=input.closest(".na-field").querySelector(".na-value-wrap")||input;
   wrap.hidden=c.checked;if(c.checked)input.value="";
+  if(c.dataset.na==="longitudIndividual")recalcularTotalMM("longitudIndividual");
+  if(c.dataset.na==="totalMM"&&!c.checked)recalcularTotalMM();
 }));
+$("longitudIndividual").addEventListener("input",()=>recalcularTotalMM("longitudIndividual"));
+$("cantidad").addEventListener("input",()=>recalcularTotalMM("cantidad"));
+function actualizarCamposSeccion(){
+  const seccion=$("seccionMaterial").value;
+  $("dimensionesLineales").hidden=seccion!=="SQ"&&seccion!=="FLAT";
+  $("dimensionRedonda").hidden=seccion!=="RND";
+}
+$("seccionMaterial").addEventListener("change",actualizarCamposSeccion);
 $("btnAuto").onclick=()=>{let n=0;mats.forEach(m=>{const x=/^MAT-(\d+)$/i.exec(m.codigo);if(x)n=Math.max(n,+x[1])});$("codigo").value="MAT-"+String(n+1).padStart(4,"0")};
 
-function resetForm(){$("f").reset();CAMPOS_EXTRA.forEach(([,id])=>$(id).hidden=false);$("editIndex").value="";$("fechaRecibo").value=hoy();$("tituloForm").textContent="Registro de material";$("btnGuardar").textContent="💾 Guardar y generar QR";$("btnCancelar").hidden=true}
+function resetForm(){$("f").reset();document.querySelectorAll("[data-na]").forEach(c=>{c.checked=false;$(c.dataset.na).closest(".na-field").querySelector(".na-value-wrap")?.removeAttribute("hidden");$(c.dataset.na).hidden=false});CAMPOS_EXTRA.forEach(([,id])=>$(id).hidden=false);actualizarCamposSeccion();$("editIndex").value="";$("fechaRecibo").value=hoy();$("tituloForm").textContent="Registro de material";$("btnGuardar").textContent="💾 Guardar y generar QR";$("btnCancelar").hidden=true}
 
 $("f").addEventListener("submit",async e=>{
   e.preventDefault();
+  recalcularTotalMM();
   const idx=$("editIndex").value;
   const noAplica=Object.fromEntries(CAMPOS_EXTRA.map(([key,id])=>[key,document.querySelector(`input[data-na="${id}"]`).checked]));
-  const extra=Object.fromEntries(CAMPOS_EXTRA.map(([key,id])=>[key,noAplica[key]?"":(["totalMM","peso"].includes(key)?($(id).value===""?null:Number($(id).value)):$(id).value.trim())]));
-  const tipoMaterial=noAplica.tipoMaterial?"":$("tipoMaterial").value.trim();
+  const extra=Object.fromEntries(CAMPOS_EXTRA.map(([key,id])=>[key,noAplica[key]?(["totalMM","longitudIndividual","peso"].includes(key)?null:""): (["totalMM","longitudIndividual","peso"].includes(key)?($(id).value===""?null:Number($(id).value)):$(id).value.trim())]));
+  const tipoMaterial=noAplica.tipoMaterial?"":$("tipoMaterial").value.trim(),tipoRegistro=$("tipoRegistro").value;
   const anterior=idx!==""?mats[idx]:null;
   const m={codigo:$("codigo").value.trim(),descripcion:$("descripcion").value.trim(),lote:extra.numeroLoteMP||"",proveedor:"",
     um:$("um").value,cantidad:parseFloat($("cantidad").value),ubicacion:$("ubicacion").value.trim(),fechaRecibo:$("fechaRecibo").value,
-    fechaModificacion:new Date().toLocaleString("es-MX"),esMP:/materia\s*prima|^mp$/i.test(tipoMaterial),
+    fechaModificacion:new Date().toLocaleString("es-MX"),tipoRegistro,esMP:tipoRegistro==="MP",seccionMaterial:$("seccionMaterial").value,
+    ubicacionCodigo:anterior&&$("ubicacion").value.trim()===anterior.ubicacion?anterior.ubicacionCodigo||null:null,
     peso:extra.peso,pesoU:extra.peso==null?null:$("pesoU").value,pesoUnidadPendiente:extra.peso!=null&&!$("pesoU").value,
     longitud:anterior?.longitud??null,longU:anterior?.longU||anterior?.longitudUnidad||null,
-    seccion:anterior?.seccion||null,secU:anterior?.secU||anterior?.diametroUnidad||null,
-    diametro:anterior?.diametro??null,alto:anterior?.alto??null,ancho:anterior?.ancho??null,
+    seccion:tipoRegistro==="MP"?({SQ:"cuadrado",FLAT:"cuadrado",RND:"redondo"}[$("seccionMaterial").value]||null):null,
+    secU:tipoRegistro==="MP"?"mm":null,
+    diametro:tipoRegistro==="MP"&&$("seccionMaterial").value==="RND"?numeroCampo("diametroMaterial"):null,
+    alto:tipoRegistro==="MP"&&["SQ","FLAT"].includes($("seccionMaterial").value)?numeroCampo("altoMaterial"):null,
+    ancho:tipoRegistro==="MP"&&["SQ","FLAT"].includes($("seccionMaterial").value)?numeroCampo("anchoMaterial"):null,
     ...extra,noAplica};
   m.despachos=anterior?(anterior.despachos||[]):[];
   const dup=mats.findIndex(x=>x.codigo.toLowerCase()===m.codigo.toLowerCase());
@@ -12802,9 +12944,20 @@ $("btnCancelar").onclick=()=>{resetForm();toast("Edición cancelada")};
 
 // --- QR ---
 function dimsTxt(m){
-  if(!m.esMP||!(m.longitud>0))return"";
-  const s=m.seccion==="cuadrado"?`CUADRADO ${m.alto} × ${m.ancho} ${m.secU||"mm"} (alto×ancho)`:`REDONDO ⌀ ${m.diametro} ${m.secU||m.diametroUnidad||"mm"}`;
-  return `${s}, L: ${m.longitud} ${m.longU||m.longitudUnidad||"mm"}`;
+  if(!m.esMP)return"";
+  const seccion=m.seccionMaterial|| (m.seccion==="cuadrado"?"SQ":"RND");
+  if(!seccion)return"";
+  const etiqueta=seccion==="FLAT"?"FLAT":seccion==="SQ"?"CUADRADO":"REDONDO";
+  const medidas=seccion==="RND"?m.diametro!=null?` ⌀ ${m.diametro} ${m.secU||m.diametroUnidad||"mm"}`:"":m.alto!=null||m.ancho!=null?` ${m.alto??"—"} × ${m.ancho??"—"} ${m.secU||"mm"} (alto×ancho)`:"";
+  const largo=m.longitud>0?`, L: ${m.longitud} ${m.longU||m.longitudUnidad||"mm"}`:"";
+  return `${etiqueta}${medidas}${largo}`;
+}
+function seccionEspecificacion(m){
+  const seccion=m.seccionMaterial|| (m.seccion==="cuadrado"?"SQ":m.seccion==="redondo"?"RND":"");
+  const etiqueta=seccion==="SQ"?"SQ":seccion==="FLAT"?"FLAT":seccion==="RND"?"RND":"";
+  const especificacion=String(m.especificacionMedida||"").trim();
+  const dimension=etiqueta&&especificacion?`${etiqueta} · ${especificacion}`:especificacion||dimsTxt(m);
+  return dimension;
 }
 const BASE="https://shardd89.github.io/TrazabilidadQR/";
 const b64e=t=>btoa(encodeURIComponent(t).replace(/%([0-9A-F]{2})/g,(_,h)=>String.fromCharCode(parseInt(h,16)))).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,"");
@@ -12813,7 +12966,7 @@ function payload(m){
   const o={c:m.codigo,d:m.descripcion,l:m.lote,p:m.proveedor,u:"PZ",q:m.cantidad,m:m.esMP?1:0,ub:m.ubicacion,fr:m.fechaRecibo,fm:m.fechaModificacion};
   if(m.esMP)Object.assign(o,{lo:m.longitud,lu:m.longU||m.longitudUnidad,s:m.seccion,su:m.secU||m.diametroUnidad,di:m.diametro,al:m.alto,an:m.ancho});
   if(m.peso!=null){o.pe=m.peso;o.pu=m.pesoUnidadPendiente?"?":m.pesoU||m.pesoUnidad}
-  const extras={tipoMaterial:"tm",especificacionMedida:"em",manufactura:"mf",numeroHeat:"nh",numeroLoteMP:"nl",numeroCertificado:"nc",totalMM:"tmm",ordenMaterial:"ord",poNumber:"po"};
+  const extras={tipoRegistro:"tr",seccionMaterial:"sm",tipoMaterial:"tm",especificacionMedida:"em",longitudIndividual:"li",manufactura:"mf",numeroHeat:"nh",numeroLoteMP:"nl",numeroCertificado:"nc",totalMM:"tmm",ordenMaterial:"ord",poNumber:"po"};
   Object.entries(extras).forEach(([key,short])=>{if(m[key])o[short]=m[key]});
   if(m.noAplica&&Object.values(m.noAplica).some(Boolean))o.na=m.noAplica;
   Object.keys(o).forEach(k=>{if(o[k]===""||o[k]==null)delete o[k]});return o}
@@ -12856,12 +13009,11 @@ function mostrar(m){
   const txt=qrTexto(m);
   const c=dibujarQR(txt);
   if(c)box.appendChild(c);else{box.textContent="No se pudo generar el QR: los datos son demasiado largos. Acorte descripción o ubicación.";actual=null}
-  const rows=[["Código",m.codigo],["Ubicación",m.ubicacion],["Tipo material",m.tipoMaterial],["Descripción",m.descripcion],
-    ["Especificación medida",m.especificacionMedida],["Manufactura",m.manufactura],["N.º Heat",m.numeroHeat],["N.º lote MP",m.numeroLoteMP||m.lote],["N.º cert.",m.numeroCertificado],["Total mm",m.totalMM],["Fecha de recibo",m.fechaRecibo],["Cantidad",`${m.cantidad} ${m.um}`],
+  const rows=[["Código",m.codigo],["Ubicación",m.ubicacion],["Clasificación",m.tipoRegistro==="MP"?"Materia prima":"Material general"],["Tipo material",m.tipoMaterial],["Descripción",m.descripcion],
+    ["Sección / especificación",seccionEspecificacion(m)],["Longitud IND",m.longitudIndividual!=null?`${m.longitudIndividual} mm`:""],["Manufactura",m.manufactura],["N.º Heat",m.numeroHeat],["N.º lote MP",m.numeroLoteMP||m.lote],["N.º cert.",m.numeroCertificado],["Total mm",m.totalMM],["Fecha de recibo",m.fechaRecibo],["Cantidad",`${m.cantidad} ${m.um}`],
     ["Etiqueta",`MASTER · ${m.cantidad} ${m.um}`+(esIndividual(m)?` (+ ${m.cantidad} QR individuales)`:` (sin QR individuales: la cantidad debe ser entera y de 1 a ${MAX_IND})`)],
-    ["Peso",m.peso!=null?`${m.peso}${m.pesoU||m.pesoUnidad?" "+(m.pesoU||m.pesoUnidad):m.pesoUnidadPendiente?" (unidad sin definir)":""}`:""],["UM",m.um],["Orden",m.ordenMaterial],["PO number",m.poNumber],
-    ["Tipo",m.esMP?"Materia prima":"Material general"],["Dimensiones",dimsTxt(m)],["Longitud total",totalTxt(m)],["Existencia",existTxt(m)],
-    ["Ubicación",m.ubicacion],["Fecha recibo",m.fechaRecibo],["Últ. modificación",m.fechaModificacion]];
+    ["Peso",m.peso!=null?`${m.peso}${m.pesoU||m.pesoUnidad?" "+(m.pesoU||m.pesoUnidad):m.pesoUnidadPendiente?" (unidad sin definir)":""}`:""],["Orden",m.ordenMaterial],["PO number",m.poNumber],
+    ["Existencia",existTxt(m)],["Últ. modificación",m.fechaModificacion]];
   $("ficha").innerHTML=rows.filter(r=>r[1]).map(r=>`<div class="d"><b>${r[0]}</b><span>${esc(r[1])}</span></div>`).join("");
   $("bPrint").disabled=$("bPng").disabled=!actual;
   const ind=!!actual&&esIndividual(m);$("piezasBox").hidden=!ind;$("pzDet").open=false;$("pzGrid").innerHTML="";
@@ -12881,7 +13033,7 @@ function etqHTML(m,n,src){
   const f=ETQ,N=m.cantidad,tag=n?`PIEZA ${n} / ${N}`:`MASTER · ${esc(N)} ${esc(m.um)}`;
   let t=`<b class="cd">${esc(m.codigo)}</b><span class="tg">${tag}</span>`;
   if(f.lv>=1)t+=`<small class="ds">${esc(m.descripcion)}</small>`;
-  if(f.lv>=2)t+=[m.lote?"Lote: "+m.lote:"",m.esMP?dimsTxt(m):"",m.peso!=null?`Peso: ${m.peso}${m.pesoU||m.pesoUnidad?" "+(m.pesoU||m.pesoUnidad):m.pesoUnidadPendiente?" (unidad sin definir)":""}`:"",m.ubicacion?"Ubic: "+m.ubicacion:"",m.fechaRecibo?"Recibo: "+m.fechaRecibo:""].filter(Boolean).map(x=>`<small>${esc(x)}</small>`).join("");
+  if(f.lv>=2)t+=[m.lote?"Lote: "+m.lote:"",seccionEspecificacion(m),m.longitudIndividual!=null?`Long IND: ${m.longitudIndividual} mm`:"",m.peso!=null?`Peso: ${m.peso}${m.pesoU||m.pesoUnidad?" "+(m.pesoU||m.pesoUnidad):m.pesoUnidadPendiente?" (unidad sin definir)":""}`:"",m.ubicacion?"Ubic: "+m.ubicacion:"",m.fechaRecibo?"Recibo: "+m.fechaRecibo:""].filter(Boolean).map(x=>`<small>${esc(x)}</small>`).join("");
   return `<div class="pz${n?"":" mst"}"><img src="${src}" alt="QR"><div class="tx">${t}</div></div>`}
 function cssEtq(){const f=ETQ;
   return `@media print{@page{size:auto;margin:0}
@@ -12941,7 +13093,7 @@ $("bPrint").onclick=()=>{if(!actual)return;const u=qrData(actual,0);if(!u){toast
 function render(){
   const codigos=new Set(mats.map(m=>m.codigo));seleccionados.forEach(c=>{if(!codigos.has(c))seleccionados.delete(c)});
   const q=$("buscar").value.toLowerCase().trim(),t=$("ftipo").value;
-  let lista=mats.map((m,i)=>({m,i})).filter(({m})=>(!t||(t==="mp")===!!m.esMP)&&(!q||[m.codigo,m.descripcion,m.lote,m.proveedor,m.ubicacion,m.tipoMaterial,m.especificacionMedida,m.manufactura,m.numeroHeat,m.numeroLoteMP,m.numeroCertificado,m.totalMM,m.tipoMoneda,m.ordenMaterial,m.poNumber].join(" ").toLowerCase().includes(q)));
+  let lista=mats.map((m,i)=>({m,i})).filter(({m})=>(!t||(t==="mp")===!!m.esMP)&&(!q||[m.codigo,m.descripcion,m.lote,m.proveedor,m.ubicacion,m.tipoMaterial,m.especificacionMedida,m.longitudIndividual,m.manufactura,m.numeroHeat,m.numeroLoteMP,m.numeroCertificado,m.totalMM,m.tipoMoneda,m.ordenMaterial,m.poNumber].join(" ").toLowerCase().includes(q)));
   if(orden.k)lista.sort((a,b)=>{const x=a.m[orden.k],y=b.m[orden.k];const r=typeof x==="number"?x-y:String(x??"").localeCompare(String(y??""),"es",{numeric:true});return orden.asc?r:-r});
   $("tbody").innerHTML=lista.map(({m,i})=>`<tr>
     <td><input type="checkbox" class="row-select" data-select="${esc(m.codigo)}" aria-label="Seleccionar ${esc(m.codigo)}" ${seleccionados.has(m.codigo)?"checked":""}></td>
@@ -12954,6 +13106,105 @@ function render(){
   $("sTot").textContent=`${mats.length} registros`;$("sMp").textContent=`${mp} materia prima`;$("sGen").textContent=`${mats.length-mp} generales`;
   syncBulkActions();
 }
+function renderInventario(){
+  const q=$("invBuscar").value.trim().toLocaleLowerCase(),tipo=$("invTipo").value;
+  const lista=mats.filter(m=>{const loc=ubicaciones.find(x=>x.codigo===m.ubicacionCodigo);return(!tipo||(tipo==="mp")===!!m.esMP)&&(!q||[m.codigo,m.descripcion,m.ubicacion,m.ubicacionCodigo,loc?.nombre,m.lote,m.numeroHeat,m.numeroLoteMP].join(" ").toLocaleLowerCase().includes(q))});
+  $("invBody").innerHTML=lista.map(m=>{const loc=ubicaciones.find(x=>x.codigo===m.ubicacionCodigo);return`<tr><td><b>${esc(m.codigo)}</b></td><td>${m.esMP?'<span class="tag t1">M. PRIMA</span>':'<span class="tag t2">GENERAL</span>'}</td><td class="l">${esc(m.descripcion)}</td><td>${esc(existTxt(m))}</td><td>${esc(loc?`${loc.nombre} (${loc.codigo})`:m.ubicacion||"Sin ubicación")}</td></tr>`}).join("");
+  $("invVacio").hidden=lista.length>0;
+}
+$("invBuscar").oninput=$("invTipo").onchange=renderInventario;
+function renderUbicaciones(){
+  const estado=$("ubiEstado"),lista=$("ubiLista"),form=$("ubiForm");
+  if(ubicacionesError){estado.innerHTML=`<div class="res bad">${esc(ubicacionesError)} <a href="./supabase_ubicaciones.sql" download>Descargar SQL</a></div>`;form.hidden=true;lista.innerHTML="";return}
+  estado.innerHTML="";form.hidden=false;
+  if(!ubicaciones.length){lista.innerHTML='<div class="empty">Todavía no hay ubicaciones registradas.</div>';return}
+  lista.innerHTML=ubicaciones.map((loc,i)=>`<article class="ubicacion-card"><div><b>${esc(loc.nombre)}</b><div class="d"><b>Código</b><span>${esc(loc.codigo)}</span></div><div class="acts"><button type="button" class="bs" data-ubi-qr="${i}">Ver QR</button></div><div id="ubiQr-${i}" hidden></div></div></article>`).join("");
+  lista.querySelectorAll("[data-ubi-qr]").forEach(btn=>btn.onclick=()=>mostrarQrUbicacion(ubicaciones[+btn.dataset.ubiQr],+btn.dataset.ubiQr));
+}
+function codigoQrUbicacion(codigo){return`TRAZABILIDAD-UBICACION:${codigo}`}
+function mostrarQrUbicacion(loc,i){
+  const box=$(`ubiQr-${i}`);if(!box)return;
+  const qr=dibujarQR(codigoQrUbicacion(loc.codigo),240);
+  if(!qr){toast("No se pudo generar el QR de la ubicación",1);return}
+  box.hidden=false;box.innerHTML=`<div class="acts"><button type="button" class="bs" data-ubi-descargar>⬇️ Descargar QR</button><button type="button" class="bs" data-ubi-imprimir>🖨️ Imprimir QR</button></div>`;
+  qr.className="ubicacion-qr";box.prepend(qr);
+  box.querySelector("[data-ubi-descargar]").onclick=()=>{const a=document.createElement("a");a.href=qr.toDataURL("image/png");a.download=`QR_${loc.codigo}.png`;a.click()};
+  box.querySelector("[data-ubi-imprimir]").onclick=()=>imprimirEtiquetaUbicacion(loc,qr.toDataURL("image/png"));
+}
+function imprimirEtiquetaUbicacion(loc,src){
+  const e=$("etiqueta");e.className="hoja";e.innerHTML=`<div class="pz"><img src="${src}" alt="QR ${esc(loc.codigo)}"><div class="tx"><b class="cd">${esc(loc.codigo)}</b><span class="tg">UBICACIÓN</span><small>${esc(loc.nombre)}</small></div></div>`;
+  let st=$("etqCss");if(!st){st=document.createElement("style");st.id="etqCss";document.head.appendChild(st)}
+  st.textContent=cssEtq();window.addEventListener("afterprint",limpiarEtqCss,{once:true});window.print();
+}
+function procesarEscaneoInventario(txt){
+  const raw=String(txt||"").trim(),prefijo="TRAZABILIDAD-UBICACION:";
+  if(raw.toUpperCase().startsWith(prefijo)){
+    const codigo=raw.slice(prefijo.length).trim(),loc=ubicaciones.find(x=>x.codigo.toLowerCase()===codigo.toLowerCase());
+    if(!loc){toast(`Ubicación no registrada: ${codigo}`,1);return}
+    ubicacionDestino=loc;$("ubiDestino").textContent=`${loc.nombre} (${loc.codigo})`;renderAsignacion();toast(`Destino seleccionado: ${loc.nombre}`);$("ubiScan").focus();return
+  }
+  const cod=codDe(raw).toLowerCase(),m=mats.find(x=>x.codigo.toLowerCase()===cod);
+  if(!m){toast(`Código no registrado: ${cod}`,1);return}
+  if(!ubicacionDestino){toast("Primero escanea el QR de la ubicación destino.",1);return}
+  if(asignacionItems.some(x=>x.codigo.toLowerCase()===m.codigo.toLowerCase())){toast(`${m.codigo} ya está en la lista de asignación`,1);return}
+  const e=existencia(m);if(e.rest<=0){toast(`${m.codigo} no tiene existencia disponible`,1);return}
+  asignacionItems.push({codigo:m.codigo});renderAsignacion();
+}
+function renderAsignacion(){
+  $("asigLista").innerHTML=asignacionItems.map((item,i)=>{const m=mats.find(x=>x.codigo===item.codigo);return m?`<div class="asig-item"><span><b>${esc(m.codigo)}</b> · ${esc(m.descripcion)} · ${esc(existTxt(m))}</span><button type="button" class="bd" data-asig-quitar="${i}">Quitar</button></div>`:""}).join("");
+  $("asigLista").querySelectorAll("[data-asig-quitar]").forEach(b=>b.onclick=()=>{asignacionItems.splice(+b.dataset.asigQuitar,1);renderAsignacion()});
+  $("ubiConfirmar").disabled=!ubicacionDestino||!asignacionItems.length||!!ubicacionesError;
+}
+async function confirmarAsignacion(){
+  if(!ubicacionDestino||!asignacionItems.length)return;
+  const items=asignacionItems.map(x=>mats.find(m=>m.codigo===x.codigo)).filter(Boolean);
+  if(items.length!==asignacionItems.length){toast("Uno o más materiales ya no están disponibles. Actualice e intente de nuevo.",1);await cargar();renderAsignacion();return}
+  const mismo=items.filter(m=>m.ubicacionCodigo===ubicacionDestino.codigo||m.ubicacion===ubicacionDestino.nombre);
+  if(mismo.length){toast(`Ya están en ${ubicacionDestino.nombre}: ${mismo.map(m=>m.codigo).join(", ")}`,1);return}
+  const folio=`UBI-${Date.now()}`;
+  const payload=items.map(m=>{const e=existencia(m);return{codigo:m.codigo,existencia:{modo:e.modo,cantidad:e.modo==="pz"?e.rest:e.qty,longitud:e.modo==="long"?e.rest:null,unidad:e.u,peso:e.peso?.peso??null,pesoUnidad:e.peso?.u??null}}});
+  $("ubiConfirmar").disabled=true;
+  try{
+    const{data,error}=await sb.rpc("asignar_inventario_ubicacion",{p_ubicacion_codigo:ubicacionDestino.codigo,p_folio:folio,p_items:payload});
+    if(error)throw error;
+    if(Number(data)!==items.length)throw new Error(`Respuesta incompleta del servidor (${data??"sin cantidad"})`);
+    asignacionItems=[];renderAsignacion();
+    try{await Promise.all([cargar(),cargarUbicaciones()])}
+    catch(err){errDB(err,"Asignación registrada, pero no se pudo actualizar la vista")}
+    toast(`Inventario asignado a ${ubicacionDestino.nombre} · ${folio}`);
+  }catch(err){errDB(err,"No se pudo asignar el inventario");$("ubiConfirmar").disabled=false}
+}
+function renderHistUbicaciones(){
+  const filas=movimientosUbicacion.slice().sort((a,b)=>new Date(b.created_at)-new Date(a.created_at));
+  $("ubiHistBody").innerHTML=filas.map(x=>`<tr><td>${esc(new Date(x.created_at).toLocaleString("es-MX"))}</td><td>${esc(x.folio)}</td><td>${esc(x.codigo_material)}</td><td>${esc(x.ubicacion_anterior||"Sin ubicación")}</td><td>${esc(x.ubicacion_nueva)}</td><td>${esc(resumenExistencia(x.existencia))}</td></tr>`).join("");
+  $("ubiHistVacio").hidden=filas.length>0;
+}
+function resumenExistencia(e){
+  if(!e)return"";
+  const cantidad=e.modo==="long"?`${fmt(e.longitud)} ${e.unidad||"mm"}`:`${fmt(e.cantidad)} ${e.unidad||"PZ"}`;
+  return`${cantidad}${e.peso!=null?` · ${fmt(e.peso)} ${e.pesoUnidad}`:""}`;
+}
+function siguienteCodigoUbicacion(){
+  const max=ubicaciones.reduce((n,l)=>Math.max(n,Number(/^(?:UBI-)?(\d+)$/i.exec(l.codigo)?.[1])||0),0);
+  $("ubiCodigo").value=`UBI-${String(max+1).padStart(3,"0")}`;
+}
+$("ubiAuto").onclick=siguienteCodigoUbicacion;
+$("ubiForm").addEventListener("submit",async e=>{
+  e.preventDefault();const codigo=$("ubiCodigo").value.trim(),nombre=$("ubiNombre").value.trim();
+  if(!codigo||!nombre)return;
+  $("ubiGuardar").disabled=true;
+  try{const{error}=await sb.from("ubicaciones").insert({codigo,nombre});if(error)throw error;
+    $("ubiNombre").value="";siguienteCodigoUbicacion();await cargarUbicaciones();toast(`Ubicación guardada: ${nombre}`);
+  }catch(err){errDB(err,"No se pudo guardar la ubicación")}
+  finally{$("ubiGuardar").disabled=false}
+});
+function manejarLectorUbicacion(){
+  const field=$("ubiScan"),valor=field.value.trim();if(!valor)return;
+  procesarEscaneoInventario(valor);field.value="";
+}
+$("ubiScan").addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();manejarLectorUbicacion()}});
+$("ubiConfirmar").onclick=confirmarAsignacion;
+$("ubiLimpiar").onclick=()=>{asignacionItems=[];ubicacionDestino=null;$("ubiDestino").textContent="Sin seleccionar";renderAsignacion()};
 function syncBulkActions(){
   const visible=[...$("tbody").querySelectorAll("[data-select]")],checked=visible.filter(c=>c.checked).length,all=$("selectAll");
   all.checked=visible.length>0&&checked===visible.length;all.indeterminate=checked>0&&checked<visible.length;
@@ -13003,10 +13254,11 @@ $("bDelAll").onclick=async()=>{
 };
 function editar(i){
   const m=mats[i];resetForm();$("editIndex").value=i;
-  const values={codigo:m.codigo,descripcion:m.descripcion,um:m.um,cantidad:m.cantidad,ubicacion:m.ubicacion,fechaRecibo:m.fechaRecibo,
-    tipoMaterial:m.tipoMaterial??(m.esMP?"Materia prima":"Material general"),especificacionMedida:m.especificacionMedida,manufactura:m.manufactura,
+  const values={codigo:m.codigo,descripcion:m.descripcion,um:m.um,cantidad:m.cantidad,ubicacion:m.ubicacion,fechaRecibo:m.fechaRecibo,tipoRegistro:m.tipoRegistro|| (m.esMP?"MP":"GENERAL"),seccionMaterial:m.seccionMaterial,altoMaterial:m.alto,anchoMaterial:m.ancho,diametroMaterial:m.diametro,
+    tipoMaterial:m.tipoMaterial??(m.esMP?"Materia prima":"Material general"),especificacionMedida:m.especificacionMedida,longitudIndividual:m.longitudIndividual,manufactura:m.manufactura,
     numeroHeat:m.numeroHeat,numeroLoteMP:m.numeroLoteMP??m.lote,numeroCertificado:m.numeroCertificado,totalMM:m.totalMM,peso:m.peso,ordenMaterial:m.ordenMaterial,poNumber:m.poNumber};
   Object.entries(values).forEach(([id,value])=>$(id).value=value??"");
+  actualizarCamposSeccion();
   $("um").value="PZ";
   $("pesoU").value=m.pesoU||m.pesoUnidad||(m.pesoUnidadPendiente?"":(["LB","KG"].includes(m.um)?m.um:"LB"));
   CAMPOS_EXTRA.forEach(([key,id])=>{
@@ -13024,11 +13276,11 @@ async function bajar(nombre,contenido,tipo){
   const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([contenido],{type:tipo}));a.download=nombre;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}
 $("bJson").onclick=()=>{bajar("trazabilidad_materiales.json",JSON.stringify(mats,null,2),"application/json");toast("JSON exportado ⬇️")};
 $("bCsv").onclick=()=>{
-  const cols=["UBICACION","CODIGO","TIPO MATERIAL","DESCRIPCION","ESPECIFICACION MEDIDA","MANUFACTURA","N°HEAT","N°LOTE MP","N°CERT.","TOTAL MM","FECHA DE RECIBO","CTD","PESO","UM","ORDEN","PO NUMBER"];
+  const cols=["UBICACION","CODIGO","CLASIFICACION","TIPO MATERIAL","DESCRIPCION","ESPECIFICACION MEDIDA","SECCION","ALTO (MM)","ANCHO (MM)","DIAMETRO (MM)","LONGITUD IND (MM)","MANUFACTURA","N°HEAT","N°LOTE MP","N°CERT.","TOTAL MM","FECHA DE RECIBO","CTD","PESO","UM","ORDEN","PO NUMBER"];
   const c=v=>{let t=String(v??"");if(/^[=+\-@\t\r]/.test(t))t="'"+t;return `"${t.replace(/"/g,'""')}"`};
   const value=(m,key,v)=>m.noAplica?.[key]?"No aplica":v;
-  const rows=mats.map(m=>[m.ubicacion,m.codigo,value(m,"tipoMaterial",m.tipoMaterial),m.descripcion,
-    value(m,"especificacionMedida",m.especificacionMedida),value(m,"manufactura",m.manufactura),value(m,"numeroHeat",m.numeroHeat),
+  const rows=mats.map(m=>[m.ubicacion,m.codigo,m.tipoRegistro==="MP"?"MATERIA PRIMA":"GENERAL",value(m,"tipoMaterial",m.tipoMaterial),m.descripcion,
+    value(m,"especificacionMedida",m.especificacionMedida),m.seccionMaterial,m.alto,m.ancho,m.diametro,value(m,"longitudIndividual",m.longitudIndividual),value(m,"manufactura",m.manufactura),value(m,"numeroHeat",m.numeroHeat),
     value(m,"numeroLoteMP",m.numeroLoteMP||m.lote),value(m,"numeroCertificado",m.numeroCertificado),value(m,"totalMM",m.totalMM),
     m.fechaRecibo,m.cantidad,value(m,"peso",m.peso),m.noAplica?.peso?"No aplica":m.pesoUnidadPendiente?"Sin especificar":m.pesoU||m.pesoUnidad||"LB",
     value(m,"ordenMaterial",m.ordenMaterial),value(m,"poNumber",m.poNumber)]);
@@ -13037,8 +13289,9 @@ $("bCsv").onclick=()=>{
 $("bImp").onclick=()=>$("fileImp").click();
 $("bExcel").onclick=()=>$("fileExcel").click();
 const EXCEL_HEADERS={
-  ubicacion:["ubicacion","location"],codigo:["codigo","code"],tipoMaterial:["tipomaterial","tipo"],descripcion:["descripcion","description"],
-  especificacionMedida:["especificacionmedida","especificacion","medida"],manufactura:["manufactura","fabricacion"],
+  ubicacion:["ubicacion","location"],codigo:["codigo","code"],tipoRegistro:["clasificacion","tiporegistro","categoriaregistro"],tipoMaterial:["tipomaterial","tipo"],descripcion:["descripcion","description"],
+  seccionMaterial:["seccion","seccionmaterial","forma","shape"],alto:["alto","altomm","height"],ancho:["ancho","anchomm","width"],diametro:["diametro","diametromm","diameter"],
+  especificacionMedida:["especificacionmedida","especificacion","medida"],longitudIndividual:["longitudind","longitudindmm","longituddelmaterial","longitudinddelmaterial","longitudindividual","longitudindividualmm","longitudindividualdelmaterial","longitudpza","longitudpieza","longitudporpieza","longind","longindmm"],manufactura:["manufactura","fabricacion"],
   numeroHeat:["nheat","numeroheat","heat"],numeroLoteMP:["nlotemp","numerolotemp","lotemp"],
   numeroCertificado:["ncert","ncertificado","numerocertificado","certificado"],totalMM:["totalmm"],
   fechaRecibo:["fechaderecibo","fecharecibo","fecha"],cantidad:["ctd","cantidad","quantity"],
@@ -13071,6 +13324,20 @@ function fechaExcel(value){
   return"";
 }
 function esNoAplica(value){return["na","n/a","n.a.","no aplica","noaplica","no aplica."].includes(String(value??"").trim().toLowerCase())}
+function normalizarSeccion(value){
+  const s=String(value??"").trim().toUpperCase();
+  if(["SQ","SQUARE","CUADRADA","CUADRADO"].includes(s))return"SQ";
+  if(["FLAT","PLANA","PLANO"].includes(s))return"FLAT";
+  if(["RND","ROUND","REDONDA","REDONDO","RD"].includes(s))return"RND";
+  return"";
+}
+function inferirSeccion(texto){
+  const s=String(texto??"").toUpperCase();
+  if(/\b(?:SQ|SQUARE|CUADRADA|CUADRADO)\b/.test(s))return"SQ";
+  if(/\b(?:FLAT|PLANA|PLANO)\b/.test(s))return"FLAT";
+  if(/\b(?:RND|ROUND|REDONDA|REDONDO)\b/.test(s))return"RND";
+  return"";
+}
 function materialDesdeExcel(row,mapped,esMateriaPrima=false){
   const get=key=>valorCelda(row,mapped,key),text=key=>String(get(key)??"").trim(),raw={};
   Object.keys(EXCEL_HEADERS).forEach(key=>raw[key]=get(key));
@@ -13081,25 +13348,34 @@ function materialDesdeExcel(row,mapped,esMateriaPrima=false){
   const cantidad=numeroExcel(get("cantidad")),peso=numeroExcel(get("peso")),umOriginal=text("um").toUpperCase();
   const pesoUnitMap={LB:"LB",LBS:"LB",LIBRA:"LB",LIBRAS:"LB",KG:"KG",KGS:"KG",KILOGRAM:"KG",KILOGRAMO:"KG",KILOGRAMOS:"KG"};
   const umCantidad=["PZ","PZA","PIEZA","PIEZAS"].includes(umOriginal);
-  const esMP=esMateriaPrima||/materia\s*prima|^mp$/i.test(text("tipoMaterial"));
+  const tipoArchivo=text("tipoRegistro").toUpperCase(),esMP=/^(?:MP|MATERIA PRIMA)$/.test(tipoArchivo)||esMateriaPrima||/materia\s*prima|^mp$/i.test(text("tipoMaterial"));
+  const seccionMaterial=normalizarSeccion(get("seccionMaterial"))||inferirSeccion(`${text("especificacionMedida")} ${text("descripcion")}`);
   const fechaRecibo=fechaExcel(get("fechaRecibo"));
   if(!codigo||!descripcion||cantidad==null||cantidad<0||!fechaRecibo||(umOriginal&&!pesoUnitMap[umOriginal]&&!umCantidad&&!noAplica.peso))return null;
-  const extra=Object.fromEntries(CAMPOS_EXTRA.map(([key])=>[key,noAplica[key]?["peso","totalMM"].includes(key)?null:"":["peso","totalMM"].includes(key)?numeroExcel(raw[key]):stringValue(key)]));
+  const extra=Object.fromEntries(CAMPOS_EXTRA.map(([key])=>[key,noAplica[key]?["peso","totalMM","longitudIndividual"].includes(key)?null:"":["peso","totalMM","longitudIndividual"].includes(key)?numeroExcel(raw[key]):stringValue(key)]));
+  if(!noAplica.totalMM&&extra.longitudIndividual!=null)extra.totalMM=cantidad*extra.longitudIndividual;
   return{codigo,descripcion,lote:extra.numeroLoteMP,proveedor:"",um:"PZ",cantidad,ubicacion,fechaRecibo,
-    fechaModificacion:new Date().toLocaleString("es-MX"),esMP,peso,pesoU:extra.peso==null?null:(pesoUnitMap[umOriginal]||null),pesoUnidadPendiente:extra.peso!=null&&umCantidad,longitud:null,longU:null,
-    seccion:null,secU:null,diametro:null,alto:null,ancho:null,...extra,noAplica,despachos:[]};
+    fechaModificacion:new Date().toLocaleString("es-MX"),tipoRegistro:esMP?"MP":"GENERAL",seccionMaterial,esMP,peso,pesoU:extra.peso==null?null:(pesoUnitMap[umOriginal]||null),pesoUnidadPendiente:extra.peso!=null&&umCantidad,longitud:null,longU:null,
+    seccion:seccionMaterial==="RND"?"redondo":["SQ","FLAT"].includes(seccionMaterial)?"cuadrado":null,secU:"mm",
+    diametro:seccionMaterial==="RND"?numeroExcel(get("diametro")):null,
+    alto:["SQ","FLAT"].includes(seccionMaterial)?numeroExcel(get("alto")):null,
+    ancho:["SQ","FLAT"].includes(seccionMaterial)?numeroExcel(get("ancho")):null,...extra,noAplica,despachos:[]};
 }
 function consolidarExcelPorCodigo(materiales){
   const porCodigo=new Map();let filasAgrupadas=0;
-  const camposIguales=["tipoMaterial","especificacionMedida","manufactura","totalMM","ubicacion"];
+  const camposIguales=["tipoRegistro","seccionMaterial","tipoMaterial","especificacionMedida","manufactura","totalMM","ubicacion","alto","ancho","diametro"];
   const camposCombinables=["numeroHeat","numeroLoteMP","numeroCertificado"];
   materiales.forEach(m=>{
     const clave=m.codigo.toLocaleLowerCase(),anterior=porCodigo.get(clave);
     if(!anterior){porCodigo.set(clave,m);return}
-    for(const campo of camposIguales){
+    for(const campo of camposIguales.filter(c=>c!=="totalMM")){
       const a=String(anterior[campo]??"").trim(),b=String(m[campo]??"").trim();
       if(a&&b&&a!==b)throw new Error(`El código ${m.codigo} aparece con valores distintos en "${campo}". Corrija esas filas antes de importar.`);
+      if(!a&&b)anterior[campo]=m[campo];
     }
+    if(anterior.longitudIndividual!=null&&m.longitudIndividual!=null&&anterior.longitudIndividual!==m.longitudIndividual)
+      throw new Error(`El código ${m.codigo} aparece con longitudes individuales distintas. Corrija esas filas antes de importar.`);
+    if(anterior.longitudIndividual==null)anterior.longitudIndividual=m.longitudIndividual;
     camposCombinables.forEach(campo=>{
       const valores=[...new Set([anterior[campo],m[campo]].flatMap(v=>String(v??"").split(" / ")).map(v=>v.trim()).filter(Boolean))];
       anterior[campo]=valores.join(" / ");
@@ -13113,6 +13389,9 @@ function consolidarExcelPorCodigo(materiales){
       if(!anterior.pesoU)anterior.pesoU=m.pesoU;
     }
     anterior.pesoUnidadPendiente=anterior.peso!=null&&!anterior.pesoU;
+    if(anterior.longitudIndividual!=null&&!anterior.noAplica?.totalMM)
+      anterior.totalMM=anterior.cantidad*anterior.longitudIndividual;
+    else if(anterior.totalMM!=null&&m.totalMM!=null)anterior.totalMM+=m.totalMM;
     const descripciones=[...new Set([anterior.descripcion,m.descripcion].filter(Boolean))];
     anterior.descripcion=descripciones.join(" / ");
     anterior.fechaRecibo=[anterior.fechaRecibo,m.fechaRecibo].sort()[0];
@@ -13163,47 +13442,71 @@ $("fileImp").onchange=e=>{
 const FAC={mm:1,cm:10,m:1000,in:25.4};
 const r4=n=>Math.round(n*1e4)/1e4;
 function okU(u){return Object.prototype.hasOwnProperty.call(FAC,u)}
-function modoLong(m){return m.esMP&&m.um==="PZ"&&m.longitud>0}
+function longBase(m){
+  const individual=Number(m.longitudIndividual);
+  if(Number.isFinite(individual)&&individual>0)return{L:individual,u:"mm"};
+  const L=Number(m.longitud),u0=m.longU||m.longitudUnidad;
+  return{L,u:okU(u0)?u0:"mm"};
+}
+function modoLong(m){return m.esMP&&m.um==="PZ"&&longBase(m).L>0}
+function longitudEnBase(d,u){
+  const longitud=Number(d.longitud)||0,unidad=okU(d.unidad)?d.unidad:u;
+  return longitud*FAC[unidad]/FAC[u];
+}
+function pesoUnidad(m){const u=m.pesoU||m.pesoUnidad;return m.peso!=null&&!m.pesoUnidadPendiente&&Number.isFinite(Number(m.peso))&&Number(m.peso)>=0&&["LB","KG"].includes(u)?u:""}
+function pesoEquivalente(m,longitud,total){
+  const u=pesoUnidad(m),peso=Number(m.peso);
+  return u&&total>0&&Number.isFinite(peso)?{peso:r4(peso*longitud/total),u}:null;
+}
 function existencia(m){
   const ds=m.despachos||[];
-  if(modoLong(m)){const u0=m.longU||m.longitudUnidad,u=okU(u0)?u0:"mm",rest=r4(m.cantidad*m.longitud-ds.reduce((s,d)=>s+(d.longitud||0),0));return{modo:"long",u,L:m.longitud,rest,qty:r4(rest/m.longitud)}}
+  if(modoLong(m)){
+    const{L,u}=longBase(m),total=m.cantidad*L;
+    const surtido=ds.reduce((s,d)=>s+longitudEnBase(d,u),0),rest=r4(total-surtido);
+    return{modo:"long",u,L,total,rest,qty:r4(rest/L),peso:pesoEquivalente(m,rest,total)};
+  }
   return{modo:"pz",u:m.um,rest:r4(m.cantidad-ds.reduce((s,d)=>s+(d.cantidad||0),0))}
 }
-function existTxt(m){const e=existencia(m);return e.modo==="long"?`${fmt(e.rest)} ${e.u} (≈${fmt(e.qty)} pz)`:`${fmt(e.rest)} ${e.u}`}
-let sel=null,pend=1,stream=null,scanning=false,pzPend=[];
+function existTxt(m){const e=existencia(m);return e.modo==="long"?`${fmt(e.rest)} ${e.u} (≈${fmt(e.qty)} pz)${e.peso?` · ${fmt(e.peso.peso)} ${e.peso.u}`:""}`:`${fmt(e.rest)} ${e.u}`}
+let surItems=[],nextSurItem=1,stream=null,scanning=false,modoEscaneo="surtido";
 
 document.querySelectorAll(".tab").forEach(b=>b.onclick=()=>{
   document.querySelectorAll(".tab").forEach(x=>x.classList.toggle("on",x===b));
-  const s=b.dataset.v==="vSur";$("vReg").hidden=s;$("vSur").hidden=!s;
-  if(s){renderSur();renderHist();enfocar()}else{camOff();render()}
+  const vista=b.dataset.v;
+  $("vReg").hidden=vista!=="vReg";$("vSur").hidden=vista!=="vSur";$("vInv").hidden=vista!=="vInv";
+  if(vista==="vSur"){modoEscaneo="surtido";renderSur();renderHist();enfocar()}else{camOff();if(vista==="vInv"){modoEscaneo="inventario";renderInventario();renderUbicaciones();renderHistUbicaciones();renderAsignacion()}else{modoEscaneo="surtido";render()}}
 });
 function enfocar(){if(matchMedia("(pointer:fine)").matches)$("scanIn").focus()}
 
 function escanear(txt){
+  if(modoEscaneo==="inventario"){procesarEscaneoInventario(txt);return}
+  if(modoEscaneo==="inventario"){procesarEscaneoInventario(txt);return}
   const cod=codDe(txt).toLowerCase();
   const i=mats.findIndex(m=>m.codigo.toLowerCase()===cod);
   if(i<0){toast(`Código no registrado: ${cod}`,1);return}
   const pz=pzDe(txt);if(pz){escanearPieza(i,pz.n);return}
-  if(pzPend.length){pzPend=[];pend=0}
-  if(i===sel&&!modoLong(mats[i]))pend+=1;else if(i!==sel){sel=i;pend=1}
-  renderSur();if(modoLong(mats[i])&&$("sLen"))$("sLen").focus();
+  agregarSurItem(i);renderSur();
 }
-// QR individual de pieza: se acumulan las piezas escaneadas y se bloquean las ya surtidas
+// Los QR de pieza se agregan como renglones individuales y no permiten duplicados.
 function escanearPieza(i,n){
   const m=mats[i];
   if(!esIndividual(m)||n<1||n>m.cantidad){toast(`Pieza ${n} no válida para ${m.codigo}`,1);return}
   if(piezasSurt(m).has(n)){toast(`⚠ La pieza ${n}/${m.cantidad} de ${m.codigo} ya fue surtida`,1);return}
-  if(i!==sel){sel=i;pzPend=[]}
-  if(pzPend.includes(n)){toast(`La pieza ${n} ya está en el surtido actual`,1);return}
-  pzPend.push(n);pend=pzPend.length;renderSur();
+  if(surItems.some(x=>x.codigo.toLowerCase()===m.codigo.toLowerCase()&&x.piezas?.includes(n))){toast(`La pieza ${n} ya está en el surtido actual`,1);return}
+  agregarSurItem(i,n);renderSur();
 }
-const sc=$("scanIn");let sT;
+function agregarSurItem(i,pieza=null){
+  const m=mats[i],e=existencia(m),longitud=pieza&&e.modo==="long"?String(e.L):"";
+  surItems.push({id:nextSurItem++,codigo:m.codigo,cantidad:1,longitud,unidad:e.modo==="long"?e.u:"",piezas:pieza?[pieza]:[]});
+}
+const sc=$("scanIn");let sT,ubiScanT;
 sc.addEventListener("input",()=>{clearTimeout(sT);if(/Código:/.test(sc.value)||/#[dc]=/.test(sc.value))sT=setTimeout(()=>{if(sc.value){escanear(sc.value);sc.value=""}},250)});
 sc.addEventListener("keydown",e=>{
   if(e.key!=="Enter"||e.shiftKey)return;const v=sc.value.trim();
   if(!v||/^TRAZABILIDAD/i.test(v))return;
   e.preventDefault();clearTimeout(sT);escanear(v);sc.value="";
 });
+$("ubiScan").addEventListener("input",()=>{clearTimeout(ubiScanT);if($("ubiScan").value.includes("TRAZABILIDAD-UBICACION:")||/#[dc]=/.test($("ubiScan").value))ubiScanT=setTimeout(manejarLectorUbicacion,250)});
 
 // Cámara (BarcodeDetector si existe; si no, jsQR)
 let det=null,audioCtx=null,wake=null,torchOn=false,busy=false,tUlt=0,txtUlt="",vistoUlt=0;
@@ -13211,7 +13514,7 @@ try{if("BarcodeDetector" in window)det=new BarcodeDetector({formats:["qr_code"]}
 function compacto(){try{return localStorage.getItem("qr_compacto2")!=="0"}catch{return true}}
 $("qrCompacto").checked=compacto();
 $("qrCompacto").onchange=()=>{try{localStorage.setItem("qr_compacto2",$("qrCompacto").checked?"1":"0")}catch{}if(actual)mostrar(actual)};
-if(!window.isSecureContext||!navigator.mediaDevices)$("camAviso").hidden=false;
+if(!window.isSecureContext||!navigator.mediaDevices){$("camAviso").hidden=false;$("invCamAviso").hidden=false}
 if(matchMedia("(pointer:fine)").matches)$("manual").open=true;
 function feedback(){
   navigator.vibrate&&navigator.vibrate(60);
@@ -13219,20 +13522,22 @@ function feedback(){
   const w=$("camWrap");w.classList.add("ok");setTimeout(()=>w.classList.remove("ok"),300);
 }
 async function camOn(){
-  if(!window.isSecureContext||!navigator.mediaDevices){$("camAviso").hidden=false;toast("La cámara en vivo requiere HTTPS",1);return}
+  if(!window.isSecureContext||!navigator.mediaDevices){$("camAviso").hidden=false;$("invCamAviso").hidden=false;toast("La cámara en vivo requiere HTTPS",1);return}
   try{
     audioCtx=audioCtx||new(window.AudioContext||window.webkitAudioContext)();
     stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:"environment"},width:{ideal:1920},height:{ideal:1080}},audio:false});
     const tr=stream.getVideoTracks()[0],cap=tr.getCapabilities?tr.getCapabilities():{};
     if(cap.focusMode&&cap.focusMode.includes("continuous"))tr.applyConstraints({advanced:[{focusMode:"continuous"}]}).catch(()=>{});
     torchOn=false;$("bTorch").hidden=!cap.torch;
-    $("video").srcObject=stream;await $("video").play();$("camWrap").hidden=false;scanning=true;$("bCam").textContent="⏹ Detener cámara";
+    $("video").srcObject=stream;await $("video").play();$("camWrap").hidden=false;scanning=true;$("bCam").textContent="⏹ Detener cámara";$("bCamInv").textContent="⏹ Detener cámara";
     try{wake=await navigator.wakeLock.request("screen")}catch{}
     bucle();
-  }catch(e){toast(e.name==="NotAllowedError"?"Permiso de cámara denegado. Actívelo en los ajustes del navegador.":"No se pudo abrir la cámara. Use 📸 Foto del QR.",1)}
+  }catch(e){toast(e.name==="NotAllowedError"?"Permiso de cámara denegado. Actívelo en los ajustes del navegador.":"No se pudo abrir la cámara.",1)}
 }
-function camOff(){scanning=false;if(stream)stream.getTracks().forEach(t=>t.stop());stream=null;if(wake){wake.release().catch(()=>{});wake=null}$("camWrap").hidden=true;$("bCam").textContent="📷 Escanear con cámara"}
-$("bCam").onclick=()=>scanning?camOff():camOn();
+function camOff(){scanning=false;if(stream)stream.getTracks().forEach(t=>t.stop());stream=null;if(wake){wake.release().catch(()=>{});wake=null}$("camWrap").hidden=true;$("bCam").textContent="📷 Escanear con cámara";$("bCamInv").textContent="📷 Escanear ubicación y materiales"}
+$("bCam").onclick=()=>{if(scanning){camOff();return}modoEscaneo="surtido";camOn()};
+$("bCamInv").onclick=()=>{if(scanning){camOff();return}modoEscaneo="inventario";camOn()};
+$("bCamClose").onclick=camOff;
 $("bTorch").onclick=()=>{torchOn=!torchOn;stream.getVideoTracks()[0].applyConstraints({advanced:[{torch:torchOn}]}).catch(()=>toast("Linterna no disponible",1))};
 document.addEventListener("visibilitychange",()=>{if(document.hidden)camOff()});
 async function leer(v){
@@ -13246,93 +13551,202 @@ function bucle(){
     leer(v).then(t=>{const n=Date.now();if(t){vistoUlt=n;if(t!==txtUlt){txtUlt=t;feedback();escanear(t)}}else if(n-vistoUlt>700)txtUlt=""}).catch(()=>{}).finally(()=>{busy=false})}
   requestAnimationFrame(bucle);
 }
-// Foto del QR (funciona sin HTTPS)
-$("fotoIn").onchange=async e=>{
-  const f=e.target.files[0];e.target.value="";if(!f)return;
-  try{
-    const bmp=await createImageBitmap(f),s=Math.min(1,1600/Math.max(bmp.width,bmp.height)),w=Math.round(bmp.width*s),hh=Math.round(bmp.height*s),cv=$("camCv");
-    cv.width=w;cv.height=hh;const x=cv.getContext("2d",{willReadFrequently:true});x.drawImage(bmp,0,0,w,hh);
-    let t=null;if(det){try{const r=await det.detect(cv);if(r[0])t=r[0].rawValue}catch{}}
-    if(!t){const r=jsQR(x.getImageData(0,0,w,hh).data,w,hh,{inversionAttempts:"attemptBoth"});t=r&&r.data}
-    if(t){feedback();escanear(t)}else toast("No se detectó QR. Acerque más, enfoque y evite reflejos.",1);
-  }catch{toast("No se pudo leer la foto",1)}
-};
-
 // Panel de surtido
 function renderSur(){
   const P=$("sPanel");
-  if(sel==null||!mats[sel]){sel=null;P.innerHTML='<div class="empty">Escanee un QR para iniciar el surtido</div>';return}
-  const m=mats[sel],e=existencia(m);
-  const rows=[["Código",m.codigo],["Descripción",m.descripcion],["Lote",m.lote],["Ubicación",m.ubicacion],["Existencia",existTxt(m)],["Piezas escaneadas",pzPend.length?pzPend.slice().sort((a,b)=>a-b).join(", "):""]];
-  let h=rows.filter(r=>r[1]).map(r=>`<div class="d"><b>${r[0]}</b><span>${esc(r[1])}</span></div>`).join("");
-  if(e.modo==="long")h+=`<div style="margin-top:12px"><label>Longitud a surtir (pieza de ${esc(fmt(e.L))} ${esc(e.u)})</label><div class="row"><input type="number" id="sLen" min="0" step="any" inputmode="decimal" placeholder="0" value="${pzPend.length?r4(pzPend.length*e.L):""}"><select id="sU">${["mm","cm","m","in"].map(u=>`<option${u===e.u?" selected":""}>${u}</option>`).join("")}</select></div></div>`;
-  else h+=`<div style="margin-top:12px"><label>Cantidad a surtir (cada escaneo suma 1)</label><div class="row" style="align-items:center"><button type="button" class="bs" id="sMenos">−</button><input type="number" id="sCnt" min="0" step="${m.um==="PZ"?1:"any"}" value="${pend}"><button type="button" class="bs" id="sMas">+</button></div></div>`;
-  h+=`<div class="res" id="sRes"></div><div class="acts"><button type="button" class="bp" id="sOk">✅ Confirmar surtido</button><button type="button" class="bd" id="sNo">Limpiar</button></div>`;
+  if(!surItems.length){P.innerHTML='<div class="empty">Escanee los QR de los materiales para agregarlos a la salida</div>';return}
+  let h=`<div class="res">Renglones en esta salida: <b>${surItems.length}</b>. Cada escaneo agrega una línea nueva, aunque el código se repita.</div>`;
+  h+=surItems.map((item,n)=>{
+    const m=mats.find(x=>x.codigo.toLowerCase()===item.codigo.toLowerCase());if(!m)return"";
+    const e=existencia(m),lote=m.numeroLoteMP||m.lote||"";
+    return`<section class="mp" style="margin-top:10px"><div class="acts" style="margin:0 0 8px;justify-content:space-between"><b>${n+1}. ${esc(m.codigo)} · ${m.esMP?"Materia prima":"General"}</b><button type="button" class="bd" data-quitar="${item.id}">Quitar</button></div>
+      <div class="d"><b>Descripción</b><span>${esc(m.descripcion)}</span></div>
+      ${lote?`<div class="d"><b>Lote / Heat</b><span>${esc([lote,m.numeroHeat].filter(Boolean).join(" / "))}</span></div>`:""}
+      <div class="d"><b>Existencia actual</b><span>${esc(existTxt(m))}</span></div>
+      ${e.modo==="long"?`<label for="sLen-${item.id}">Longitud a surtir (pieza de ${esc(fmt(e.L))} ${esc(e.u)})</label><div class="row"><input type="number" id="sLen-${item.id}" min="0" step="any" inputmode="decimal" placeholder="Longitud" value="${esc(item.longitud)}"><select id="sU-${item.id}">${["mm","cm","m","in"].map(u=>`<option value="${u}"${(item.unidad||e.u)===u?" selected":""}>${u}</option>`).join("")}</select></div>`:
+      `<label for="sCnt-${item.id}">Cantidad a surtir (${esc(m.um)})</label><input type="number" id="sCnt-${item.id}" min="0" step="any" value="${esc(item.cantidad)}">`}
+      ${item.piezas?.length?`<small>Pieza QR: ${item.piezas.join(", ")}</small>`:""}
+      <div class="res" id="sItemRes-${item.id}"></div></section>`;
+  }).join("");
+  h+=`<div class="res" id="sRes"></div><div class="acts"><button type="button" class="bp" id="sOk">✅ Confirmar salida múltiple</button><button type="button" class="bd" id="sNo">Vaciar salida</button></div>`;
   P.innerHTML=h;
-  ["sLen","sCnt"].forEach(i=>$(i)&&$(i).addEventListener("input",calcSur));
-  if($("sU"))$("sU").onchange=calcSur;
-  if($("sMenos")){$("sMenos").onclick=()=>{$("sCnt").value=Math.max(0,(parseFloat($("sCnt").value)||0)-1);calcSur()};$("sMas").onclick=()=>{$("sCnt").value=(parseFloat($("sCnt").value)||0)+1;calcSur()}}
-  $("sNo").onclick=()=>{sel=null;pend=1;pzPend=[];renderSur();enfocar()};$("sOk").onclick=confirmarSur;calcSur();
+  surItems.forEach(item=>{
+    const len=$(`sLen-${item.id}`),unit=$(`sU-${item.id}`),cnt=$(`sCnt-${item.id}`);
+    if(len)len.oninput=()=>{item.longitud=len.value;calcSur()};
+    if(unit)unit.onchange=()=>{item.unidad=unit.value;calcSur()};
+    if(cnt)cnt.oninput=()=>{item.cantidad=Number(cnt.value);calcSur()};
+  });
+  P.querySelectorAll("[data-quitar]").forEach(b=>b.onclick=()=>{surItems=surItems.filter(x=>x.id!==Number(b.dataset.quitar));renderSur()});
+  $("sNo").onclick=()=>{surItems=[];renderSur();enfocar()};$("sOk").onclick=confirmarSur;calcSur();
 }
 function calcSur(){
-  const m=mats[sel],e=existencia(m),eu=esc(e.u),R=$("sRes");let d=null,txt="",bad=false;
-  if(e.modo==="long"){
-    const len=parseFloat($("sLen").value)||0,u=$("sU").value,lr=r4(len*FAC[u]/FAC[e.u]),q=r4(lr/e.L),quedan=r4(e.rest-lr);
-    if(len>0){
-      txt=`Surtir: <b>${fmt(len)} ${u}</b> = <b>${fmt(q)} pz</b> equivalentes (${fmt(e.L)} ${eu} c/u)<br>Quedará: ${fmt(quedan)} ${eu} (≈${fmt(r4(quedan/e.L))} pz)`;
-      if(quedan<0){bad=true;txt=`⚠ Excede la existencia (${fmt(e.rest)} ${eu})`}else d={modo:"longitud",longitud:lr,unidad:e.u,cantidad:q,piezasEq:q}
-    }else txt="Escriba la longitud a surtir.";
-  }else{
-    const n=parseFloat($("sCnt").value)||0,quedan=r4(e.rest-n);pend=n;
-    if(n>0){txt=`Surtir: <b>${fmt(n)} ${eu}</b><br>Quedará: ${fmt(quedan)} ${eu}`;
-      if(quedan<0){bad=true;txt=`⚠ Excede la existencia (${fmt(e.rest)} ${eu})`}else d={modo:"pieza",cantidad:n}}
-    else txt="Indique la cantidad a surtir.";
-  }
-  if(pzPend.length&&d&&Math.abs((d.modo==="longitud"?d.piezasEq:d.cantidad)-pzPend.length)>1e-6)txt+=`<br><small>⚠ La cantidad no coincide con las ${pzPend.length} pieza(s) escaneada(s); no se marcarán piezas individuales.</small>`;
-  R.innerHTML=txt;R.classList.toggle("bad",bad);$("sOk").disabled=!d;calcSur.d=d;
+  const totalPorCodigo=new Map(),salidas=[],errores=[];
+  surItems.forEach(item=>{
+    const m=mats.find(x=>x.codigo.toLowerCase()===item.codigo.toLowerCase());
+    if(!m){errores.push(`${esc(item.codigo)} ya no está registrado`);return}
+    const e=existencia(m),anterior=totalPorCodigo.get(m.codigo.toLowerCase())||0;
+    if(item.errorPieza){errores.push(`${esc(m.codigo)}: una pieza seleccionada ya fue surtida`);return}
+    let d=null,html="";
+    if(e.modo==="long"){
+      const len=Number(item.longitud)||0,u=okU(item.unidad)?item.unidad:e.u;
+      const lr=r4(len*FAC[u]/FAC[e.u]),disponible=r4(e.rest-anterior),quedan=r4(disponible-lr);
+      if(len<=0){html="Capture la longitud a surtir."}
+      else if(quedan<0){html=`⚠ Excede la existencia disponible para este renglón (${fmt(disponible)} ${esc(e.u)}).`;errores.push(`${esc(m.codigo)}: longitud total excedida`)}
+      else{
+        const peso=pesoEquivalente(m,lr,e.total),pesoRest=pesoEquivalente(m,quedan,e.total);
+        const piezas=item.piezas?.length===r4(lr/e.L)?item.piezas.slice():undefined;
+        d={modo:"longitud",longitud:lr,unidad:e.u,cantidad:r4(lr/e.L),piezasEq:r4(lr/e.L),...(piezas?{piezas}:{}),...(peso?{pesoSurtido:peso.peso,pesoU:peso.u}:{})};
+        html=`Surtir: <b>${fmt(lr)} ${esc(e.u)}</b>${peso?` · ≈ ${fmt(peso.peso)} ${peso.u}`:""}<br>Restante después de este renglón: ${fmt(quedan)} ${esc(e.u)}${pesoRest?` · ≈ ${fmt(pesoRest.peso)} ${pesoRest.u}`:""}`;
+        totalPorCodigo.set(m.codigo.toLowerCase(),anterior+lr);
+      }
+    }else{
+      const qty=Number(item.cantidad)||0,disponible=r4(e.rest-anterior),quedan=r4(disponible-qty);
+      if(qty<=0){html="Indique una cantidad mayor que cero."}
+      else if(quedan<0){html=`⚠ Excede la existencia disponible para este renglón (${fmt(disponible)} ${esc(e.u)}).`;errores.push(`${esc(m.codigo)}: cantidad total excedida`)}
+      else{
+        d={modo:"pieza",cantidad:qty,...(item.piezas?.length===qty?{piezas:item.piezas.slice()}:{})};
+        html=`Surtir: <b>${fmt(qty)} ${esc(e.u)}</b><br>Restante después de este renglón: ${fmt(quedan)} ${esc(e.u)}`;
+        totalPorCodigo.set(m.codigo.toLowerCase(),anterior+qty);
+      }
+    }
+    const R=$(`sItemRes-${item.id}`);if(R){R.innerHTML=html;R.classList.toggle("bad",!d)}
+    item.d=d;
+    if(d)salidas.push({item,m,d});
+  });
+  const R=$("sRes");
+  if(R){R.innerHTML=errores.length?`⚠ Revise antes de confirmar:<br>${errores.map(x=>`• ${x}`).join("<br>")}`:`${salidas.length} renglón(es) listos para registrar en una salida.`;R.classList.toggle("bad",errores.length>0)}
+  $("sOk").disabled=!salidas.length||errores.length>0||salidas.length!==surItems.length;
+  calcSur.items=errores.length?null:salidas;
 }
 async function confirmarSur(){
-  const d=calcSur.d;if(!d)return;const m=mats[sel];
-  const reg={...d,t:Date.now(),fecha:new Date().toLocaleString("es-MX"),orden:$("orden").value.trim()};
-  if(pzPend.length&&Math.abs((d.modo==="longitud"?d.piezasEq:d.cantidad)-pzPend.length)<1e-6)reg.piezas=pzPend.slice().sort((a,b)=>a-b);
+  const lineas=calcSur.items;if(!lineas?.length)return;const orden=$("orden").value.trim();
+  if(!orden){toast("Capture la orden de producción para generar el comprobante de salida.",1);$("orden").focus();return}
+  const t=Date.now(),folio=folioSalida(t),fecha=new Date(t).toLocaleString("es-MX"),porCodigo=new Map(),registros=[];
+  lineas.forEach(({m,d},i)=>{
+    const anteriores=porCodigo.get(m.codigo.toLowerCase())||[];
+    const temporal={...m,despachos:[...(m.despachos||[]),...anteriores]};
+    const reg={...d,t:t+i,folio,fecha,orden,
+      entrega:$("entrega").value.trim(),recibe:$("recibe").value.trim(),maquina:$("maquina").value.trim(),
+      motivo:$("motivo").value.trim(),observaciones:$("observaciones").value.trim(),
+      material:{codigo:m.codigo,descripcion:m.descripcion,tipoRegistro:m.tipoRegistro,lote:m.numeroLoteMP||m.lote,numeroHeat:m.numeroHeat,ubicacion:m.ubicacion,seccionMaterial:m.seccionMaterial,especificacionMedida:m.especificacionMedida}};
+    const exPost=existencia({...temporal,despachos:[...temporal.despachos,reg]});
+    reg.existenciaRestante=exPost.rest;reg.existenciaUnidad=exPost.u;
+    if(exPost.peso){reg.pesoRestante=exPost.peso.peso;reg.pesoRestanteU=exPost.peso.u}
+    porCodigo.set(m.codigo.toLowerCase(),[...anteriores,reg]);registros.push({m,d:reg});
+  });
   $("sOk").disabled=true;
-  try{const{error}=await sb.from("despachos").insert(desFila(m.codigo,reg));if(error)throw error}
-  catch(err){errDB(err,"No se pudo registrar el surtido");await cargar().catch(()=>{});if(sel!=null)renderSur();return}
-  await cargar().catch(()=>{});const m2=mats.find(x=>x.codigo===m.codigo)||m;
-  toast(`Surtido registrado ✔ · Quedan ${existTxt(m2)}`);sel=null;pend=1;pzPend=[];renderSur();renderHist();enfocar();
+  try{
+    const filas=registros.map(({m,d})=>desFila(m.codigo,d)),{error}=await sb.from("despachos").insert(filas);
+    if(error)throw error;
+  }catch(err){errDB(err,"No se pudo registrar la salida múltiple");await cargar().catch(()=>{});renderSur();return}
+  await cargar().catch(()=>{});
+  const confirmados=registros.map(({m,d})=>({m:mats.find(x=>x.codigo.toLowerCase()===m.codigo.toLowerCase())||m,d}));
+  imprimirSalidaGrupo(confirmados,folio);
+  toast(`Salida registrada ✔ · ${registros.length} renglón(es) · Folio ${folio}`);
+  surItems=[];renderSur();renderHist();enfocar();
+}
+function folioSalida(t){
+  const fecha=new Date(t),dia=`${fecha.getFullYear()}${String(fecha.getMonth()+1).padStart(2,"0")}${String(fecha.getDate()).padStart(2,"0")}`;
+  return`SAL-${dia}-${t}`;
 }
 function movs(){const L=[];mats.forEach((m,i)=>(m.despachos||[]).forEach((d,j)=>L.push({m,i,j,d})));return L.sort((a,b)=>b.d.t-a.d.t)}
-function surTxt(m,d){return(d.modo==="longitud"?`${fmt(d.longitud)} ${d.unidad} ≈ ${fmt(d.piezasEq)} pz`:`${fmt(d.cantidad)} ${m.um}`)+(d.piezas&&d.piezas.length?` (pzas ${d.piezas.join(",")})`:"")}
+function pesoSurtido(m,d){
+  const u=d.pesoU||pesoUnidad(m);
+  if(d.pesoSurtido!=null&&["LB","KG"].includes(u))return{peso:Number(d.pesoSurtido),u};
+  if(d.modo==="longitud"){
+    const e=existencia(m);
+    return pesoEquivalente(m,longitudEnBase(d,e.u),e.total);
+  }
+  return null;
+}
+function surTxt(m,d){
+  const base=d.modo==="longitud"?`${fmt(d.longitud)} ${d.unidad} ≈ ${fmt(d.piezasEq)} pz`:`${fmt(d.cantidad)} ${m.um}`;
+  const peso=d.modo==="longitud"?pesoSurtido(m,d):null;
+  return base+(peso?` · ≈ ${fmt(peso.peso)} ${peso.u}`:"")+(d.piezas&&d.piezas.length?` (pzas ${d.piezas.join(",")})`:"");
+}
+function imprimirSalida(m,d){
+  imprimirSalidaGrupo([{m,d}],d.folio||folioSalida(d.t));
+}
+function imprimirSalidaGrupo(items,folio){
+  if(!items.length)return;
+  const {d:base}=items[0];
+  const encabezados=[
+    ["Fecha y hora",base.fecha],["Orden de producción",base.orden],
+    ["Máquina / línea",base.maquina],["Motivo / uso",base.motivo]
+  ];
+  const renglones=items.map(({m,d})=>{
+    const p=d.modo==="longitud"?pesoSurtido(m,d):null;
+    const surtido=d.modo==="longitud"?`${fmt(d.longitud)} ${d.unidad} (${fmt(d.piezasEq)} pz eq.)`:`${fmt(d.cantidad)} ${m.um}`;
+    const despues={...m,despachos:[...(m.despachos||[]).filter(x=>x.t!==d.t),d]},rest=existencia(despues);
+    const restL=d.existenciaRestante??rest.rest,restU=d.existenciaUnidad||rest.u;
+    const restPeso=d.pesoRestante!=null?{peso:d.pesoRestante,u:d.pesoRestanteU}:rest.peso;
+    const restantes=`${fmt(restL)} ${restU}${restPeso?` (≈ ${fmt(restPeso.peso)} ${restPeso.u})`:""}`;
+    const material=d.material||m;
+    return`<tr><td>${esc(material.codigo)}</td><td>${esc(material.tipoRegistro==="MP"||m.esMP?"Materia prima":"General")}</td><td>${esc(material.descripcion)}</td>
+      <td>${esc([material.lote,material.numeroHeat].filter(Boolean).join(" / ")||"—")}</td>
+      <td>${esc([material.seccionMaterial,material.especificacionMedida].filter(Boolean).join(" · ")||"—")}</td>
+      <td>${esc(material.ubicacion||"—")}</td><td>${esc(surtido)}</td>
+      <td>${esc(p?`${fmt(p.peso)} ${p.u}`:"—")}</td><td>${esc(restantes)}</td></tr>`;
+  }).join("");
+  $("salidaView").innerHTML=`<article class="salida">
+    <div class="salida-top"><div><h1>Comprobante de salida de materiales</h1><div>Trazabilidad de materiales · Surtido a Producción</div></div><div class="folio">Folio<br>${esc(folio)}</div></div>
+    <h2>Datos de la salida</h2><table><tbody>${encabezados.map(([k,v])=>`<tr><th>${esc(k)}</th><td>${esc(v||"—")}</td></tr>`).join("")}
+      <tr><th>Entrega · Almacén</th><td>${esc(base.entrega||"—")}</td></tr><tr><th>Recibe · Producción</th><td>${esc(base.recibe||"—")}</td></tr></tbody></table>
+    <h2>Materiales surtidos · ${items.length} renglón(es)</h2><table class="renglones"><thead><tr><th>Código</th><th>Clasificación</th><th>Descripción</th><th>Lote / Heat</th><th>Sección / especificación</th><th>Ubicación</th><th>Surtido</th><th>Peso eq.</th><th>Existencia restante</th></tr></thead><tbody>${renglones}</tbody></table>
+    <h2>Observaciones</h2><div class="salida-nota">${esc(base.observaciones||"")}</div>
+    <div class="firmas"><div><div class="firma-linea"></div><div>Firma de quien entrega · Almacén</div><div>${esc(base.entrega||"Nombre: ____________________")}</div></div>
+    <div><div class="firma-linea"></div><div>Firma de quien recibe · Producción</div><div>${esc(base.recibe||"Nombre: ____________________")}</div></div></div>
+    <p style="margin-top:8mm;font-size:8pt">Conserve este comprobante como evidencia de entrega. El folio identifica todos los movimientos agrupados en esta salida.</p>
+  </article>`;
+  $("salidaView").hidden=false;
+  window.print();
+  $("salidaView").hidden=true;
+}
+function imprimirFolio(folio){
+  const items=movs().filter(({d})=>(d.folio||folioSalida(d.t))===folio);
+  if(items.length)imprimirSalidaGrupo(items,folio);
+}
 function renderHist(){
-  const L=movs().slice(0,100);
-  $("hBody").innerHTML=L.map(({m,i,j,d})=>`<tr><td>${esc(d.fecha)}</td><td><b>${esc(m.codigo)}</b></td><td>${esc(surTxt(m,d))}</td><td>${esc(d.orden||"—")}</td><td><button type="button" class="ic" data-i="${i}" data-j="${j}" title="Anular">↩️</button></td></tr>`).join("");
+  const L=movs().slice(0,100),groups=new Map();
+  L.forEach(row=>{
+    const order=String(row.d.orden||"").trim(),key=order?`orden:${order.toLocaleLowerCase()}`:`sin-orden:${row.m.codigo}:${row.d.t}`;
+    if(!groups.has(key))groups.set(key,{orden:order,items:[]});
+    groups.get(key).items.push(row);
+  });
+  $("hBody").innerHTML=[...groups.values()].map(g=>{
+    const materiales=new Set(g.items.map(({m})=>m.codigo)),ultima=g.items[0].d.fecha||"";
+    const detalles=g.items.map(({m,i,j,d})=>`<tr><td>${esc(d.fecha)}</td><td><b>${esc(m.codigo)}</b><br><small>${esc(d.folio||folioSalida(d.t))}</small></td><td>${esc(surTxt(m,d))}</td><td><button type="button" class="ic" data-action="pdf" data-folio="${esc(d.folio||folioSalida(d.t))}" title="PDF / Imprimir salida completa">📄</button> <button type="button" class="ic" data-action="anular" data-i="${i}" data-j="${j}" title="Anular este renglón">↩️</button></td></tr>`).join("");
+    return`<details class="sur-group"><summary><span class="sur-date">${esc(ultima)}</span><span class="sur-order">Orden: ${esc(g.orden||"Sin orden")}</span><span class="sur-count">${g.items.length} surtido(s) · ${materiales.size} material(es)</span></summary>
+      <div class="sur-group-body"><table><thead><tr><th>Fecha</th><th>Código / folio</th><th>Surtido</th><th>Acciones</th></tr></thead><tbody>${detalles}</tbody></table></div></details>`;
+  }).join("");
   $("hVacio").hidden=L.length>0;
 }
 $("hBody").addEventListener("click",async e=>{
-  const b=e.target.closest("button");if(!b)return;const m=mats[+b.dataset.i],d=m.despachos[+b.dataset.j];
+  const b=e.target.closest("button");if(!b)return;
+  if(b.dataset.action==="pdf"){imprimirFolio(b.dataset.folio);return}
+  const m=mats[+b.dataset.i],d=m.despachos[+b.dataset.j];
   if(confirm(`¿Anular el surtido de ${m.codigo} (${surTxt(m,d)})? La existencia se restituye.`)){try{const{error}=await sb.from("despachos").delete().eq("codigo",m.codigo).eq("t",d.t);if(error)throw error;await cargar();renderHist();renderSur();toast("Surtido anulado")}catch(err){errDB(err,"No se pudo anular")}}
 });
 $("bCsvS").onclick=()=>{
   const c=v=>{let t=String(v??"");if(/^[=+\-@\t\r]/.test(t))t="'"+t;return `"${t.replace(/"/g,'""')}"`};
-  const f=movs().map(({m,d})=>[d.fecha,m.codigo,m.descripcion,d.orden,d.modo,d.cantidad,m.um,d.longitud??"",d.unidad??"",(d.piezas||[]).join(" ")].map(c).join(","));
-  bajar("surtidos.csv","\ufeff"+["fecha,codigo,descripcion,orden,modo,cantidad,um,longitud,unidad,piezas",...f].join("\r\n"),"text/csv;charset=utf-8");toast("CSV exportado ⬇️");
+  const f=movs().map(({m,d})=>{const p=d.modo==="longitud"?pesoSurtido(m,d):null;return[d.folio||folioSalida(d.t),d.fecha,d.orden,d.entrega,d.recibe,d.maquina,d.motivo,d.observaciones,m.codigo,m.descripcion,d.modo,d.cantidad,m.um,d.longitud??"",d.unidad??"",p?.peso??"",p?.u??"",(d.piezas||[]).join(" ")].map(c).join(",")});
+  bajar("surtidos.csv","\ufeff"+["folio,fecha,orden,entrega,recibe,maquina,motivo,observaciones,codigo,descripcion,modo,cantidad,um,longitud,unidad,peso_equivalente,peso_um,piezas",...f].join("\r\n"),"text/csv;charset=utf-8");toast("CSV exportado ⬇️");
 };
 
 // --- Ficha: página que se abre al escanear el QR con la cámara del celular ---
 function limpiaP(o){
   const t=v=>v==null?"":String(v).slice(0,300),n=v=>v==null?null:(Number(v)||0);
   return{codigo:t(o.c),descripcion:t(o.d),lote:t(o.l),proveedor:t(o.p),um:"PZ",cantidad:n(o.q)??0,esMP:!!o.m,ubicacion:t(o.ub),fechaRecibo:t(o.fr),fechaModificacion:t(o.fm),
-    tipoMaterial:t(o.tm),especificacionMedida:t(o.em),manufactura:t(o.mf),numeroHeat:t(o.nh),numeroLoteMP:t(o.nl),numeroCertificado:t(o.nc),totalMM:t(o.tmm),tipoMoneda:t(o.mon),ordenMaterial:t(o.ord),poNumber:t(o.po),noAplica:o.na&&typeof o.na==="object"?o.na:{},
+    tipoRegistro:o.tr==="MP"||o.m? "MP":"GENERAL",seccionMaterial:["SQ","FLAT","RND"].includes(o.sm)?o.sm:"",tipoMaterial:t(o.tm),especificacionMedida:t(o.em),longitudIndividual:n(o.li),manufactura:t(o.mf),numeroHeat:t(o.nh),numeroLoteMP:t(o.nl),numeroCertificado:t(o.nc),totalMM:n(o.tmm),tipoMoneda:t(o.mon),ordenMaterial:t(o.ord),poNumber:t(o.po),noAplica:o.na&&typeof o.na==="object"?o.na:{},
     peso:n(o.pe),pesoU:o.pu==="LB"||o.pu==="KG"?o.pu:o.u==="LB"||o.u==="KG"?o.u:null,pesoUnidadPendiente:o.pu==="?",longitud:n(o.lo),longU:okU(o.lu)?o.lu:"mm",seccion:o.s==="cuadrado"?"cuadrado":"redondo",
     secU:["mm","cm","in"].includes(o.su)?o.su:"mm",diametro:n(o.di),alto:n(o.al),ancho:n(o.an),despachos:[],existSnap:t(o.x)}}
 function filasFicha(m,ex,pz){
   const et=pz?`Pieza ${pz.n} de ${pz.t||m.cantidad}`:`MASTER · ${m.cantidad} ${m.um}`;
   const st=pz&&ex?(piezasSurt(m).has(pz.n)?"⚠ SURTIDA":"En existencia"):"";
-  return[["Código",m.codigo],["Etiqueta",et],["Estado de la pieza",st],["Descripción",m.descripcion],["Lote / Colada",m.lote],["Proveedor",m.proveedor],
-    ["Tipo material",m.tipoMaterial],["Especificación medida",m.especificacionMedida],["Manufactura",m.manufactura],["N.º Heat",m.numeroHeat],["N.º lote MP",m.numeroLoteMP||m.lote],["N.º cert.",m.numeroCertificado],["Total mm",m.totalMM],["Fecha de recibo",m.fechaRecibo],["Cantidad",`${m.cantidad} ${m.um}`],
-    ["Peso",m.peso!=null?`${m.peso}${m.pesoU||m.pesoUnidad?" "+(m.pesoU||m.pesoUnidad):m.pesoUnidadPendiente?" (unidad sin definir)":""}`:""],["UM",m.um],["Orden",m.ordenMaterial],["PO number",m.poNumber],
-    ["Tipo",m.esMP?"Materia prima":"Material general"],["Dimensiones",dimsTxt(m)],["Longitud total",totalTxt(m)],
-    ["Existencia",ex?existTxt(m):""],["Existencia al imprimir la etiqueta",!ex&&m.existSnap?m.existSnap:""],["Ubicación",m.ubicacion],["Fecha recibo",m.fechaRecibo],["Últ. modificación",m.fechaModificacion]]}
+  return[["Código",m.codigo],["Etiqueta",et],["Estado de la pieza",st],["Clasificación",m.tipoRegistro==="MP"?"Materia prima":"Material general"],["Tipo material",m.tipoMaterial],["Descripción",m.descripcion],["Lote / Colada",m.lote],["Proveedor",m.proveedor],
+    ["Sección / especificación",seccionEspecificacion(m)],["Longitud IND",m.longitudIndividual!=null?`${m.longitudIndividual} mm`:""],["Manufactura",m.manufactura],["N.º Heat",m.numeroHeat],["N.º lote MP",m.numeroLoteMP||m.lote],["N.º cert.",m.numeroCertificado],["Total mm",m.totalMM],["Fecha de recibo",m.fechaRecibo],["Cantidad",`${m.cantidad} ${m.um}`],
+    ["Peso",m.peso!=null?`${m.peso}${m.pesoU||m.pesoUnidad?" "+(m.pesoU||m.pesoUnidad):m.pesoUnidadPendiente?" (unidad sin definir)":""}`:""],["Orden",m.ordenMaterial],["PO number",m.poNumber],
+    ["Existencia",ex?existTxt(m):""],["Existencia al imprimir la etiqueta",!ex&&m.existSnap?m.existSnap:""],["Últ. modificación",m.fechaModificacion]]}
 function salirFicha(){document.body.classList.remove("ficha");$("fichaView").hidden=true;document.title="Trazabilidad de Material · QR";try{history.replaceState(null,"",location.pathname+location.search)}catch{}}
 async function iniciarFicha(){
   const x=/#(?:[^#]*&)?(d|c)=([^&\s]+)/.exec(location.hash);if(!x)return;
