@@ -12422,7 +12422,23 @@ header{background:linear-gradient(90deg,var(--pri2),var(--pri));color:#fff;paddi
 header h1{font-size:1.15rem}
 .chips{display:flex;gap:8px;flex-wrap:wrap}
 .chip{background:rgba(255,255,255,.18);border-radius:20px;padding:4px 12px;font-size:.78rem;font-weight:600}
-main{max-width:1180px;margin:20px auto;padding:0 14px;display:grid;grid-template-columns:1.15fr .85fr;gap:20px;align-items:start}
+.app-layout{width:min(1600px,100%);margin:0 auto;padding:20px 24px;display:grid;grid-template-columns:224px minmax(0,1fr);gap:24px;align-items:start}
+.sidebar{position:sticky;top:16px;display:grid;gap:16px;min-width:0}
+.sidebar-group,.sidebar-note{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px;box-shadow:0 2px 8px rgba(20,40,90,.04)}
+.sidebar-label{padding:4px 9px 10px;color:var(--mut);font-size:.68rem;font-weight:800;letter-spacing:.1em}
+.tabs{display:grid;gap:5px}
+.tab{width:100%;display:flex;align-items:center;gap:11px;text-align:left;background:transparent;color:var(--tx);padding:11px 10px;border-radius:10px}
+.tab-icon{width:34px;height:34px;flex:0 0 34px;display:grid;place-items:center;border-radius:9px;background:var(--soft);font-size:1rem}
+.tab-copy{display:grid;gap:2px;min-width:0}
+.tab-copy strong{font-size:.88rem}
+.tab-copy small{color:var(--mut);font-size:.7rem;font-weight:500}
+.tab:hover{background:var(--soft)}
+.tab.on{background:var(--soft);color:var(--pri)}
+.tab.on .tab-icon{background:var(--pri);color:#fff}
+.sidebar-note{padding:14px;color:var(--mut);font-size:.76rem;line-height:1.5}
+.sidebar-note strong{display:block;color:var(--tx);font-size:.8rem;margin-bottom:4px}
+.app-content{min-width:0}
+main{max-width:none;margin:0;padding:0;display:grid;grid-template-columns:1.15fr .85fr;gap:20px;align-items:start}
 main>div,main>.card{min-width:0}
 @media(max-width:1024px){main{grid-template-columns:1fr}}
 .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px;box-shadow:0 2px 6px rgba(20,40,90,.06);margin-bottom:20px}
@@ -12469,7 +12485,6 @@ input.row-select{width:18px;height:18px;padding:0;vertical-align:middle;accent-c
 .d b{min-width:118px;color:var(--mut);font-weight:600}
 .toast{position:fixed;bottom:calc(20px + env(safe-area-inset-bottom,0px));left:50%;transform:translateX(-50%);background:var(--ok);color:#fff;padding:11px 20px;border-radius:8px;font-size:.86rem;opacity:0;pointer-events:none;transition:.3s;z-index:99}
 .toast.show{opacity:1}.toast.err{background:var(--bad)}
-.tabs{display:flex;gap:6px}.tab{background:rgba(255,255,255,.18);color:#fff;padding:7px 16px;border-radius:20px}.tab.on{background:#fff;color:var(--pri2)}
 #video{width:100%;max-height:260px;object-fit:cover;border-radius:10px;background:#000;margin-bottom:12px}
 #sCnt{text-align:center;font-size:1.4rem;font-weight:700}.res{margin:10px 0;padding:10px;border-radius:8px;background:var(--soft);font-size:.86rem;line-height:1.5}.res.bad{background:var(--badbg);color:var(--bad)}
 #camWrap{position:relative;margin-bottom:12px;overflow:hidden;border-radius:10px}#camWrap #video{margin:0;display:block}
@@ -12483,7 +12498,15 @@ header{display:grid;grid-template-columns:minmax(0,1fr);gap:12px}
 header h1{font-size:clamp(1rem,4vw,1.15rem);line-height:1.35}
 .chips{width:100%;gap:6px}
 .chip{padding:6px 9px}
-main{width:100%}
+.app-layout{padding:12px 14px;grid-template-columns:minmax(0,1fr);gap:12px}
+.sidebar{position:static;gap:0}
+.sidebar-group{padding:8px;overflow:hidden}
+.sidebar-label,.sidebar-note{display:none}
+.tabs{display:flex;gap:6px;overflow-x:auto;overscroll-behavior-x:contain;scrollbar-width:thin}
+.tab{flex:1 0 138px;min-width:0;padding:8px}
+.tab-icon{width:32px;height:32px;flex-basis:32px}
+.tab-copy small{display:none}
+.app-content,main{width:100%}
 .card{border-radius:10px}
 .grid>div{min-width:0}
 .row{min-width:0}
@@ -12560,10 +12583,54 @@ body.ficha>#login{display:none!important}
 #camWrap .vf{inset:16% 14%}
 #bTorch{position:absolute;right:58px;top:8px;z-index:2}
 #bCamClose{position:absolute;right:8px;top:8px;z-index:2;background:#fff;color:#111}
-.ubicacion-card{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;align-items:center;border:1px solid var(--line);padding:12px;border-radius:8px;margin-top:8px}
+.ubicaciones-ayuda{margin-top:8px;color:var(--mut);font-size:.8rem;line-height:1.45}
+.ubicaciones-list{display:grid;gap:8px;margin-top:12px}
+.ubicacion-card{min-width:0;border:1px solid var(--line);border-radius:10px;background:var(--card);overflow:hidden}
+.ubicacion-card[open]{border-color:var(--pri);box-shadow:0 2px 8px rgba(20,40,90,.08)}
+.ubicacion-card>summary{display:grid;grid-template-columns:minmax(0,1fr) auto 18px;align-items:center;gap:12px;padding:12px 14px;cursor:pointer;list-style:none}
+.ubicacion-card>summary::-webkit-details-marker{display:none}
+.ubicacion-card>summary:after{content:"⌄";color:var(--mut);font-size:1.1rem;transition:transform .15s}
+.ubicacion-card[open]>summary:after{transform:rotate(180deg);color:var(--pri)}
+.ubicacion-card>summary:hover{background:var(--soft)}
+.ubicacion-nombre{font-weight:700;color:var(--tx);overflow-wrap:anywhere}
+.ubicacion-codigo{font-size:.8rem;color:var(--mut);overflow-wrap:anywhere}
+.ubicacion-fila>summary{grid-template-columns:minmax(0,1fr) 18px;gap:4px 12px}
+.ubicacion-fila .ubicacion-codigo{grid-column:1;grid-row:2}
+.ubicacion-detalle{padding:0 14px 14px;border-top:1px solid var(--line)}
+.ubicacion-detalle>.d{margin-top:5px}
+.ubicacion-admin-actions{display:flex;justify-content:flex-end;margin-top:10px}
+.ubicacion-delete:disabled{opacity:.45;cursor:not-allowed}
 .ubicacion-qr{width:120px;height:120px;background:#fff}
 .asig-items{display:grid;gap:6px;margin-top:10px}
 .asig-item{display:flex;justify-content:space-between;gap:8px;align-items:center;background:var(--soft);padding:8px;border-radius:6px}
+.view-heading{grid-column:1/-1;display:flex;align-items:flex-end;justify-content:space-between;gap:16px;padding:2px 2px 0}
+.view-heading h2{margin:0 0 5px;padding:0;border:0;color:var(--tx);font-size:clamp(1.2rem,2vw,1.55rem);letter-spacing:-.02em}
+.view-heading p{color:var(--mut);font-size:.86rem;line-height:1.45}
+.view-kicker{display:block;margin-bottom:5px;color:var(--pri);font-size:.68rem;font-weight:800;letter-spacing:.1em;text-transform:uppercase}
+.view-heading .chip{background:var(--soft);color:var(--pri);white-space:nowrap}
+.section-nav{grid-column:1/-1;display:flex;gap:6px;overflow-x:auto;padding:5px;background:var(--card);border:1px solid var(--line);border-radius:12px;scrollbar-width:thin}
+.section-tab{display:flex;align-items:center;justify-content:center;gap:8px;flex:1 0 140px;min-height:42px;padding:9px 14px;border-radius:8px;background:transparent;color:var(--mut);white-space:nowrap}
+.section-tab:hover{background:var(--soft);color:var(--tx)}
+.section-tab[aria-current="page"]{background:var(--soft);color:var(--pri)}
+.section-tab[aria-current="page"] strong{font-weight:750}
+.section-content{grid-column:1/-1;min-width:0}
+.section-title{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin:4px 2px 14px}
+.section-title h3{font-size:1.02rem;margin-bottom:4px}
+.section-title p{color:var(--mut);font-size:.82rem;line-height:1.45}
+.section-title .chip{background:var(--soft);color:var(--pri);white-space:nowrap}
+#vReg{grid-template-columns:minmax(0,1fr)}
+#vReg>div:not(.view-heading){display:contents}
+#vReg>[data-module-screen]{grid-column:1/-1;min-width:0}
+#vSur>#surPreparar{grid-column:1/-1}
+#surPreparar>div{display:grid;grid-template-columns:minmax(240px,.72fr) minmax(0,1.28fr);gap:20px;align-items:start}
+#surPreparar .card,#vSur>#surHistorial{min-width:0}
+#vSur>#surHistorial,#vInv>[data-module-screen]{grid-column:1/-1}
+#vInv>[data-module-screen]{min-width:0}
+#vInv>.view-heading,#vSur>.view-heading,#vReg>.view-heading{grid-column:1/-1}
+#vInv{grid-template-columns:repeat(2,minmax(0,1fr))}
+@media(max-width:1024px){.app-layout{padding:16px;grid-template-columns:minmax(0,1fr);gap:12px}.sidebar{position:static}.sidebar-note{display:none}.tabs{grid-template-columns:repeat(3,minmax(0,1fr))}.tab{padding:10px}#vInv{grid-template-columns:minmax(0,1fr)}#surPreparar>div{grid-template-columns:minmax(0,1fr)}}
+@media(max-width:700px){.app-layout{padding:12px 10px}.view-heading{align-items:flex-start;flex-direction:column;gap:6px}.view-heading p{font-size:.82rem}.section-nav{margin-bottom:2px}.section-tab{flex:1 0 126px;min-height:44px;padding:9px 12px}.section-title{flex-direction:column;gap:5px}.section-title .chip{white-space:normal}}
+body.ficha>.app-layout{display:none!important}
 @media print{@page{margin:12mm}body>*:not(#etiqueta):not(#fichaView):not(#salidaView){display:none!important}
 #etiqueta{display:block;text-align:center;font-family:Arial,sans-serif;color:#000}
 #etiqueta.hoja{display:block}
@@ -12600,13 +12667,32 @@ body.ficha>#login{display:none!important}
   </form></div></div>
 <header>
   <h1>📦 Trazabilidad de Material · Generador QR</h1>
-  <nav class="tabs" aria-label="Vistas"><button type="button" class="tab on" data-v="vReg">📝 Registro</button><button type="button" class="tab" data-v="vSur">📤 Surtido</button><button type="button" class="tab" data-v="vInv">📦 Inventario</button></nav>
-  <div class="chips"><span class="chip" id="sTot">0 registros</span><span class="chip" id="sMp">0 materia prima</span><span class="chip" id="sGen">0 generales</span><button type="button" class="chip" id="bSalir" style="border:0;color:#fff;cursor:pointer" title="Cerrar sesión">⏻ Salir</button></div>
+  <div class="chips"><span class="chip" id="sTot">0 registros</span><span class="chip" id="sMp">0 materia prima</span><span class="chip" id="sGen">0 generales</span><span class="chip" id="rolUsuario" hidden></span><button type="button" class="chip" id="bSalir" style="border:0;color:#fff;cursor:pointer" title="Cerrar sesión">⏻ Salir</button></div>
 </header>
 
+<div class="app-layout">
+<aside class="sidebar" aria-label="Navegación principal">
+  <div class="sidebar-group">
+    <div class="sidebar-label">OPERACIÓN</div>
+    <nav class="tabs" aria-label="Módulos">
+      <button type="button" class="tab on" data-v="vReg" aria-current="page"><span class="tab-icon" aria-hidden="true">📝</span><span class="tab-copy"><strong>Registro</strong><small>Alta y consulta</small></span></button>
+      <button type="button" class="tab" data-v="vSur"><span class="tab-icon" aria-hidden="true">📤</span><span class="tab-copy"><strong>Surtido</strong><small>Salida a producción</small></span></button>
+      <button type="button" class="tab" data-v="vInv"><span class="tab-icon" aria-hidden="true">📦</span><span class="tab-copy"><strong>Inventario</strong><small>Existencias y ubicaciones</small></span></button>
+    </nav>
+  </div>
+  <div class="sidebar-note"><strong>Flujo de trabajo</strong>Registra materiales, prepara surtidos para producción y consulta o asigna existencias por ubicación.</div>
+</aside>
+<div class="app-content">
 <main id="vReg" aria-label="Registro">
+<div class="view-heading"><div><span class="view-kicker">Módulo 01 · Catálogo</span><h2>Registro de materiales</h2><p>Da de alta materiales y consulta su historial, ficha y código QR.</p></div><span class="chip">Catálogo y etiquetas</span></div>
+<nav class="section-nav" aria-label="Pantallas de Registro">
+  <button type="button" class="section-tab" data-module="vReg" data-page="captura" aria-current="page">✍️ <strong>Capturar material</strong></button>
+  <button type="button" class="section-tab" data-module="vReg" data-page="historial">📋 <strong>Historial</strong></button>
+  <button type="button" class="section-tab" data-module="vReg" data-page="qr">🔳 <strong>Etiquetas QR</strong></button>
+</nav>
 <div>
-  <section class="card">
+  <div class="section-title" data-module-screen="captura"><div><h3>Alta de material</h3><p>Completa los datos de identificación, dimensiones y existencia.</p></div></div>
+  <section class="card section-content" data-module-screen="captura">
     <h2 id="tituloForm">Registro de material</h2>
     <form id="f" autocomplete="off">
       <input type="hidden" id="editIndex">
@@ -12640,7 +12726,8 @@ body.ficha>#login{display:none!important}
     </form>
   </section>
 
-  <section class="card">
+  <div class="section-title" data-module-screen="historial" hidden><div><h3>Materiales registrados</h3><p>Busca y exporta el catálogo. La edición y eliminación están reservadas al administrador.</p></div></div>
+  <section class="card section-content" data-module-screen="historial" hidden>
     <h2>Historial</h2>
     <div class="tools">
       <input type="search" id="buscar" placeholder="🔍 Buscar código, descripción, lote, ubicación…">
@@ -12666,7 +12753,8 @@ body.ficha>#login{display:none!important}
   </section>
 </div>
 
-<section class="card sticky">
+<div class="section-title" data-module-screen="qr" hidden><div><h3>Etiquetas e identificación</h3><p>Selecciona un material del historial para preparar su etiqueta.</p></div></div>
+<section class="card sticky section-content" data-module-screen="qr" hidden>
   <h2>Identificación QR</h2>
   <div id="qrBox">Guarde o seleccione un material para generar su QR</div>
   <div id="ficha" style="margin-top:12px"></div>
@@ -12685,7 +12773,12 @@ body.ficha>#login{display:none!important}
 </main>
 
 <main id="vSur" aria-label="Surtido" hidden>
-<div>
+<div class="view-heading"><div><span class="view-kicker">Módulo 02 · Producción</span><h2>Surtido de materiales</h2><p>Prepara salidas por orden de producción y conserva el historial de cada movimiento.</p></div><span class="chip">Salidas y movimientos</span></div>
+<nav class="section-nav" aria-label="Pantallas de Surtido">
+  <button type="button" class="section-tab" data-module="vSur" data-page="preparar" aria-current="page">📤 <strong>Preparar salida</strong></button>
+  <button type="button" class="section-tab" data-module="vSur" data-page="historial">📋 <strong>Historial de salidas</strong></button>
+</nav>
+<div id="surPreparar" data-module-screen="preparar">
   <section class="card"><h2>Escaneo de QR</h2>
     <div class="acts" style="margin:0 0 12px"><button type="button" class="bp" id="bCam">📷 Escanear con cámara</button></div>
     <div class="res bad" id="camAviso" hidden>⚠ La cámara en vivo requiere HTTPS (o localhost). Aloje este archivo en un sitio con HTTPS para usar el escáner.</div>
@@ -12703,52 +12796,78 @@ body.ficha>#login{display:none!important}
     </div>
     <div id="sPanel"></div></section>
 </div>
-<section class="card"><h2>Movimientos de surtido</h2>
+<section class="card section-content" id="surHistorial" data-module-screen="historial" hidden><h2>Movimientos de surtido</h2>
   <div class="tw"><div id="hBody" class="sur-groups"></div><div class="empty" id="hVacio">Sin surtidos</div></div>
   <div class="acts"><button type="button" class="bs" id="bCsvS">⬇️ CSV de surtidos</button></div>
 </section>
 </main>
 
 <main id="vInv" aria-label="Inventario" hidden>
-  <section class="card">
+  <div class="view-heading"><div><span class="view-kicker">Módulo 03 · Almacén</span><h2>Control de inventario</h2><p>Consulta existencias, administra ubicaciones y mueve materiales con trazabilidad.</p></div><span class="chip">Existencias y ubicaciones</span></div>
+  <nav class="section-nav" aria-label="Pantallas de Inventario">
+    <button type="button" class="section-tab" data-module="vInv" data-page="existencias" aria-current="page">📦 <strong>Existencias</strong></button>
+    <button type="button" class="section-tab" data-module="vInv" data-page="almacenes">🏭 <strong>Almacenes</strong></button>
+    <button type="button" class="section-tab" data-module="vInv" data-page="ubicaciones">📍 <strong>Ubicaciones y QR</strong></button>
+    <button type="button" class="section-tab" data-module="vInv" data-page="asignar">🔄 <strong>Traspasos</strong></button>
+    <button type="button" class="section-tab" data-module="vInv" data-page="historial">📋 <strong>Movimientos</strong></button>
+  </nav>
+  <section class="card section-content" data-module-screen="existencias">
     <h2>Inventario de materiales</h2>
     <p style="color:var(--mut);margin-bottom:14px">Consulta existencias disponibles y asigna materiales a ubicaciones escaneando el QR del destino.</p>
     <div class="tools">
       <input type="search" id="invBuscar" placeholder="🔍 Buscar código, descripción o ubicación…">
       <select id="invTipo"><option value="">Todas las clasificaciones</option><option value="mp">Materia prima</option><option value="gen">General</option></select>
+      <select id="invAlmacen" aria-label="Filtrar por almacén"><option value="">Todos los almacenes</option></select>
     </div>
     <div class="tw"><table>
-      <thead><tr><th>Código</th><th>Clasificación</th><th>Descripción</th><th>Existencia disponible</th><th>Ubicación</th></tr></thead>
+      <thead><tr><th>Código</th><th>Clasificación</th><th>Descripción</th><th>Existencia disponible</th><th>Almacén</th><th>Ubicación</th></tr></thead>
       <tbody id="invBody"></tbody>
     </table><div class="empty" id="invVacio" hidden>Sin materiales que coincidan.</div></div>
   </section>
-  <section class="card">
+  <section class="card section-content" data-module-screen="almacenes" hidden>
+    <h2>Almacenes</h2>
+    <p style="color:var(--mut);margin-bottom:14px">Crea almacenes con nombre libre y una clasificación opcional. Cada rack o estante se registra dentro de uno de ellos.</p>
+    <form id="almacenForm" class="grid" autocomplete="off">
+      <div><label for="almacenCodigo">Código de almacén *</label><div class="row"><input id="almacenCodigo" required placeholder="ALM-001"><button type="button" class="bs" id="almacenAuto">Auto</button></div></div>
+      <div><label for="almacenNombre">Nombre del almacén *</label><input id="almacenNombre" required placeholder="Ej. Rack de materia prima"></div>
+      <div><label for="almacenTipo">Clasificación</label><select id="almacenTipo"><option value="">Sin clasificación</option><option value="MP">Materia prima</option><option value="GENERAL">Material general</option><option value="CONSUMIBLES">Consumibles</option><option value="OTRO">Otro</option></select></div>
+      <div class="full"><button type="submit" class="bp" id="almacenGuardar">Guardar almacén</button></div>
+    </form>
+    <div id="almacenEstado"></div>
+    <div id="almacenLista" class="ubicaciones-list"></div>
+  </section>
+  <section class="card section-content" data-module-screen="ubicaciones" hidden>
     <h2>Ubicaciones y códigos QR</h2>
     <div id="ubiEstado"></div>
     <form id="ubiForm" class="grid" autocomplete="off">
+      <div class="full"><label for="ubiAlmacen">Almacén *</label><select id="ubiAlmacen" required></select></div>
       <div><label for="ubiCodigo">Código de ubicación *</label><div class="row"><input id="ubiCodigo" required placeholder="UBI-001"><button type="button" class="bs" id="ubiAuto">Auto</button></div></div>
       <div><label for="ubiNombre">Nombre de ubicación *</label><input id="ubiNombre" required placeholder="Ej. Rack A · Nivel 1"></div>
       <div class="full"><button type="submit" class="bp" id="ubiGuardar">Guardar ubicación</button></div>
     </form>
+    <p class="ubicaciones-ayuda">Selecciona una ubicación para desplegar su código QR y las opciones para descargarlo o imprimirlo.</p>
     <div id="ubiLista"></div>
   </section>
-  <section class="card">
-    <h2>Asignar materiales a una ubicación</h2>
-    <p style="color:var(--mut)">Escanea primero el QR de la ubicación y después los QR de los materiales. Confirma para mover todo el inventario disponible; se conservará el historial de ubicaciones.</p>
+  <section class="card section-content" data-module-screen="asignar" hidden>
+    <h2>Traspaso entre ubicaciones</h2>
+    <p style="color:var(--mut)">Escanea el QR de la ubicación destino y después los QR de los materiales. El origen se registra automáticamente y el historial del traspaso se conserva.</p>
     <div class="acts"><button type="button" class="bp" id="bCamInv">📷 Escanear ubicación y materiales</button></div>
     <div class="res bad" id="invCamAviso" hidden>⚠ El escáner con cámara requiere HTTPS (o localhost).</div>
     <label for="ubiScan">Lector QR / código manual</label>
-    <textarea id="ubiScan" rows="2" placeholder="Escanea la ubicación; después escanea cada material"></textarea>
-    <div class="d"><b>Destino seleccionado</b><span id="ubiDestino">Sin seleccionar</span></div>
+    <textarea id="ubiScan" rows="2" placeholder="Escanea la ubicación destino; después cada material"></textarea>
+    <div class="d"><b>Ubicación destino</b><span id="ubiDestino">Sin seleccionar</span></div>
     <div id="asigLista" class="asig-items"></div>
-    <div class="acts"><button type="button" class="bp" id="ubiConfirmar" disabled>✅ Confirmar asignación</button><button type="button" class="bd" id="ubiLimpiar">Limpiar</button></div>
+    <div class="acts"><button type="button" class="bp" id="ubiConfirmar" disabled>✅ Confirmar traspaso</button><button type="button" class="bd" id="ubiLimpiar">Limpiar</button></div>
   </section>
-  <section class="card">
+  <section class="card section-content" data-module-screen="historial" hidden>
     <h2>Historial de ubicaciones</h2>
-    <div class="tw"><table><thead><tr><th>Fecha</th><th>Folio</th><th>Código</th><th>Desde</th><th>Hacia</th><th>Existencia al mover</th></tr></thead><tbody id="ubiHistBody"></tbody></table><div class="empty" id="ubiHistVacio" hidden>Sin movimientos de ubicación.</div></div>
+    <div id="ubiHistEstado"></div>
+    <div class="tw"><table><thead><tr><th>Fecha</th><th>Folio</th><th>Código</th><th>Almacén anterior</th><th>Desde</th><th>Almacén destino</th><th>Hacia</th><th>Existencia al mover</th></tr></thead><tbody id="ubiHistBody"></tbody></table><div class="empty" id="ubiHistVacio" hidden>Sin movimientos de ubicación.</div></div>
   </section>
 </main>
 
+</div>
+</div>
 <div id="fichaView" hidden>
   <div class="fh"><div class="fb">📦 Trazabilidad de material</div><div id="fCod"></div></div>
   <div class="fbody">
@@ -12771,7 +12890,7 @@ const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&
 const hoy=()=>new Date(Date.now()-new Date().getTimezoneOffset()*6e4).toISOString().slice(0,10);
 const fmt=n=>Number(n).toLocaleString("es-MX",{maximumFractionDigits:3});
 function totalTxt(m){return m.esMP&&m.um==="PZ"&&m.cantidad>0&&m.longitud>0?`${fmt(m.cantidad*m.longitud)} ${m.longU||m.longitudUnidad||"mm"}`:""}
-let mats=[],actual=null,orden={k:null,asc:true},esStaff=false,ubicaciones=[],movimientosUbicacion=[],ubicacionesError="",ubicacionDestino=null,asignacionItems=[];
+let mats=[],actual=null,orden={k:null,asc:true},esStaff=false,esAdmin=false,almacenes=[],ubicaciones=[],movimientosUbicacion=[],almacenesError="",ubicacionesError="",movimientosError="",ubicacionDestino=null,asignacionItems=[];
 const seleccionados=new Set();
 
 // --- Supabase ---
@@ -12808,23 +12927,30 @@ async function cargar(){
   if(act){const a=mats.find(x=>x.codigo===act.codigo);if(a){if(JSON.stringify(a)!==actAntes)mostrar(a);else actual=a}}
 }
 async function cargarUbicaciones(){
-  try{
-    const[locs,movs]=await Promise.all([
-      leerTodo("ubicaciones","codigo,nombre,created_at",["nombre"]),
-      leerTodo("movimientos_ubicacion","id,folio,codigo_material,ubicacion_anterior,ubicacion_nueva,existencia,created_at",["id"])
-    ]);
-    ubicaciones=locs;movimientosUbicacion=movs;ubicacionesError="";
-    if(!$("ubiCodigo").value)siguienteCodigoUbicacion();
-    renderUbicaciones();renderHistUbicaciones();renderInventario();
-  }catch(err){
-    const msg=String(err?.message||err||"");
-    if(/PGRST205|42P01|does not exist|schema cache/i.test(msg)){
-      ubicacionesError="Falta crear las tablas de ubicaciones en Supabase. Ejecute el archivo supabase_ubicaciones.sql en el SQL Editor del proyecto y vuelva a cargar.";
-    }else{errDB(err,"No se pudieron cargar las ubicaciones");ubicacionesError="No fue posible cargar ubicaciones. Revise la conexión y los permisos."}
-    ubicaciones=[];movimientosUbicacion=[];renderUbicaciones();renderHistUbicaciones();renderInventario();
-  }
+  const resultados=await Promise.allSettled([
+    leerTodo("almacenes","codigo,nombre,clasificacion,created_at",["nombre"]),
+    leerTodo("ubicaciones","codigo,nombre,almacen_codigo,created_at",["nombre"]),
+    leerTodo("movimientos_ubicacion","id,folio,codigo_material,ubicacion_anterior_codigo,ubicacion_anterior,ubicacion_nueva_codigo,ubicacion_nueva,ubicacion_anterior_almacen_codigo,ubicacion_nueva_almacen_codigo,existencia,created_at",["id"])
+  ]);
+  const mensajeError=(resultado,nombre)=>{
+    if(resultado.status==="fulfilled")return"";
+    const detalle=String(resultado.reason?.message||resultado.reason||"Error desconocido");
+    if(/PGRST205|42P01|does not exist|schema cache/i.test(detalle))return`Falta aplicar o actualizar la migración: no se pudo consultar ${nombre}.`;
+    return`No se pudo consultar ${nombre}: ${detalle}`;
+  };
+  almacenesError=mensajeError(resultados[0],"almacenes");
+  ubicacionesError=mensajeError(resultados[1],"ubicaciones");
+  movimientosError=mensajeError(resultados[2],"el historial de movimientos");
+  almacenes=resultados[0].status==="fulfilled"?resultados[0].value:[];
+  ubicaciones=resultados[1].status==="fulfilled"?resultados[1].value:[];
+  movimientosUbicacion=resultados[2].status==="fulfilled"?resultados[2].value:[];
+  [resultados[0],resultados[1],resultados[2]].forEach(resultado=>{if(resultado.status==="rejected")console.error(resultado.reason)});
+  if(!$("ubiCodigo").value)siguienteCodigoUbicacion();
+  if(!$("almacenCodigo").value)siguienteCodigoAlmacen();
+  renderAlmacenes();renderUbicaciones();renderHistUbicaciones();renderInventario();
 }
 async function subirLista(ms,ds){
+  if(!esAdmin)throw new Error("Solo el administrador puede restaurar información.");
   for(let i=0;i<ms.length;i+=200){const{error}=await sb.from("materiales").upsert(ms.slice(i,i+200).map(m=>({codigo:m.codigo,data:matData(m)})),{onConflict:"codigo"});if(error)throw error}
   const filas=ds.map(x=>desFila(x.codigo,x.d));
   for(let i=0;i<filas.length;i+=200){const{error}=await sb.from("despachos").upsert(filas.slice(i,i+200),{onConflict:"codigo,t",ignoreDuplicates:true});if(error)throw error}
@@ -12833,15 +12959,20 @@ let rtT=null;
 function suscribir(){
   if(!sb)return;sb.removeAllChannels();
   const rt=()=>{clearTimeout(rtT);rtT=setTimeout(()=>{cargar().catch(()=>{});cargarUbicaciones()},400)};
-  sb.channel("cambios").on("postgres_changes",{event:"*",schema:"public",table:"materiales"},rt).on("postgres_changes",{event:"*",schema:"public",table:"despachos"},rt).on("postgres_changes",{event:"*",schema:"public",table:"ubicaciones"},rt).on("postgres_changes",{event:"*",schema:"public",table:"movimientos_ubicacion"},rt).subscribe();
+  sb.channel("cambios").on("postgres_changes",{event:"*",schema:"public",table:"materiales"},rt).on("postgres_changes",{event:"*",schema:"public",table:"despachos"},rt).on("postgres_changes",{event:"*",schema:"public",table:"almacenes"},rt).on("postgres_changes",{event:"*",schema:"public",table:"ubicaciones"},rt).on("postgres_changes",{event:"*",schema:"public",table:"movimientos_ubicacion"},rt).subscribe();
 }
 // --- Sesión ---
 function lgMostrar(msg){$("lgCarga").hidden=true;$("lgF").hidden=false;$("lgMsg").hidden=!msg;$("lgMsg").textContent=msg||""}
-function salirUI(){esStaff=false;document.body.classList.remove("auth");if(sb)sb.removeAllChannels();camOff();mats=[];surItems=[];ubicaciones=[];movimientosUbicacion=[];ubicacionesError="";ubicacionDestino=null;asignacionItems=[];actual=null;render();lgMostrar()}
+function salirUI(){esStaff=false;esAdmin=false;seleccionados.clear();$("rolUsuario").hidden=true;$("bImp").hidden=$("bExcel").hidden=false;document.body.classList.remove("auth");if(sb)sb.removeAllChannels();camOff();mats=[];surItems=[];almacenes=[];ubicaciones=[];movimientosUbicacion=[];almacenesError="";ubicacionesError="";movimientosError="";ubicacionDestino=null;asignacionItems=[];actual=null;render();lgMostrar()}
 async function entrar(){
+  const admin=await sb.rpc("is_admin");
+  if(admin.error){await sb.auth.signOut();lgMostrar("No se pudieron verificar los permisos del administrador. Ejecute la migración actualizada supabase_almacenes.sql.");return false}
   const r=await sb.rpc("is_staff");
-  if(r.error||r.data!==true){await sb.auth.signOut();lgMostrar("Este usuario no tiene autorización. Pida al administrador que agregue su correo.");return false}
-  esStaff=true;document.body.classList.add("auth");
+  if((r.error||r.data!==true)&&admin.data!==true){await sb.auth.signOut();lgMostrar("Este usuario no tiene autorización. Pida al administrador que agregue su correo.");return false}
+  esStaff=true;esAdmin=admin.data===true;document.body.classList.add("auth");
+  $("rolUsuario").textContent=esAdmin?"Administrador":"Personal";$("rolUsuario").hidden=false;
+  $("bDelSel").hidden=$("bDelAll").hidden=$("selectAll").hidden=!esAdmin;
+  $("bImp").hidden=$("bExcel").hidden=!esAdmin;
   try{await cargar()}catch(e){errDB(e,"No se pudo cargar los datos")}
   await cargarUbicaciones();
   suscribir();await migrarLocal();return true}
@@ -12850,6 +12981,7 @@ async function migrarLocal(){
   if(mats.length||sessionStorage.getItem("mig_omitido"))return;
   let loc=[];try{if(localStorage.getItem(K+"_migrado"))return;loc=JSON.parse(localStorage.getItem(K)||localStorage.getItem("materiales_v1")||"[]")}catch{}
   loc=(Array.isArray(loc)?loc:[]).filter(m=>m&&m.codigo);if(!loc.length)return;
+  if(!esAdmin){toast("La restauración de datos guardados en este navegador requiere al administrador.",1);return}
   if(!confirm(`Se encontraron ${loc.length} registro(s) guardados en este navegador (de antes de usar Supabase).\n\n¿Subirlos ahora a la base de datos compartida?`)){try{sessionStorage.setItem("mig_omitido","1")}catch{}return}
   loc.forEach(m=>{Object.assign(m,normalizarMaterial(m));m.codigo=String(m.codigo);m.esMP=!!m.esMP;m.cantidad=Number(m.cantidad)||0;m.despachos=Array.isArray(m.despachos)?m.despachos.filter(d=>d&&typeof d==="object"&&d.t!=null):[]});
   try{await subirLista(loc,loc.flatMap(m=>m.despachos.map(d=>({codigo:m.codigo,d}))));try{localStorage.setItem(K+"_migrado","1")}catch{}await cargar();toast(`${loc.length} registro(s) subidos a Supabase ✔`)}
@@ -12911,6 +13043,7 @@ $("f").addEventListener("submit",async e=>{
   e.preventDefault();
   recalcularTotalMM();
   const idx=$("editIndex").value;
+  if(idx!==""&&!esAdmin){toast("Solo el administrador puede editar materiales.",1);resetForm();return}
   const noAplica=Object.fromEntries(CAMPOS_EXTRA.map(([key,id])=>[key,document.querySelector(`input[data-na="${id}"]`).checked]));
   const extra=Object.fromEntries(CAMPOS_EXTRA.map(([key,id])=>[key,noAplica[key]?(["totalMM","longitudIndividual","peso"].includes(key)?null:""): (["totalMM","longitudIndividual","peso"].includes(key)?($(id).value===""?null:Number($(id).value)):$(id).value.trim())]));
   const tipoMaterial=noAplica.tipoMaterial?"":$("tipoMaterial").value.trim(),tipoRegistro=$("tipoRegistro").value;
@@ -12919,6 +13052,8 @@ $("f").addEventListener("submit",async e=>{
     um:$("um").value,cantidad:parseFloat($("cantidad").value),ubicacion:$("ubicacion").value.trim(),fechaRecibo:$("fechaRecibo").value,
     fechaModificacion:new Date().toLocaleString("es-MX"),tipoRegistro,esMP:tipoRegistro==="MP",seccionMaterial:$("seccionMaterial").value,
     ubicacionCodigo:anterior&&$("ubicacion").value.trim()===anterior.ubicacion?anterior.ubicacionCodigo||null:null,
+    ubicacionAlmacenCodigo:anterior&&$("ubicacion").value.trim()===anterior.ubicacion?anterior.ubicacionAlmacenCodigo||null:null,
+    ubicacionAlmacenNombre:anterior&&$("ubicacion").value.trim()===anterior.ubicacion?anterior.ubicacionAlmacenNombre||null:null,
     peso:extra.peso,pesoU:extra.peso==null?null:$("pesoU").value,pesoUnidadPendiente:extra.peso!=null&&!$("pesoU").value,
     longitud:anterior?.longitud??null,longU:anterior?.longU||anterior?.longitudUnidad||null,
     seccion:tipoRegistro==="MP"?({SQ:"cuadrado",FLAT:"cuadrado",RND:"redondo"}[$("seccionMaterial").value]||null):null,
@@ -13005,11 +13140,12 @@ function dibujarQR(txt,px=240){
   return c;
 }
 function mostrar(m){
+  activarSubpantalla("vReg","qr");
   actual=m;const box=$("qrBox");box.innerHTML="";
   const txt=qrTexto(m);
   const c=dibujarQR(txt);
   if(c)box.appendChild(c);else{box.textContent="No se pudo generar el QR: los datos son demasiado largos. Acorte descripción o ubicación.";actual=null}
-  const rows=[["Código",m.codigo],["Ubicación",m.ubicacion],["Clasificación",m.tipoRegistro==="MP"?"Materia prima":"Material general"],["Tipo material",m.tipoMaterial],["Descripción",m.descripcion],
+  const rows=[["Código",m.codigo],["Almacén",m.ubicacionAlmacenNombre||almacenes.find(a=>a.codigo===m.ubicacionAlmacenCodigo)?.nombre],["Ubicación",m.ubicacion],["Clasificación",m.tipoRegistro==="MP"?"Materia prima":"Material general"],["Tipo material",m.tipoMaterial],["Descripción",m.descripcion],
     ["Sección / especificación",seccionEspecificacion(m)],["Longitud IND",m.longitudIndividual!=null?`${m.longitudIndividual} mm`:""],["Manufactura",m.manufactura],["N.º Heat",m.numeroHeat],["N.º lote MP",m.numeroLoteMP||m.lote],["N.º cert.",m.numeroCertificado],["Total mm",m.totalMM],["Fecha de recibo",m.fechaRecibo],["Cantidad",`${m.cantidad} ${m.um}`],
     ["Etiqueta",`MASTER · ${m.cantidad} ${m.um}`+(esIndividual(m)?` (+ ${m.cantidad} QR individuales)`:` (sin QR individuales: la cantidad debe ser entera y de 1 a ${MAX_IND})`)],
     ["Peso",m.peso!=null?`${m.peso}${m.pesoU||m.pesoUnidad?" "+(m.pesoU||m.pesoUnidad):m.pesoUnidadPendiente?" (unidad sin definir)":""}`:""],["Orden",m.ordenMaterial],["PO number",m.poNumber],
@@ -13096,43 +13232,142 @@ function render(){
   let lista=mats.map((m,i)=>({m,i})).filter(({m})=>(!t||(t==="mp")===!!m.esMP)&&(!q||[m.codigo,m.descripcion,m.lote,m.proveedor,m.ubicacion,m.tipoMaterial,m.especificacionMedida,m.longitudIndividual,m.manufactura,m.numeroHeat,m.numeroLoteMP,m.numeroCertificado,m.totalMM,m.tipoMoneda,m.ordenMaterial,m.poNumber].join(" ").toLowerCase().includes(q)));
   if(orden.k)lista.sort((a,b)=>{const x=a.m[orden.k],y=b.m[orden.k];const r=typeof x==="number"?x-y:String(x??"").localeCompare(String(y??""),"es",{numeric:true});return orden.asc?r:-r});
   $("tbody").innerHTML=lista.map(({m,i})=>`<tr>
-    <td><input type="checkbox" class="row-select" data-select="${esc(m.codigo)}" aria-label="Seleccionar ${esc(m.codigo)}" ${seleccionados.has(m.codigo)?"checked":""}></td>
+    <td>${esAdmin?`<input type="checkbox" class="row-select" data-select="${esc(m.codigo)}" aria-label="Seleccionar ${esc(m.codigo)}" ${seleccionados.has(m.codigo)?"checked":""}>`:""}</td>
     <td><b>${esc(m.codigo)}</b></td><td class="l">${esc(m.descripcion)}</td><td>${esc(m.um)}</td><td>${esc(m.cantidad)}</td><td>${esc(existTxt(m))}</td>
     <td>${m.esMP?'<span class="tag t1">M. PRIMA</span>':'<span class="tag t2">GENERAL</span>'}</td>
     <td>${esc(m.ubicacion||"Sin ubicación")}</td><td>${esc(m.fechaRecibo)}</td>
-    <td style="white-space:nowrap"><button type="button" class="ic" data-a="qr" data-i="${i}" title="Ver QR">🔳</button><button type="button" class="ic" data-a="ed" data-i="${i}" title="Editar">✏️</button><button type="button" class="ic" data-a="del" data-i="${i}" title="Eliminar">🗑️</button></td></tr>`).join("");
+    <td style="white-space:nowrap"><button type="button" class="ic" data-a="qr" data-i="${i}" title="Ver QR">🔳</button>${esAdmin?`<button type="button" class="ic" data-a="ed" data-i="${i}" title="Editar">✏️</button><button type="button" class="ic" data-a="del" data-i="${i}" title="Eliminar">🗑️</button>`:""}</td></tr>`).join("");
   $("vacio").hidden=lista.length>0;
   const mp=mats.filter(m=>m.esMP).length;
   $("sTot").textContent=`${mats.length} registros`;$("sMp").textContent=`${mp} materia prima`;$("sGen").textContent=`${mats.length-mp} generales`;
   syncBulkActions();
 }
 function renderInventario(){
-  const q=$("invBuscar").value.trim().toLocaleLowerCase(),tipo=$("invTipo").value;
-  const lista=mats.filter(m=>{const loc=ubicaciones.find(x=>x.codigo===m.ubicacionCodigo);return(!tipo||(tipo==="mp")===!!m.esMP)&&(!q||[m.codigo,m.descripcion,m.ubicacion,m.ubicacionCodigo,loc?.nombre,m.lote,m.numeroHeat,m.numeroLoteMP].join(" ").toLocaleLowerCase().includes(q))});
-  $("invBody").innerHTML=lista.map(m=>{const loc=ubicaciones.find(x=>x.codigo===m.ubicacionCodigo);return`<tr><td><b>${esc(m.codigo)}</b></td><td>${m.esMP?'<span class="tag t1">M. PRIMA</span>':'<span class="tag t2">GENERAL</span>'}</td><td class="l">${esc(m.descripcion)}</td><td>${esc(existTxt(m))}</td><td>${esc(loc?`${loc.nombre} (${loc.codigo})`:m.ubicacion||"Sin ubicación")}</td></tr>`}).join("");
+  const selector=$("invAlmacen"),almacenActual=selector.value;
+  selector.innerHTML='<option value="">Todos los almacenes</option>'+almacenes.map(a=>`<option value="${esc(a.codigo)}">${esc(a.nombre)}</option>`).join("");
+  selector.value=almacenes.some(a=>a.codigo===almacenActual)?almacenActual:"";
+  const q=$("invBuscar").value.trim().toLocaleLowerCase(),tipo=$("invTipo").value,almacenFiltro=selector.value;
+  const lista=mats.filter(m=>{const loc=ubicaciones.find(x=>x.codigo===m.ubicacionCodigo),almacenCodigo=loc?.almacen_codigo||m.ubicacionAlmacenCodigo,alm=almacenes.find(x=>x.codigo===almacenCodigo);return(!tipo||(tipo==="mp")===!!m.esMP)&&(!almacenFiltro||almacenCodigo===almacenFiltro)&&(!q||[m.codigo,m.descripcion,m.ubicacion,m.ubicacionCodigo,loc?.nombre,alm?.nombre,m.lote,m.numeroHeat,m.numeroLoteMP].join(" ").toLocaleLowerCase().includes(q))});
+  $("invBody").innerHTML=lista.map(m=>{const loc=ubicaciones.find(x=>x.codigo===m.ubicacionCodigo),alm=almacenes.find(x=>x.codigo===(loc?.almacen_codigo||m.ubicacionAlmacenCodigo));return`<tr><td><b>${esc(m.codigo)}</b></td><td>${m.esMP?'<span class="tag t1">M. PRIMA</span>':'<span class="tag t2">GENERAL</span>'}</td><td class="l">${esc(m.descripcion)}</td><td>${esc(existTxt(m))}</td><td>${esc(alm?.nombre||m.ubicacionAlmacenNombre||"Sin almacén")}</td><td>${esc(loc?`${loc.nombre} (${loc.codigo})`:m.ubicacion||"Sin ubicación")}</td></tr>`}).join("");
   $("invVacio").hidden=lista.length>0;
 }
-$("invBuscar").oninput=$("invTipo").onchange=renderInventario;
+$("invBuscar").oninput=$("invTipo").onchange=$("invAlmacen").onchange=renderInventario;
+function renderAlmacenes(){
+  const estado=$("almacenEstado"),lista=$("almacenLista"),form=$("almacenForm");
+  if(almacenesError){estado.innerHTML=`<div class="res bad">${esc(almacenesError)} <a href="./supabase_almacenes.sql" download>Descargar migración</a></div>`;form.hidden=true;lista.innerHTML="";return}
+  estado.innerHTML=[ubicacionesError,movimientosError].filter(Boolean).map(error=>`<div class="res bad">${esc(error)} <a href="./supabase_almacenes.sql" download>Ver migración</a></div>`).join("");form.hidden=false;
+  if(!almacenes.length){lista.innerHTML='<div class="empty">No hay almacenes registrados.</div>';return}
+  const abiertas=new Set([...lista.querySelectorAll(".ubicacion-card[open]")].map(item=>item.dataset.codigo));
+  lista.innerHTML=almacenes.map(a=>{
+    const locs=ubicaciones.filter(loc=>loc.almacen_codigo===a.codigo),tipo={MP:"Materia prima",GENERAL:"Material general",CONSUMIBLES:"Consumibles",OTRO:"Otro"}[a.clasificacion]||"Sin clasificación";
+    const materiales=materialesEnAlmacenes([a.codigo]),movimientos=movimientosEnAlmacenes([a.codigo],locs);
+    return`<details class="ubicacion-card" data-codigo="${esc(a.codigo)}" ${abiertas.has(a.codigo)?"open":""}><summary><span class="ubicacion-nombre">${esc(a.nombre)}</span><span class="ubicacion-codigo">${esc(a.codigo)} · ${locs.length} ubicaciones</span></summary><div class="ubicacion-detalle"><div class="d"><b>Clasificación</b><span>${esc(tipo)}</span></div><div class="d"><b>Ubicaciones</b><span>${locs.length?locs.map(loc=>`${esc(loc.nombre)} (${esc(loc.codigo)})`).join(" · "):"Sin ubicaciones"}</span></div>${esAdmin?`<div class="res bad">Al eliminar se conservarán los materiales, pero se quitará su almacén y ubicación y se borrarán ${movimientos} movimientos del historial${materiales?` (${materiales} material(es) quedarán sin ubicación)`: ""}.</div><div class="ubicacion-admin-actions"><button type="button" class="bd" data-eliminar-almacen="${esc(a.codigo)}">🗑️ Eliminar almacén y su historial</button></div>`:""}</div></details>`
+  }).join("");
+  lista.querySelectorAll("[data-eliminar-almacen]").forEach(btn=>btn.onclick=()=>eliminarAlmacen(btn.dataset.eliminarAlmacen));
+}
+function materialesEnUbicacion(loc){
+  return mats.filter(m=>m.ubicacionCodigo===loc.codigo||(!m.ubicacionCodigo&&String(m.ubicacion||"").trim().toLocaleLowerCase()===loc.nombre.toLocaleLowerCase()&&(!m.ubicacionAlmacenCodigo||m.ubicacionAlmacenCodigo===loc.almacen_codigo))).length;
+}
+function movimientosDeUbicacion(loc){
+  return movimientosUbicacion.filter(m=>
+    m.ubicacion_anterior_codigo===loc.codigo||m.ubicacion_nueva_codigo===loc.codigo||
+    (!m.ubicacion_anterior_codigo&&String(m.ubicacion_anterior||"").trim().toLocaleLowerCase()===loc.nombre.toLocaleLowerCase())||
+    (!m.ubicacion_nueva_codigo&&String(m.ubicacion_nueva||"").trim().toLocaleLowerCase()===loc.nombre.toLocaleLowerCase())
+  ).length;
+}
+function materialesEnAlmacenes(codigos){
+  const codSet=new Set(codigos),locs=ubicaciones.filter(loc=>codSet.has(loc.almacen_codigo));
+  return mats.filter(m=>codSet.has(m.ubicacionAlmacenCodigo)||locs.some(loc=>(
+    m.ubicacionCodigo===loc.codigo||(!m.ubicacionCodigo&&String(m.ubicacion||"").trim().toLocaleLowerCase()===loc.nombre.toLocaleLowerCase())
+  ))).length;
+}
+function movimientosEnAlmacenes(codigos,locs){
+  const codSet=new Set(codigos),locSet=new Set(locs.map(loc=>loc.codigo));
+  return movimientosUbicacion.filter(m=>
+    codSet.has(m.ubicacion_anterior_almacen_codigo)||codSet.has(m.ubicacion_nueva_almacen_codigo)||
+    locSet.has(m.ubicacion_anterior_codigo)||locSet.has(m.ubicacion_nueva_codigo)||
+    locs.some(loc=>
+      (!m.ubicacion_anterior_codigo&&String(m.ubicacion_anterior||"").trim().toLocaleLowerCase()===loc.nombre.toLocaleLowerCase())||
+      (!m.ubicacion_nueva_codigo&&String(m.ubicacion_nueva||"").trim().toLocaleLowerCase()===loc.nombre.toLocaleLowerCase())
+    )
+  ).length;
+}
+async function eliminarUbicacion(codigo){
+  if(!esAdmin){toast("Solo el administrador puede eliminar ubicaciones.",1);return}
+  if(movimientosError){toast("No se pudo verificar el historial. Recarga antes de eliminar esta ubicación.",1);return}
+  const loc=ubicaciones.find(item=>item.codigo===codigo);if(!loc)return;
+  const materiales=materialesEnUbicacion(loc),movimientos=movimientosDeUbicacion(loc);
+  if(materiales){toast("Traspasa primero todo el inventario de esta ubicación.",1);return}
+  if(!confirm(`¿Eliminar la ubicación ${loc.nombre} (${loc.codigo}) del almacén ${almacenes.find(a=>a.codigo===loc.almacen_codigo)?.nombre||"Sin almacén"}?${movimientos?`\n\nSe conservarán ${movimientos} movimiento(s) en el historial con el nombre y código originales.`:""}`))return;
+  let movimientosConservados=movimientos;
+  try{
+    const{data,error}=await sb.rpc("eliminar_ubicacion_vacia",{p_ubicacion_codigo:codigo});if(error)throw error;
+    movimientosConservados=Number(data?.movimientos_conservados??movimientos);
+  }catch(err){
+    if(/UBICACION_NO_VACIA/.test(String(err?.message||err)))toast("La ubicación todavía tiene inventario. Traspásalo antes de eliminarla.",1);
+    else errDB(err,"No se pudo eliminar la ubicación");
+    return;
+  }
+  await cargarUbicaciones();toast(`Ubicación eliminada: ${loc.nombre}${movimientosConservados?` · ${movimientosConservados} movimiento(s) conservados`:""}`);
+}
+async function eliminarAlmacen(codigo){
+  if(!esAdmin){toast("Solo el administrador puede eliminar almacenes.",1);return}
+  const almacen=almacenes.find(item=>item.codigo===codigo);if(!almacen)return;
+  const locs=ubicaciones.filter(loc=>loc.almacen_codigo===codigo),materiales=materialesEnAlmacenes([codigo]),movimientos=movimientosEnAlmacenes([codigo],locs);
+  const detalle=`\n\nSe eliminarán ${locs.length} ubicación(es) y ${movimientos} movimientos del historial. Los ${materiales} materiales se conservarán, pero quedarán sin almacén ni ubicación. Esta acción no se puede deshacer.`;
+  if(!confirm(`¿Eliminar el almacén ${almacen.nombre} (${almacen.codigo})?${detalle}`))return;
+  try{
+    const{data,error}=await sb.rpc("eliminar_almacen_inventario",{p_almacen_codigo:codigo});if(error)throw error;
+    const borrados=Number(data?.movimientos_eliminados??movimientos),liberados=Number(data?.materiales_desvinculados??materiales);
+    await cargarUbicaciones();
+    toast(`Almacén eliminado. ${liberados} materiales conservados sin ubicación · ${borrados} movimientos eliminados.`);
+  }catch(err){errDB(err,"No se pudo eliminar el almacén")}
+}
+function actualizarSelectorAlmacenes(seleccionActual){
+  const selector=$("ubiAlmacen"),valor=seleccionActual||selector.value;
+  selector.innerHTML='<option value="">Seleccione un almacén…</option>'+almacenes.map(a=>`<option value="${esc(a.codigo)}">${esc(a.nombre)}${a.clasificacion?` · ${esc(a.clasificacion)}`:""}</option>`).join("");
+  const predeterminado=almacenes.some(a=>a.codigo==="ALM-MP")?"ALM-MP":almacenes[0]?.codigo||"";
+  selector.value=almacenes.some(a=>a.codigo===valor)?valor:predeterminado;
+  $("ubiGuardar").disabled=!selector.value||!!almacenesError||!!ubicacionesError;
+}
 function renderUbicaciones(){
   const estado=$("ubiEstado"),lista=$("ubiLista"),form=$("ubiForm");
-  if(ubicacionesError){estado.innerHTML=`<div class="res bad">${esc(ubicacionesError)} <a href="./supabase_ubicaciones.sql" download>Descargar SQL</a></div>`;form.hidden=true;lista.innerHTML="";return}
-  estado.innerHTML="";form.hidden=false;
-  if(!ubicaciones.length){lista.innerHTML='<div class="empty">Todavía no hay ubicaciones registradas.</div>';return}
-  lista.innerHTML=ubicaciones.map((loc,i)=>`<article class="ubicacion-card"><div><b>${esc(loc.nombre)}</b><div class="d"><b>Código</b><span>${esc(loc.codigo)}</span></div><div class="acts"><button type="button" class="bs" data-ubi-qr="${i}">Ver QR</button></div><div id="ubiQr-${i}" hidden></div></div></article>`).join("");
-  lista.querySelectorAll("[data-ubi-qr]").forEach(btn=>btn.onclick=()=>mostrarQrUbicacion(ubicaciones[+btn.dataset.ubiQr],+btn.dataset.ubiQr));
+  actualizarSelectorAlmacenes();
+  if(almacenesError||ubicacionesError){estado.innerHTML=[almacenesError,ubicacionesError].filter(Boolean).map(error=>`<div class="res bad">${esc(error)} <a href="./supabase_almacenes.sql" download>Descargar migración</a></div>`).join("");form.hidden=true;lista.innerHTML="";return}
+  estado.innerHTML=movimientosError?`<div class="res bad">${esc(movimientosError)} El listado de ubicaciones sigue disponible, pero no se pudo consultar el historial.</div>`:"";form.hidden=false;
+  const almacenCodigo=$("ubiAlmacen").value;
+  if(!almacenCodigo){lista.innerHTML='<div class="empty">Crea o selecciona un almacén antes de agregar ubicaciones.</div>';return}
+  const ubicacionesAlmacen=ubicaciones.filter(loc=>loc.almacen_codigo===almacenCodigo);
+  if(!ubicacionesAlmacen.length){lista.className="ubicaciones-list";lista.innerHTML='<div class="empty">Este almacén todavía no tiene ubicaciones.</div>';return}
+  const abiertas=new Set([...lista.querySelectorAll(".ubicacion-card[open]")].map(item=>item.dataset.codigo));
+  lista.className="ubicaciones-list";
+  lista.innerHTML=ubicacionesAlmacen.map(loc=>{const i=ubicaciones.indexOf(loc),alm=almacenes.find(a=>a.codigo===loc.almacen_codigo),existencias=materialesEnUbicacion(loc),movimientos=movimientosDeUbicacion(loc),ocupada=existencias>0||!!movimientosError;return`<details class="ubicacion-card ubicacion-fila" data-index="${i}" data-codigo="${esc(loc.codigo)}" ${abiertas.has(loc.codigo)?"open":""}><summary><span class="ubicacion-nombre">${esc(loc.nombre)}</span><span class="ubicacion-codigo">Código: ${esc(loc.codigo)} · Almacén: ${esc(alm?.nombre||"Sin almacén")}</span></summary><div class="ubicacion-detalle"><div class="d"><b>Almacén</b><span>${esc(alm?.nombre||"Sin almacén")}</span></div><div class="d"><b>Código</b><span>${esc(loc.codigo)}</span></div><div class="d"><b>Inventario</b><span>${existencias} materiales · ${movimientos} movimientos históricos</span></div>${movimientos?`<p class="ubicaciones-ayuda">Al eliminarla, sus movimientos permanecerán en el historial con el nombre y código originales.</p>`:""}<div id="ubiQr-${i}"></div>${esAdmin?`<div class="ubicacion-admin-actions"><button type="button" class="bd ubicacion-delete" data-eliminar-ubicacion="${esc(loc.codigo)}" ${ocupada?`disabled title="${movimientosError?"No se pudo verificar el historial":"Traspasa el inventario antes de eliminar"}"`:""}>🗑️ Eliminar ubicación</button></div>`:""}</div></details>`}).join("");
+  lista.querySelectorAll(".ubicacion-card").forEach(item=>{
+    item.addEventListener("toggle",()=>{
+      if(!item.open)return;
+      lista.querySelectorAll(".ubicacion-card[open]").forEach(otra=>{if(otra!==item)otra.open=false});
+      const i=Number(item.dataset.index);mostrarQrUbicacion(ubicaciones[i],i);
+    });
+  });
+  lista.querySelectorAll(".ubicacion-card[open]").forEach(item=>{
+    const i=Number(item.dataset.index);mostrarQrUbicacion(ubicaciones[i],i);
+  });
+  lista.querySelectorAll("[data-eliminar-ubicacion]").forEach(btn=>btn.onclick=()=>eliminarUbicacion(btn.dataset.eliminarUbicacion));
 }
 function codigoQrUbicacion(codigo){return`TRAZABILIDAD-UBICACION:${codigo}`}
 function mostrarQrUbicacion(loc,i){
   const box=$(`ubiQr-${i}`);if(!box)return;
+  if(box.querySelector("canvas"))return;
   const qr=dibujarQR(codigoQrUbicacion(loc.codigo),240);
   if(!qr){toast("No se pudo generar el QR de la ubicación",1);return}
-  box.hidden=false;box.innerHTML=`<div class="acts"><button type="button" class="bs" data-ubi-descargar>⬇️ Descargar QR</button><button type="button" class="bs" data-ubi-imprimir>🖨️ Imprimir QR</button></div>`;
+  const almacen=almacenes.find(a=>a.codigo===loc.almacen_codigo);
+  box.innerHTML=`<div class="acts"><button type="button" class="bs" data-ubi-descargar>⬇️ Descargar QR</button><button type="button" class="bs" data-ubi-imprimir>🖨️ Imprimir QR</button></div>`;
   qr.className="ubicacion-qr";box.prepend(qr);
   box.querySelector("[data-ubi-descargar]").onclick=()=>{const a=document.createElement("a");a.href=qr.toDataURL("image/png");a.download=`QR_${loc.codigo}.png`;a.click()};
-  box.querySelector("[data-ubi-imprimir]").onclick=()=>imprimirEtiquetaUbicacion(loc,qr.toDataURL("image/png"));
+  box.querySelector("[data-ubi-imprimir]").onclick=()=>imprimirEtiquetaUbicacion(loc,qr.toDataURL("image/png"),almacen);
 }
-function imprimirEtiquetaUbicacion(loc,src){
-  const e=$("etiqueta");e.className="hoja";e.innerHTML=`<div class="pz"><img src="${src}" alt="QR ${esc(loc.codigo)}"><div class="tx"><b class="cd">${esc(loc.codigo)}</b><span class="tg">UBICACIÓN</span><small>${esc(loc.nombre)}</small></div></div>`;
+function imprimirEtiquetaUbicacion(loc,src,almacen){
+  const e=$("etiqueta");e.className="hoja";e.innerHTML=`<div class="pz"><img src="${src}" alt="QR ${esc(loc.codigo)}"><div class="tx"><b class="cd">${esc(loc.codigo)}</b><span class="tg">UBICACIÓN</span><small>${esc(almacen?.nombre||"Sin almacén")}</small><small>${esc(loc.nombre)}</small></div></div>`;
   let st=$("etqCss");if(!st){st=document.createElement("style");st.id="etqCss";document.head.appendChild(st)}
   st.textContent=cssEtq();window.addEventListener("afterprint",limpiarEtqCss,{once:true});window.print();
 }
@@ -13141,17 +13376,18 @@ function procesarEscaneoInventario(txt){
   if(raw.toUpperCase().startsWith(prefijo)){
     const codigo=raw.slice(prefijo.length).trim(),loc=ubicaciones.find(x=>x.codigo.toLowerCase()===codigo.toLowerCase());
     if(!loc){toast(`Ubicación no registrada: ${codigo}`,1);return}
-    ubicacionDestino=loc;$("ubiDestino").textContent=`${loc.nombre} (${loc.codigo})`;renderAsignacion();toast(`Destino seleccionado: ${loc.nombre}`);$("ubiScan").focus();return
+    const almacen=almacenes.find(a=>a.codigo===loc.almacen_codigo);
+    ubicacionDestino=loc;$("ubiDestino").textContent=`${almacen?.nombre||"Sin almacén"} → ${loc.nombre} (${loc.codigo})`;renderAsignacion();toast(`Destino seleccionado: ${almacen?.nombre?almacen.nombre+" → ":""}${loc.nombre}`);$("ubiScan").focus();return
   }
   const cod=codDe(raw).toLowerCase(),m=mats.find(x=>x.codigo.toLowerCase()===cod);
   if(!m){toast(`Código no registrado: ${cod}`,1);return}
   if(!ubicacionDestino){toast("Primero escanea el QR de la ubicación destino.",1);return}
-  if(asignacionItems.some(x=>x.codigo.toLowerCase()===m.codigo.toLowerCase())){toast(`${m.codigo} ya está en la lista de asignación`,1);return}
+  if(asignacionItems.some(x=>x.codigo.toLowerCase()===m.codigo.toLowerCase())){toast(`${m.codigo} ya está en la lista de traspaso`,1);return}
   const e=existencia(m);if(e.rest<=0){toast(`${m.codigo} no tiene existencia disponible`,1);return}
   asignacionItems.push({codigo:m.codigo});renderAsignacion();
 }
 function renderAsignacion(){
-  $("asigLista").innerHTML=asignacionItems.map((item,i)=>{const m=mats.find(x=>x.codigo===item.codigo);return m?`<div class="asig-item"><span><b>${esc(m.codigo)}</b> · ${esc(m.descripcion)} · ${esc(existTxt(m))}</span><button type="button" class="bd" data-asig-quitar="${i}">Quitar</button></div>`:""}).join("");
+  $("asigLista").innerHTML=asignacionItems.map((item,i)=>{const m=mats.find(x=>x.codigo===item.codigo);if(!m)return"";const origen=ubicaciones.find(loc=>loc.codigo===m.ubicacionCodigo),origenTxt=origen?`${origen.nombre} (${origen.codigo})`:m.ubicacion||"Sin ubicación";return`<div class="asig-item"><span><b>${esc(m.codigo)}</b> · ${esc(m.descripcion)} · ${esc(existTxt(m))}<br><small>Desde: ${esc(origenTxt)}</small></span><button type="button" class="bd" data-asig-quitar="${i}">Quitar</button></div>`}).join("");
   $("asigLista").querySelectorAll("[data-asig-quitar]").forEach(b=>b.onclick=()=>{asignacionItems.splice(+b.dataset.asigQuitar,1);renderAsignacion()});
   $("ubiConfirmar").disabled=!ubicacionDestino||!asignacionItems.length||!!ubicacionesError;
 }
@@ -13159,7 +13395,7 @@ async function confirmarAsignacion(){
   if(!ubicacionDestino||!asignacionItems.length)return;
   const items=asignacionItems.map(x=>mats.find(m=>m.codigo===x.codigo)).filter(Boolean);
   if(items.length!==asignacionItems.length){toast("Uno o más materiales ya no están disponibles. Actualice e intente de nuevo.",1);await cargar();renderAsignacion();return}
-  const mismo=items.filter(m=>m.ubicacionCodigo===ubicacionDestino.codigo||m.ubicacion===ubicacionDestino.nombre);
+  const mismo=items.filter(m=>m.ubicacionCodigo===ubicacionDestino.codigo||(!m.ubicacionCodigo&&m.ubicacion===ubicacionDestino.nombre&&(!m.ubicacionAlmacenCodigo||m.ubicacionAlmacenCodigo===ubicacionDestino.almacen_codigo)));
   if(mismo.length){toast(`Ya están en ${ubicacionDestino.nombre}: ${mismo.map(m=>m.codigo).join(", ")}`,1);return}
   const folio=`UBI-${Date.now()}`;
   const payload=items.map(m=>{const e=existencia(m);return{codigo:m.codigo,existencia:{modo:e.modo,cantidad:e.modo==="pz"?e.rest:e.qty,longitud:e.modo==="long"?e.rest:null,unidad:e.u,peso:e.peso?.peso??null,pesoUnidad:e.peso?.u??null}}});
@@ -13170,13 +13406,14 @@ async function confirmarAsignacion(){
     if(Number(data)!==items.length)throw new Error(`Respuesta incompleta del servidor (${data??"sin cantidad"})`);
     asignacionItems=[];renderAsignacion();
     try{await Promise.all([cargar(),cargarUbicaciones()])}
-    catch(err){errDB(err,"Asignación registrada, pero no se pudo actualizar la vista")}
-    toast(`Inventario asignado a ${ubicacionDestino.nombre} · ${folio}`);
-  }catch(err){errDB(err,"No se pudo asignar el inventario");$("ubiConfirmar").disabled=false}
+    catch(err){errDB(err,"Traspaso registrado, pero no se pudo actualizar la vista")}
+    toast(`Traspaso registrado a ${ubicacionDestino.nombre} · ${folio}`);
+  }catch(err){errDB(err,"No se pudo registrar el traspaso");$("ubiConfirmar").disabled=false}
 }
 function renderHistUbicaciones(){
+  $("ubiHistEstado").innerHTML=movimientosError?`<div class="res bad">${esc(movimientosError)}</div>`:"";
   const filas=movimientosUbicacion.slice().sort((a,b)=>new Date(b.created_at)-new Date(a.created_at));
-  $("ubiHistBody").innerHTML=filas.map(x=>`<tr><td>${esc(new Date(x.created_at).toLocaleString("es-MX"))}</td><td>${esc(x.folio)}</td><td>${esc(x.codigo_material)}</td><td>${esc(x.ubicacion_anterior||"Sin ubicación")}</td><td>${esc(x.ubicacion_nueva)}</td><td>${esc(resumenExistencia(x.existencia))}</td></tr>`).join("");
+  $("ubiHistBody").innerHTML=filas.map(x=>{const anterior=almacenes.find(a=>a.codigo===x.ubicacion_anterior_almacen_codigo),nueva=almacenes.find(a=>a.codigo===x.ubicacion_nueva_almacen_codigo),desde=`${esc(x.ubicacion_anterior||"Sin ubicación")}${x.ubicacion_anterior_codigo?` <small>(${esc(x.ubicacion_anterior_codigo)})</small>`:""}`,hacia=`${esc(x.ubicacion_nueva)}${x.ubicacion_nueva_codigo?` <small>(${esc(x.ubicacion_nueva_codigo)})</small>`:""}`;return`<tr><td>${esc(new Date(x.created_at).toLocaleString("es-MX"))}</td><td>${esc(x.folio)}</td><td>${esc(x.codigo_material)}</td><td>${esc(anterior?.nombre||"Sin almacén")}</td><td>${desde}</td><td>${esc(nueva?.nombre||"Sin almacén")}</td><td>${hacia}</td><td>${esc(resumenExistencia(x.existencia))}</td></tr>`}).join("");
   $("ubiHistVacio").hidden=filas.length>0;
 }
 function resumenExistencia(e){
@@ -13188,13 +13425,33 @@ function siguienteCodigoUbicacion(){
   const max=ubicaciones.reduce((n,l)=>Math.max(n,Number(/^(?:UBI-)?(\d+)$/i.exec(l.codigo)?.[1])||0),0);
   $("ubiCodigo").value=`UBI-${String(max+1).padStart(3,"0")}`;
 }
+function siguienteCodigoAlmacen(){
+  const max=almacenes.reduce((n,a)=>Math.max(n,Number(/^ALM-(\d+)$/i.exec(a.codigo)?.[1])||0),0);
+  $("almacenCodigo").value=`ALM-${String(max+1).padStart(3,"0")}`;
+}
+$("almacenAuto").onclick=siguienteCodigoAlmacen;
+$("almacenForm").addEventListener("submit",async e=>{
+  e.preventDefault();
+  const codigo=$("almacenCodigo").value.trim(),nombre=$("almacenNombre").value.trim(),clasificacion=$("almacenTipo").value||null;
+  if(!codigo||!nombre)return;
+  $("almacenGuardar").disabled=true;
+  try{
+    const{error}=await sb.from("almacenes").insert({codigo,nombre,clasificacion});if(error)throw error;
+    $("almacenNombre").value="";$("almacenTipo").value="";siguienteCodigoAlmacen();
+    await cargarUbicaciones();$("ubiAlmacen").value=codigo;renderUbicaciones();
+    toast(`Almacén guardado: ${nombre}`);
+  }catch(err){errDB(err,"No se pudo guardar el almacén")}
+  finally{$("almacenGuardar").disabled=false}
+});
 $("ubiAuto").onclick=siguienteCodigoUbicacion;
+$("ubiAlmacen").onchange=renderUbicaciones;
 $("ubiForm").addEventListener("submit",async e=>{
   e.preventDefault();const codigo=$("ubiCodigo").value.trim(),nombre=$("ubiNombre").value.trim();
-  if(!codigo||!nombre)return;
+  const almacenCodigo=$("ubiAlmacen").value,almacen=almacenes.find(a=>a.codigo===almacenCodigo);
+  if(!codigo||!nombre||!almacen)return;
   $("ubiGuardar").disabled=true;
-  try{const{error}=await sb.from("ubicaciones").insert({codigo,nombre});if(error)throw error;
-    $("ubiNombre").value="";siguienteCodigoUbicacion();await cargarUbicaciones();toast(`Ubicación guardada: ${nombre}`);
+  try{const{error}=await sb.from("ubicaciones").insert({codigo,nombre,almacen_codigo:almacenCodigo});if(error)throw error;
+    $("ubiNombre").value="";siguienteCodigoUbicacion();await cargarUbicaciones();$("ubiAlmacen").value=almacenCodigo;renderUbicaciones();toast(`Ubicación guardada en ${almacen.nombre}: ${nombre}`);
   }catch(err){errDB(err,"No se pudo guardar la ubicación")}
   finally{$("ubiGuardar").disabled=false}
 });
@@ -13207,6 +13464,7 @@ $("ubiConfirmar").onclick=confirmarAsignacion;
 $("ubiLimpiar").onclick=()=>{asignacionItems=[];ubicacionDestino=null;$("ubiDestino").textContent="Sin seleccionar";renderAsignacion()};
 function syncBulkActions(){
   const visible=[...$("tbody").querySelectorAll("[data-select]")],checked=visible.filter(c=>c.checked).length,all=$("selectAll");
+  all.hidden=!esAdmin;$("seleccionInfo").hidden=!esAdmin;$("bDelSel").hidden=$("bDelAll").hidden=!esAdmin;
   all.checked=visible.length>0&&checked===visible.length;all.indeterminate=checked>0&&checked<visible.length;
   $("seleccionInfo").textContent=`${seleccionados.size} seleccionados`;
   $("bDelSel").disabled=seleccionados.size===0;$("bDelAll").disabled=mats.length===0;
@@ -13225,16 +13483,21 @@ $("tbody").addEventListener("change",e=>{
 $("tbody").addEventListener("click",async e=>{
   const b=e.target.closest("button");if(!b)return;const i=+b.dataset.i,m=mats[i];
   if(b.dataset.a==="qr")mostrar(m);
-  else if(b.dataset.a==="ed")editar(i);
-  else if(confirm(`¿Eliminar el material ${m.codigo}? También se borran sus surtidos.`)){try{const{error}=await sb.from("materiales").delete().eq("codigo",m.codigo);if(error)throw error;await cargar();toast("Material eliminado")}catch(err){errDB(err,"No se pudo eliminar")}}
+  else if(b.dataset.a==="ed"){if(esAdmin)editar(i);else toast("Solo el administrador puede editar materiales.",1)}
+  else if(b.dataset.a==="del"){
+    if(!esAdmin){toast("Solo el administrador puede eliminar materiales.",1);return}
+    if(confirm(`¿Eliminar el material ${m.codigo}? También se borran sus surtidos.`)){try{const{error}=await sb.from("materiales").delete().eq("codigo",m.codigo);if(error)throw error;await cargar();toast("Material eliminado")}catch(err){errDB(err,"No se pudo eliminar")}}
+  }
 });
 async function eliminarEnLotes(codigos){
+ if(!esAdmin)throw new Error("Solo el administrador puede eliminar materiales.");
  for(let i=0;i<codigos.length;i+=100){
    const{error}=await sb.from("materiales").delete().in("codigo",codigos.slice(i,i+100));
    if(error)throw error;
  }
 }
 $("bDelSel").onclick=async()=>{
+ if(!esAdmin){toast("Solo el administrador puede eliminar materiales.",1);return}
  const codigos=[...seleccionados].filter(c=>mats.some(m=>m.codigo===c));
  if(!codigos.length){seleccionados.clear();render();return}
  if(!confirm(`¿Eliminar ${codigos.length} material(es) seleccionado(s)? También se borrarán sus surtidos.`))return;
@@ -13244,6 +13507,7 @@ $("bDelSel").onclick=async()=>{
  try{await cargar()}catch(err){errDB(err,"No se pudo actualizar la lista")}
 };
 $("bDelAll").onclick=async()=>{
+ if(!esAdmin){toast("Solo el administrador puede restablecer el catálogo.",1);return}
  const codigos=mats.map(m=>m.codigo);
  if(!codigos.length)return;
  if(!confirm(`¿Eliminar TODOS los ${codigos.length} materiales? También se borrarán sus surtidos. Esta acción no se puede deshacer.`))return;
@@ -13253,6 +13517,8 @@ $("bDelAll").onclick=async()=>{
  try{await cargar()}catch(err){errDB(err,"No se pudo actualizar la lista")}
 };
 function editar(i){
+  if(!esAdmin){toast("Solo el administrador puede editar materiales.",1);return}
+  activarSubpantalla("vReg","captura");
   const m=mats[i];resetForm();$("editIndex").value=i;
   const values={codigo:m.codigo,descripcion:m.descripcion,um:m.um,cantidad:m.cantidad,ubicacion:m.ubicacion,fechaRecibo:m.fechaRecibo,tipoRegistro:m.tipoRegistro|| (m.esMP?"MP":"GENERAL"),seccionMaterial:m.seccionMaterial,altoMaterial:m.alto,anchoMaterial:m.ancho,diametroMaterial:m.diametro,
     tipoMaterial:m.tipoMaterial??(m.esMP?"Materia prima":"Material general"),especificacionMedida:m.especificacionMedida,longitudIndividual:m.longitudIndividual,manufactura:m.manufactura,
@@ -13286,8 +13552,8 @@ $("bCsv").onclick=()=>{
     value(m,"ordenMaterial",m.ordenMaterial),value(m,"poNumber",m.poNumber)]);
   bajar("trazabilidad_materiales.csv","\ufeff"+[cols.join(","),...rows.map(row=>row.map(c).join(","))].join("\r\n"),"text/csv;charset=utf-8");toast("CSV exportado ⬇️");
 };
-$("bImp").onclick=()=>$("fileImp").click();
-$("bExcel").onclick=()=>$("fileExcel").click();
+$("bImp").onclick=()=>{if(!esAdmin){toast("Solo el administrador puede restaurar información.",1);return}$("fileImp").click()};
+$("bExcel").onclick=()=>{if(!esAdmin){toast("Solo el administrador puede importar información.",1);return}$("fileExcel").click()};
 const EXCEL_HEADERS={
   ubicacion:["ubicacion","location"],codigo:["codigo","code"],tipoRegistro:["clasificacion","tiporegistro","categoriaregistro"],tipoMaterial:["tipomaterial","tipo"],descripcion:["descripcion","description"],
   seccionMaterial:["seccion","seccionmaterial","forma","shape"],alto:["alto","altomm","height"],ancho:["ancho","anchomm","width"],diametro:["diametro","diametromm","diameter"],
@@ -13402,6 +13668,7 @@ function consolidarExcelPorCodigo(materiales){
   return{materiales:[...porCodigo.values()],filasAgrupadas};
 }
 async function importarExcel(file){
+  if(!esAdmin)throw new Error("Solo el administrador puede importar información.");
   if(!window.XLSX)throw new Error("No se pudo cargar el lector de Excel. Revise la conexión y recargue la página.");
   const workbook=XLSX.read(await file.arrayBuffer(),{type:"array",cellDates:true}),nombreHoja=workbook.SheetNames[0],sheet=workbook.Sheets[nombreHoja];
   if(!sheet)throw new Error("El archivo no contiene hojas para importar.");
@@ -13426,6 +13693,7 @@ $("fileExcel").onchange=async e=>{
   try{await importarExcel(file)}catch(err){toast(err.message||"No se pudo leer el archivo de Excel",1)}
 };
 $("fileImp").onchange=e=>{
+  if(!esAdmin){e.target.value="";toast("Solo el administrador puede restaurar información.",1);return}
   const f=e.target.files[0];if(!f)return;const r=new FileReader();
   r.onload=async()=>{try{
     const a=JSON.parse(r.result);if(!Array.isArray(a))throw 0;let nuevos=0,omit=0,surt=0;
@@ -13471,11 +13739,19 @@ function existTxt(m){const e=existencia(m);return e.modo==="long"?`${fmt(e.rest)
 let surItems=[],nextSurItem=1,stream=null,scanning=false,modoEscaneo="surtido";
 
 document.querySelectorAll(".tab").forEach(b=>b.onclick=()=>{
-  document.querySelectorAll(".tab").forEach(x=>x.classList.toggle("on",x===b));
+  document.querySelectorAll(".tab").forEach(x=>{x.classList.toggle("on",x===b);if(x===b)x.setAttribute("aria-current","page");else x.removeAttribute("aria-current")});
   const vista=b.dataset.v;
   $("vReg").hidden=vista!=="vReg";$("vSur").hidden=vista!=="vSur";$("vInv").hidden=vista!=="vInv";
-  if(vista==="vSur"){modoEscaneo="surtido";renderSur();renderHist();enfocar()}else{camOff();if(vista==="vInv"){modoEscaneo="inventario";renderInventario();renderUbicaciones();renderHistUbicaciones();renderAsignacion()}else{modoEscaneo="surtido";render()}}
+  if(vista==="vSur"){activarSubpantalla("vSur","preparar");modoEscaneo="surtido";renderSur();renderHist();enfocar()}else{camOff();if(vista==="vInv"){activarSubpantalla("vInv","existencias");modoEscaneo="inventario";renderInventario();renderUbicaciones();renderHistUbicaciones();renderAsignacion()}else{activarSubpantalla("vReg","captura");modoEscaneo="surtido";render()}}
 });
+function activarSubpantalla(modulo,pagina){
+  const vista=$(modulo);if(!vista)return;
+  vista.querySelectorAll("[data-module-screen]").forEach(panel=>{panel.hidden=panel.dataset.moduleScreen!==pagina});
+  vista.querySelectorAll(".section-tab").forEach(b=>{if(b.dataset.page===pagina)b.setAttribute("aria-current","page");else b.removeAttribute("aria-current")});
+  if(modulo==="vInv"&&pagina!=="asignar"&&modoEscaneo==="inventario")camOff();
+  if(modulo==="vSur"&&pagina!=="preparar")camOff();
+}
+document.querySelectorAll(".section-tab").forEach(b=>b.onclick=()=>activarSubpantalla(b.dataset.module,b.dataset.page));
 function enfocar(){if(matchMedia("(pointer:fine)").matches)$("scanIn").focus()}
 
 function escanear(txt){
@@ -13715,7 +13991,7 @@ function renderHist(){
   });
   $("hBody").innerHTML=[...groups.values()].map(g=>{
     const materiales=new Set(g.items.map(({m})=>m.codigo)),ultima=g.items[0].d.fecha||"";
-    const detalles=g.items.map(({m,i,j,d})=>`<tr><td>${esc(d.fecha)}</td><td><b>${esc(m.codigo)}</b><br><small>${esc(d.folio||folioSalida(d.t))}</small></td><td>${esc(surTxt(m,d))}</td><td><button type="button" class="ic" data-action="pdf" data-folio="${esc(d.folio||folioSalida(d.t))}" title="PDF / Imprimir salida completa">📄</button> <button type="button" class="ic" data-action="anular" data-i="${i}" data-j="${j}" title="Anular este renglón">↩️</button></td></tr>`).join("");
+    const detalles=g.items.map(({m,i,j,d})=>`<tr><td>${esc(d.fecha)}</td><td><b>${esc(m.codigo)}</b><br><small>${esc(d.folio||folioSalida(d.t))}</small></td><td>${esc(surTxt(m,d))}</td><td><button type="button" class="ic" data-action="pdf" data-folio="${esc(d.folio||folioSalida(d.t))}" title="PDF / Imprimir salida completa">📄</button>${esAdmin?` <button type="button" class="ic" data-action="anular" data-i="${i}" data-j="${j}" title="Anular este renglón">↩️</button>`:""}</td></tr>`).join("");
     return`<details class="sur-group"><summary><span class="sur-date">${esc(ultima)}</span><span class="sur-order">Orden: ${esc(g.orden||"Sin orden")}</span><span class="sur-count">${g.items.length} surtido(s) · ${materiales.size} material(es)</span></summary>
       <div class="sur-group-body"><table><thead><tr><th>Fecha</th><th>Código / folio</th><th>Surtido</th><th>Acciones</th></tr></thead><tbody>${detalles}</tbody></table></div></details>`;
   }).join("");
@@ -13724,6 +14000,7 @@ function renderHist(){
 $("hBody").addEventListener("click",async e=>{
   const b=e.target.closest("button");if(!b)return;
   if(b.dataset.action==="pdf"){imprimirFolio(b.dataset.folio);return}
+  if(!esAdmin){toast("Solo el administrador puede anular surtidos.",1);return}
   const m=mats[+b.dataset.i],d=m.despachos[+b.dataset.j];
   if(confirm(`¿Anular el surtido de ${m.codigo} (${surTxt(m,d)})? La existencia se restituye.`)){try{const{error}=await sb.from("despachos").delete().eq("codigo",m.codigo).eq("t",d.t);if(error)throw error;await cargar();renderHist();renderSur();toast("Surtido anulado")}catch(err){errDB(err,"No se pudo anular")}}
 });
@@ -13743,7 +14020,7 @@ function limpiaP(o){
 function filasFicha(m,ex,pz){
   const et=pz?`Pieza ${pz.n} de ${pz.t||m.cantidad}`:`MASTER · ${m.cantidad} ${m.um}`;
   const st=pz&&ex?(piezasSurt(m).has(pz.n)?"⚠ SURTIDA":"En existencia"):"";
-  return[["Código",m.codigo],["Etiqueta",et],["Estado de la pieza",st],["Clasificación",m.tipoRegistro==="MP"?"Materia prima":"Material general"],["Tipo material",m.tipoMaterial],["Descripción",m.descripcion],["Lote / Colada",m.lote],["Proveedor",m.proveedor],
+  return[["Código",m.codigo],["Etiqueta",et],["Estado de la pieza",st],["Clasificación",m.tipoRegistro==="MP"?"Materia prima":"Material general"],["Tipo material",m.tipoMaterial],["Descripción",m.descripcion],["Proveedor",m.proveedor],
     ["Sección / especificación",seccionEspecificacion(m)],["Longitud IND",m.longitudIndividual!=null?`${m.longitudIndividual} mm`:""],["Manufactura",m.manufactura],["N.º Heat",m.numeroHeat],["N.º lote MP",m.numeroLoteMP||m.lote],["N.º cert.",m.numeroCertificado],["Total mm",m.totalMM],["Fecha de recibo",m.fechaRecibo],["Cantidad",`${m.cantidad} ${m.um}`],
     ["Peso",m.peso!=null?`${m.peso}${m.pesoU||m.pesoUnidad?" "+(m.pesoU||m.pesoUnidad):m.pesoUnidadPendiente?" (unidad sin definir)":""}`:""],["Orden",m.ordenMaterial],["PO number",m.poNumber],
     ["Existencia",ex?existTxt(m):""],["Existencia al imprimir la etiqueta",!ex&&m.existSnap?m.existSnap:""],["Últ. modificación",m.fechaModificacion]]}
