@@ -12919,7 +12919,7 @@ const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&
 const hoy=()=>new Date(Date.now()-new Date().getTimezoneOffset()*6e4).toISOString().slice(0,10);
 const fmt=n=>Number(n).toLocaleString("es-MX",{maximumFractionDigits:3});
 function totalTxt(m){return m.esMP&&m.um==="PZ"&&m.cantidad>0&&m.longitud>0?`${fmt(m.cantidad*m.longitud)} ${m.longU||m.longitudUnidad||"mm"}`:""}
-let mats=[],actual=null,orden={k:null,asc:true},esStaff=false,esAdmin=false,almacenes=[],ubicaciones=[],movimientosUbicacion=[],almacenesError="",ubicacionesError="",movimientosError="",ubicacionDestino=null,asignacionItems=[];
+let mats=[],actual=null,orden={k:null,asc:true},esStaff=false,esAdmin=false,almacenes=[],ubicaciones=[],ubicacionesAlias=[],movimientosUbicacion=[],almacenesError="",ubicacionesError="",ubicacionesAliasError="",movimientosError="",ubicacionDestino=null,asignacionItems=[];
 const seleccionados=new Set();
 
 // --- Supabase ---
@@ -12960,7 +12960,8 @@ async function cargarUbicaciones(){
   const resultados=await Promise.allSettled([
     leerTodo("almacenes","codigo,nombre,clasificacion,created_at",["nombre"]),
     leerTodo("ubicaciones","codigo,nombre,almacen_codigo,created_at",["nombre"]),
-    leerTodo("movimientos_ubicacion","id,folio,codigo_material,ubicacion_anterior_codigo,ubicacion_anterior,ubicacion_nueva_codigo,ubicacion_nueva,ubicacion_anterior_almacen_codigo,ubicacion_nueva_almacen_codigo,existencia,created_at",["id"])
+    leerTodo("movimientos_ubicacion","id,folio,codigo_material,ubicacion_anterior_codigo,ubicacion_anterior,ubicacion_nueva_codigo,ubicacion_nueva,ubicacion_anterior_almacen_codigo,ubicacion_nueva_almacen_codigo,existencia,created_at",["id"]),
+    leerTodo("ubicaciones_codigos_alias","codigo_alias,ubicacion_codigo,created_at",["codigo_alias"])
   ]);
   const mensajeError=(resultado,nombre)=>{
     if(resultado.status==="fulfilled")return"";
@@ -12971,10 +12972,12 @@ async function cargarUbicaciones(){
   almacenesError=mensajeError(resultados[0],"almacenes");
   ubicacionesError=mensajeError(resultados[1],"ubicaciones");
   movimientosError=mensajeError(resultados[2],"el historial de movimientos");
+  ubicacionesAliasError=mensajeError(resultados[3],"los códigos anteriores de QR de ubicaciones");
   almacenes=resultados[0].status==="fulfilled"?resultados[0].value:[];
   ubicaciones=resultados[1].status==="fulfilled"?resultados[1].value:[];
   movimientosUbicacion=resultados[2].status==="fulfilled"?resultados[2].value:[];
-  [resultados[0],resultados[1],resultados[2]].forEach(resultado=>{if(resultado.status==="rejected")console.error(resultado.reason)});
+  ubicacionesAlias=resultados[3].status==="fulfilled"?resultados[3].value:[];
+  resultados.forEach(resultado=>{if(resultado.status==="rejected")console.error(resultado.reason)});
   if(!$("ubiCodigo").value)siguienteCodigoUbicacion();
   if(!$("almacenCodigo").value)siguienteCodigoAlmacen();
   renderAlmacenes();renderUbicaciones();renderHistUbicaciones();renderInventario();
@@ -12990,14 +12993,14 @@ function dejarCanal(){const c=canalRT;canalRT=null;if(!sb||!c)return;try{sb.remo
 function suscribir(){
   if(!sb||canalRT)return;
   const rt=()=>{clearTimeout(rtT);rtT=setTimeout(()=>{cargar().catch(()=>{});cargarUbicaciones()},400)};
-  canalRT=sb.channel("cambios").on("postgres_changes",{event:"*",schema:"public",table:"materiales"},rt).on("postgres_changes",{event:"*",schema:"public",table:"despachos"},rt).on("postgres_changes",{event:"*",schema:"public",table:"almacenes"},rt).on("postgres_changes",{event:"*",schema:"public",table:"ubicaciones"},rt).on("postgres_changes",{event:"*",schema:"public",table:"movimientos_ubicacion"},rt).subscribe(estado=>{if((estado==="CHANNEL_ERROR"||estado==="TIMED_OUT")&&canalRT){const c=canalRT;canalRT=null;try{sb.removeChannel(c).catch(()=>{})}catch{}}});
+  canalRT=sb.channel("cambios").on("postgres_changes",{event:"*",schema:"public",table:"materiales"},rt).on("postgres_changes",{event:"*",schema:"public",table:"despachos"},rt).on("postgres_changes",{event:"*",schema:"public",table:"almacenes"},rt).on("postgres_changes",{event:"*",schema:"public",table:"ubicaciones"},rt).on("postgres_changes",{event:"*",schema:"public",table:"ubicaciones_codigos_alias"},rt).on("postgres_changes",{event:"*",schema:"public",table:"movimientos_ubicacion"},rt).subscribe(estado=>{if((estado==="CHANNEL_ERROR"||estado==="TIMED_OUT")&&canalRT){const c=canalRT;canalRT=null;try{sb.removeChannel(c).catch(()=>{})}catch{}}});
 }
 // --- Sesión ---
 function lgMostrar(msg){$("lgCarga").hidden=true;$("lgF").hidden=false;$("lgMsg").hidden=!msg;$("lgMsg").textContent=msg||""}
 function limpiarSesionLocal(){try{Object.keys(localStorage).filter(k=>k.indexOf("sb-")===0&&k.indexOf("-auth-token")>0).forEach(k=>localStorage.removeItem(k))}catch{}}
 function errorSesion(e){const c=Number(e?.status||e?.code||0);return c===401||c===403||/jwt|token|session|sesi[oó]n/i.test(String(e?.message||""))}
 async function cerrarSesion(){try{const{error}=await sb.auth.signOut();if(error)throw error}catch(e){console.warn("No se pudo revocar la sesión en el servidor; se cierra localmente.",e)}limpiarSesionLocal();salirUI()}
-function salirUI(){esStaff=false;esAdmin=false;seleccionados.clear();$("rolUsuario").hidden=true;$("bImp").hidden=$("bExcel").hidden=false;document.body.classList.remove("auth");dejarCanal();camOff();mats=[];surItems=[];almacenes=[];ubicaciones=[];movimientosUbicacion=[];almacenesError="";ubicacionesError="";movimientosError="";ubicacionDestino=null;asignacionItems=[];actual=null;render();lgMostrar()}
+function salirUI(){esStaff=false;esAdmin=false;seleccionados.clear();$("rolUsuario").hidden=true;$("bImp").hidden=$("bExcel").hidden=false;document.body.classList.remove("auth");dejarCanal();camOff();mats=[];surItems=[];almacenes=[];ubicaciones=[];ubicacionesAlias=[];movimientosUbicacion=[];almacenesError="";ubicacionesError="";ubicacionesAliasError="";movimientosError="";ubicacionDestino=null;asignacionItems=[];actual=null;render();lgMostrar()}
 let entrando=false;
 async function entrar(){
   if(!sb||entrando)return false;
@@ -13310,9 +13313,16 @@ function limpiarConsultaUbicacion(){
   $("ubiConsultaBody").innerHTML="";
   $("ubiConsultaVacio").hidden=true;
 }
+function ubicacionPorCodigo(codigo){
+  const clave=String(codigo||"").trim().toLocaleLowerCase();
+  const directa=ubicaciones.find(loc=>loc.codigo.toLocaleLowerCase()===clave);
+  if(directa)return directa;
+  const alias=ubicacionesAlias.find(item=>item.codigo_alias.toLocaleLowerCase()===clave);
+  return alias?ubicaciones.find(loc=>loc.codigo===alias.ubicacion_codigo):null;
+}
 function mostrarMaterialesPorUbicacion(codigo){
-  const loc=ubicaciones.find(x=>x.codigo.toLowerCase()===String(codigo||"").toLowerCase());
-  if(!loc){toast("Ubicación no registrada",1);return}
+  const loc=ubicacionPorCodigo(codigo);
+  if(!loc){toast(ubicacionesAliasError||"Ubicación no registrada",1);return}
   const almacen=almacenes.find(a=>a.codigo===loc.almacen_codigo);
   const lista=listaMaterialesEnUbicacion(loc);
   ubiConsultaCodigo=loc.codigo;
@@ -13331,7 +13341,7 @@ $("bUbiConsultaLimpiar").onclick=()=>{limpiarConsultaUbicacion()};
 function procesarEscaneoUbiConsulta(txt){
   const raw=String(txt||"").trim(),prefijo="TRAZABILIDAD-UBICACION:";
   if(raw.toUpperCase().startsWith(prefijo)){modoEscaneo="inventario";mostrarMaterialesPorUbicacion(raw.slice(prefijo.length).trim());camOff();return true}
-  const loc=ubicaciones.find(x=>x.codigo.toLowerCase()===raw.toLowerCase());if(loc){modoEscaneo="inventario";mostrarMaterialesPorUbicacion(loc.codigo);camOff();return true}
+  const loc=ubicacionPorCodigo(raw);if(loc){modoEscaneo="inventario";mostrarMaterialesPorUbicacion(loc.codigo);camOff();return true}
   toast("Escanee un QR de ubicación válido",1);return false;
 }
 function renderAlmacenes(){
@@ -13419,7 +13429,7 @@ function renderUbicaciones(){
   const estado=$("ubiEstado"),lista=$("ubiLista"),form=$("ubiForm");
   actualizarSelectorAlmacenes();
   if(almacenesError||ubicacionesError){estado.innerHTML=[almacenesError,ubicacionesError].filter(Boolean).map(error=>`<div class="res bad">${esc(error)} <a href="./supabase_almacenes.sql" download>Descargar migración</a></div>`).join("");form.hidden=true;lista.innerHTML="";return}
-  estado.innerHTML=movimientosError?`<div class="res bad">${esc(movimientosError)} El listado de ubicaciones sigue disponible, pero no se pudo consultar el historial.</div>`:"";form.hidden=false;
+  estado.innerHTML=[movimientosError,ubicacionesAliasError?`${ubicacionesAliasError} Los QR nuevos siguen disponibles; los códigos impresos anteriores podrían no reconocerse.`:""].filter(Boolean).map(error=>`<div class="res bad">${esc(error)}</div>`).join("");form.hidden=false;
   const almacenCodigo=$("ubiAlmacen").value;
   if(!almacenCodigo){lista.innerHTML='<div class="empty">Crea o selecciona un almacén antes de agregar ubicaciones.</div>';return}
   const ubicacionesAlmacen=ubicaciones.filter(loc=>loc.almacen_codigo===almacenCodigo);
@@ -13465,8 +13475,8 @@ function imprimirEtiquetaUbicacion(loc,src,almacen){
 function procesarEscaneoInventario(txt){
   const raw=String(txt||"").trim(),prefijo="TRAZABILIDAD-UBICACION:";
   if(raw.toUpperCase().startsWith(prefijo)){
-    const codigo=raw.slice(prefijo.length).trim(),loc=ubicaciones.find(x=>x.codigo.toLowerCase()===codigo.toLowerCase());
-    if(!loc){toast(`Ubicación no registrada: ${codigo}`,1);return}
+    const codigo=raw.slice(prefijo.length).trim(),loc=ubicacionPorCodigo(codigo);
+    if(!loc){toast(ubicacionesAliasError||`Ubicación no registrada: ${codigo}`,1);return}
     const almacen=almacenes.find(a=>a.codigo===loc.almacen_codigo);
     ubicacionDestino=loc;$("ubiDestino").textContent=`${almacen?.nombre||"Sin almacén"} → ${ubicacionConCodigo(loc)}`;renderAsignacion();toast(`Destino seleccionado: ${almacen?.nombre?almacen.nombre+" → ":""}${ubicacionConCodigo(loc)}`);$("ubiScan").focus();return
   }
@@ -13535,6 +13545,8 @@ async function resolverUbicacionRegistro(nombre,tipoRegistro,ubicacionAnteriorCo
   if(!almacen)throw new Error(`No se encontró el almacén ${almacenCodigo} para ${nombreTipoRegistro(tipoRegistro)}.`);
   const existentePorCodigo=ubicaciones.find(loc=>loc.almacen_codigo===almacenCodigo&&loc.codigo.toLocaleLowerCase()===clave);
   if(existentePorCodigo)return{ubicacion:existentePorCodigo,almacen,creada:false};
+  if(ubicacionesAlias.some(alias=>alias.codigo_alias.toLocaleLowerCase()===clave))
+    throw new Error(`El código ${valor} está reservado como QR anterior de otra ubicación.`);
   const existente=ubicaciones.find(loc=>loc.almacen_codigo===almacenCodigo&&coincideNombre(loc));
   if(/^\d+$/.test(valor)&&existente){
     if(!esAdmin)throw new Error(`La ubicación ${valor} ya existe con el código ${existente.codigo}. Pide al administrador que corrija esa ubicación.`);
@@ -13549,6 +13561,8 @@ async function resolverUbicacionRegistro(nombre,tipoRegistro,ubicacionAnteriorCo
     if(data?.codigo_nuevo!==valor)throw new Error("El servidor no confirmó la corrección del código de ubicación.");
     const corregida={...existente,codigo:valor,nombre:valor};
     ubicaciones=ubicaciones.map(loc=>loc.codigo===existente.codigo?corregida:loc);
+    ubicacionesAlias=ubicacionesAlias.map(alias=>alias.ubicacion_codigo===existente.codigo?{...alias,ubicacion_codigo:valor}:alias);
+    if(!ubicacionesAlias.some(alias=>alias.codigo_alias===existente.codigo))ubicacionesAlias.push({codigo_alias:existente.codigo,ubicacion_codigo:valor});
     mats.forEach(material=>{
       if(material.ubicacionCodigo!==existente.codigo)return;
       material.ubicacionCodigo=valor;material.ubicacion=valor;
@@ -13564,7 +13578,7 @@ async function resolverUbicacionRegistro(nombre,tipoRegistro,ubicacionAnteriorCo
   if(!/^\d+$/.test(valor)){
     const max=ubicaciones.reduce((n,loc)=>Math.max(n,Number(/^(?:UBI-)?(\d+)$/i.exec(loc.codigo)?.[1])||0),0);
     let numero=max+1;codigo=`UBI-${String(numero).padStart(3,"0")}`;
-    while(ubicaciones.some(loc=>loc.codigo.toLocaleLowerCase()===codigo.toLocaleLowerCase())){numero++;codigo=`UBI-${String(numero).padStart(3,"0")}`}
+    while(ubicaciones.some(loc=>loc.codigo.toLocaleLowerCase()===codigo.toLocaleLowerCase())||ubicacionesAlias.some(alias=>alias.codigo_alias.toLocaleLowerCase()===codigo.toLocaleLowerCase())){numero++;codigo=`UBI-${String(numero).padStart(3,"0")}`}
   }
   const{data,error}=await sb.from("ubicaciones").insert({codigo,nombre:valor,almacen_codigo:almacenCodigo}).select("codigo,nombre,almacen_codigo,created_at").single();
   if(error){
