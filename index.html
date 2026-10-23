@@ -12840,9 +12840,8 @@ body.ficha>.app-layout{display:none!important}
     <h2>Ubicaciones y códigos QR</h2>
     <div id="ubiEstado"></div>
     <form id="ubiForm" class="grid" autocomplete="off">
-      <div class="full"><label for="ubiAlmacen">Almacén *</label><select id="ubiAlmacen" required></select></div>
+      <div><label for="ubiAlmacen">Almacén *</label><select id="ubiAlmacen" required></select></div>
       <div><label for="ubiCodigo">Código de ubicación *</label><div class="row"><input id="ubiCodigo" required placeholder="UBI-001"><button type="button" class="bs" id="ubiAuto">Auto</button></div></div>
-      <div><label for="ubiNombre">Nombre de ubicación *</label><input id="ubiNombre" required placeholder="Ej. Rack A · Nivel 1"></div>
       <div class="full"><button type="submit" class="bp" id="ubiGuardar">Guardar ubicación</button></div>
     </form>
     <p class="ubicaciones-ayuda">Selecciona una ubicación para desplegar su código QR y las opciones para descargarlo o imprimirlo.</p>
@@ -13260,7 +13259,7 @@ function renderInventario(){
   selector.value=almacenes.some(a=>a.codigo===almacenActual)?almacenActual:"";
   const q=$("invBuscar").value.trim().toLocaleLowerCase(),tipo=$("invTipo").value,almacenFiltro=selector.value;
   const lista=mats.filter(m=>{const loc=ubicaciones.find(x=>x.codigo===m.ubicacionCodigo),almacenCodigo=loc?.almacen_codigo||m.ubicacionAlmacenCodigo,alm=almacenes.find(x=>x.codigo===almacenCodigo);return(!tipo||(tipo==="mp")===!!m.esMP)&&(!almacenFiltro||almacenCodigo===almacenFiltro)&&(!q||[m.codigo,m.descripcion,m.ubicacion,m.ubicacionCodigo,loc?.nombre,alm?.nombre,m.lote,m.numeroHeat,m.numeroLoteMP].join(" ").toLocaleLowerCase().includes(q))});
-  $("invBody").innerHTML=lista.map(m=>{const loc=ubicaciones.find(x=>x.codigo===m.ubicacionCodigo),alm=almacenes.find(x=>x.codigo===(loc?.almacen_codigo||m.ubicacionAlmacenCodigo));return`<tr><td><b>${esc(m.codigo)}</b></td><td>${m.esMP?'<span class="tag t1">M. PRIMA</span>':'<span class="tag t2">GENERAL</span>'}</td><td class="l">${esc(m.descripcion)}</td><td>${esc(existTxt(m))}</td><td>${esc(alm?.nombre||m.ubicacionAlmacenNombre||"Sin almacén")}</td><td>${esc(loc?`${loc.nombre} (${loc.codigo})`:m.ubicacion||"Sin ubicación")}</td></tr>`}).join("");
+  $("invBody").innerHTML=lista.map(m=>{const loc=ubicaciones.find(x=>x.codigo===m.ubicacionCodigo),alm=almacenes.find(x=>x.codigo===(loc?.almacen_codigo||m.ubicacionAlmacenCodigo));return`<tr><td><b>${esc(m.codigo)}</b></td><td>${m.esMP?'<span class="tag t1">M. PRIMA</span>':'<span class="tag t2">GENERAL</span>'}</td><td class="l">${esc(m.descripcion)}</td><td>${esc(existTxt(m))}</td><td>${esc(alm?.nombre||m.ubicacionAlmacenNombre||"Sin almacén")}</td><td>${esc(loc?ubicacionConCodigo(loc):m.ubicacion||"Sin ubicación")}</td></tr>`}).join("");
   $("invVacio").hidden=lista.length>0;
 }
 $("invBuscar").oninput=$("invTipo").onchange=$("invAlmacen").onchange=renderInventario;
@@ -13273,7 +13272,7 @@ function renderAlmacenes(){
   lista.innerHTML=almacenes.map(a=>{
     const locs=ubicaciones.filter(loc=>loc.almacen_codigo===a.codigo),tipo={MP:"Materia prima",GENERAL:"Material general",CONSUMIBLES:"Consumibles",OTRO:"Otro"}[a.clasificacion]||"Sin clasificación";
     const materiales=materialesEnAlmacenes([a.codigo]),movimientos=movimientosEnAlmacenes([a.codigo],locs);
-    return`<details class="ubicacion-card" data-codigo="${esc(a.codigo)}" ${abiertas.has(a.codigo)?"open":""}><summary><span class="ubicacion-nombre">${esc(a.nombre)}</span><span class="ubicacion-codigo">${esc(a.codigo)} · ${locs.length} ubicaciones</span></summary><div class="ubicacion-detalle"><div class="d"><b>Clasificación</b><span>${esc(tipo)}</span></div><div class="d"><b>Ubicaciones</b><span>${locs.length?locs.map(loc=>`${esc(loc.nombre)} (${esc(loc.codigo)})`).join(" · "):"Sin ubicaciones"}</span></div>${esAdmin?`<div class="res bad">Al eliminar se conservarán los materiales, pero se quitará su almacén y ubicación y se borrarán ${movimientos} movimientos del historial${materiales?` (${materiales} material(es) quedarán sin ubicación)`: ""}.</div><div class="ubicacion-admin-actions"><button type="button" class="bd" data-eliminar-almacen="${esc(a.codigo)}">🗑️ Eliminar almacén y su historial</button></div>`:""}</div></details>`
+    return`<details class="ubicacion-card" data-codigo="${esc(a.codigo)}" ${abiertas.has(a.codigo)?"open":""}><summary><span class="ubicacion-nombre">${esc(a.nombre)}</span><span class="ubicacion-codigo">${esc(a.codigo)} · ${locs.length} ubicaciones</span></summary><div class="ubicacion-detalle"><div class="d"><b>Clasificación</b><span>${esc(tipo)}</span></div><div class="d"><b>Ubicaciones</b><span>${locs.length?locs.map(loc=>esc(ubicacionConCodigo(loc))).join(" · "):"Sin ubicaciones"}</span></div>${esAdmin?`<div class="res bad">Al eliminar se conservarán los materiales, pero se quitará su almacén y ubicación y se borrarán ${movimientos} movimientos del historial${materiales?` (${materiales} material(es) quedarán sin ubicación)`: ""}.</div><div class="ubicacion-admin-actions"><button type="button" class="bd" data-eliminar-almacen="${esc(a.codigo)}">🗑️ Eliminar almacén y su historial</button></div>`:""}</div></details>`
   }).join("");
   lista.querySelectorAll("[data-eliminar-almacen]").forEach(btn=>btn.onclick=()=>eliminarAlmacen(btn.dataset.eliminarAlmacen));
 }
@@ -13310,7 +13309,7 @@ async function eliminarUbicacion(codigo){
   const loc=ubicaciones.find(item=>item.codigo===codigo);if(!loc)return;
   const materiales=materialesEnUbicacion(loc),movimientos=movimientosDeUbicacion(loc);
   if(materiales){toast("Traspasa primero todo el inventario de esta ubicación.",1);return}
-  if(!confirm(`¿Eliminar la ubicación ${loc.nombre} (${loc.codigo}) del almacén ${almacenes.find(a=>a.codigo===loc.almacen_codigo)?.nombre||"Sin almacén"}?${movimientos?`\n\nSe conservarán ${movimientos} movimiento(s) en el historial con el nombre y código originales.`:""}`))return;
+  if(!confirm(`¿Eliminar la ubicación ${ubicacionConCodigo(loc)} del almacén ${almacenes.find(a=>a.codigo===loc.almacen_codigo)?.nombre||"Sin almacén"}?${movimientos?`\n\nSe conservarán ${movimientos} movimiento(s) en el historial con el nombre y código originales.`:""}`))return;
   let movimientosConservados=movimientos;
   try{
     const{data,error}=await sb.rpc("eliminar_ubicacion_vacia",{p_ubicacion_codigo:codigo});if(error)throw error;
@@ -13320,7 +13319,7 @@ async function eliminarUbicacion(codigo){
     else errDB(err,"No se pudo eliminar la ubicación");
     return;
   }
-  await cargarUbicaciones();toast(`Ubicación eliminada: ${loc.nombre}${movimientosConservados?` · ${movimientosConservados} movimiento(s) conservados`:""}`);
+  await cargarUbicaciones();toast(`Ubicación eliminada: ${ubicacionConCodigo(loc)}${movimientosConservados?` · ${movimientosConservados} movimiento(s) conservados`:""}`);
 }
 async function eliminarAlmacen(codigo){
   if(!esAdmin){toast("Solo el administrador puede eliminar almacenes.",1);return}
@@ -13342,6 +13341,8 @@ function actualizarSelectorAlmacenes(seleccionActual){
   selector.value=almacenes.some(a=>a.codigo===valor)?valor:predeterminado;
   $("ubiGuardar").disabled=!selector.value||!!almacenesError||!!ubicacionesError;
 }
+const nombreUbicacion=loc=>(loc&&loc.nombre&&loc.nombre!==loc.codigo)?loc.nombre:(loc?.codigo||"");
+const ubicacionConCodigo=loc=>{if(!loc)return"";const n=nombreUbicacion(loc);return n===loc.codigo?loc.codigo:`${n} (${loc.codigo})`};
 function renderUbicaciones(){
   const estado=$("ubiEstado"),lista=$("ubiLista"),form=$("ubiForm");
   actualizarSelectorAlmacenes();
@@ -13353,7 +13354,7 @@ function renderUbicaciones(){
   if(!ubicacionesAlmacen.length){lista.className="ubicaciones-list";lista.innerHTML='<div class="empty">Este almacén todavía no tiene ubicaciones.</div>';return}
   const abiertas=new Set([...lista.querySelectorAll(".ubicacion-card[open]")].map(item=>item.dataset.codigo));
   lista.className="ubicaciones-list";
-  lista.innerHTML=ubicacionesAlmacen.map(loc=>{const i=ubicaciones.indexOf(loc),alm=almacenes.find(a=>a.codigo===loc.almacen_codigo),existencias=materialesEnUbicacion(loc),movimientos=movimientosDeUbicacion(loc),ocupada=existencias>0||!!movimientosError;return`<details class="ubicacion-card ubicacion-fila" data-index="${i}" data-codigo="${esc(loc.codigo)}" ${abiertas.has(loc.codigo)?"open":""}><summary><span class="ubicacion-nombre">${esc(loc.nombre)}</span><span class="ubicacion-codigo">Código: ${esc(loc.codigo)} · Almacén: ${esc(alm?.nombre||"Sin almacén")}</span></summary><div class="ubicacion-detalle"><div class="d"><b>Almacén</b><span>${esc(alm?.nombre||"Sin almacén")}</span></div><div class="d"><b>Código</b><span>${esc(loc.codigo)}</span></div><div class="d"><b>Inventario</b><span>${existencias} materiales · ${movimientos} movimientos históricos</span></div>${movimientos?`<p class="ubicaciones-ayuda">Al eliminarla, sus movimientos permanecerán en el historial con el nombre y código originales.</p>`:""}<div id="ubiQr-${i}"></div>${esAdmin?`<div class="ubicacion-admin-actions"><button type="button" class="bd ubicacion-delete" data-eliminar-ubicacion="${esc(loc.codigo)}" ${ocupada?`disabled title="${movimientosError?"No se pudo verificar el historial":"Traspasa el inventario antes de eliminar"}"`:""}>🗑️ Eliminar ubicación</button></div>`:""}</div></details>`}).join("");
+  lista.innerHTML=ubicacionesAlmacen.map(loc=>{const i=ubicaciones.indexOf(loc),alm=almacenes.find(a=>a.codigo===loc.almacen_codigo),existencias=materialesEnUbicacion(loc),movimientos=movimientosDeUbicacion(loc),ocupada=existencias>0||!!movimientosError;return`<details class="ubicacion-card ubicacion-fila" data-index="${i}" data-codigo="${esc(loc.codigo)}" ${abiertas.has(loc.codigo)?"open":""}><summary><span class="ubicacion-nombre">${esc(loc.codigo)}</span><span class="ubicacion-codigo">${esc(alm?.nombre||"Sin almacén")}${loc.nombre&&loc.nombre!==loc.codigo?` · ${esc(loc.nombre)}`:""}</span></summary><div class="ubicacion-detalle"><div class="d"><b>Almacén</b><span>${esc(alm?.nombre||"Sin almacén")}</span></div><div class="d"><b>Código</b><span>${esc(loc.codigo)}</span></div><div class="d"><b>Inventario</b><span>${existencias} materiales · ${movimientos} movimientos históricos</span></div>${movimientos?`<p class="ubicaciones-ayuda">Al eliminarla, sus movimientos permanecerán en el historial con el nombre y código originales.</p>`:""}<div id="ubiQr-${i}"></div>${esAdmin?`<div class="ubicacion-admin-actions"><button type="button" class="bd ubicacion-delete" data-eliminar-ubicacion="${esc(loc.codigo)}" ${ocupada?`disabled title="${movimientosError?"No se pudo verificar el historial":"Traspasa el inventario antes de eliminar"}"`:""}>🗑️ Eliminar ubicación</button></div>`:""}</div></details>`}).join("");
   lista.querySelectorAll(".ubicacion-card").forEach(item=>{
     item.addEventListener("toggle",()=>{
       if(!item.open)return;
@@ -13379,7 +13380,7 @@ function mostrarQrUbicacion(loc,i){
   box.querySelector("[data-ubi-imprimir]").onclick=()=>imprimirEtiquetaUbicacion(loc,qr.toDataURL("image/png"),almacen);
 }
 function imprimirEtiquetaUbicacion(loc,src,almacen){
-  const e=$("etiqueta");e.className="hoja";e.innerHTML=`<div class="pz"><img src="${src}" alt="QR ${esc(loc.codigo)}"><div class="tx"><b class="cd">${esc(loc.codigo)}</b><span class="tg">UBICACIÓN</span><small>${esc(almacen?.nombre||"Sin almacén")}</small><small>${esc(loc.nombre)}</small></div></div>`;
+  const e=$("etiqueta");e.className="hoja";e.innerHTML=`<div class="pz"><img src="${src}" alt="QR ${esc(loc.codigo)}"><div class="tx"><b class="cd">${esc(loc.codigo)}</b><span class="tg">UBICACIÓN</span><small>${esc(almacen?.nombre||"Sin almacén")}</small>${loc.nombre&&loc.nombre!==loc.codigo?`<small>${esc(loc.nombre)}</small>`:""}</div></div>`;
   let st=$("etqCss");if(!st){st=document.createElement("style");st.id="etqCss";document.head.appendChild(st)}
   st.textContent=cssEtq();window.addEventListener("afterprint",limpiarEtqCss,{once:true});window.print();
 }
@@ -13389,7 +13390,7 @@ function procesarEscaneoInventario(txt){
     const codigo=raw.slice(prefijo.length).trim(),loc=ubicaciones.find(x=>x.codigo.toLowerCase()===codigo.toLowerCase());
     if(!loc){toast(`Ubicación no registrada: ${codigo}`,1);return}
     const almacen=almacenes.find(a=>a.codigo===loc.almacen_codigo);
-    ubicacionDestino=loc;$("ubiDestino").textContent=`${almacen?.nombre||"Sin almacén"} → ${loc.nombre} (${loc.codigo})`;renderAsignacion();toast(`Destino seleccionado: ${almacen?.nombre?almacen.nombre+" → ":""}${loc.nombre}`);$("ubiScan").focus();return
+    ubicacionDestino=loc;$("ubiDestino").textContent=`${almacen?.nombre||"Sin almacén"} → ${ubicacionConCodigo(loc)}`;renderAsignacion();toast(`Destino seleccionado: ${almacen?.nombre?almacen.nombre+" → ":""}${ubicacionConCodigo(loc)}`);$("ubiScan").focus();return
   }
   const cod=codDe(raw).toLowerCase(),m=mats.find(x=>x.codigo.toLowerCase()===cod);
   if(!m){toast(`Código no registrado: ${cod}`,1);return}
@@ -13399,7 +13400,7 @@ function procesarEscaneoInventario(txt){
   asignacionItems.push({codigo:m.codigo});renderAsignacion();
 }
 function renderAsignacion(){
-  $("asigLista").innerHTML=asignacionItems.map((item,i)=>{const m=mats.find(x=>x.codigo===item.codigo);if(!m)return"";const origen=ubicaciones.find(loc=>loc.codigo===m.ubicacionCodigo),origenTxt=origen?`${origen.nombre} (${origen.codigo})`:m.ubicacion||"Sin ubicación";return`<div class="asig-item"><span><b>${esc(m.codigo)}</b> · ${esc(m.descripcion)} · ${esc(existTxt(m))}<br><small>Desde: ${esc(origenTxt)}</small></span><button type="button" class="bd" data-asig-quitar="${i}">Quitar</button></div>`}).join("");
+  $("asigLista").innerHTML=asignacionItems.map((item,i)=>{const m=mats.find(x=>x.codigo===item.codigo);if(!m)return"";const origen=ubicaciones.find(loc=>loc.codigo===m.ubicacionCodigo),origenTxt=origen?ubicacionConCodigo(origen):m.ubicacion||"Sin ubicación";return`<div class="asig-item"><span><b>${esc(m.codigo)}</b> · ${esc(m.descripcion)} · ${esc(existTxt(m))}<br><small>Desde: ${esc(origenTxt)}</small></span><button type="button" class="bd" data-asig-quitar="${i}">Quitar</button></div>`}).join("");
   $("asigLista").querySelectorAll("[data-asig-quitar]").forEach(b=>b.onclick=()=>{asignacionItems.splice(+b.dataset.asigQuitar,1);renderAsignacion()});
   $("ubiConfirmar").disabled=!ubicacionDestino||!asignacionItems.length||!!ubicacionesError;
 }
@@ -13408,7 +13409,7 @@ async function confirmarAsignacion(){
   const items=asignacionItems.map(x=>mats.find(m=>m.codigo===x.codigo)).filter(Boolean);
   if(items.length!==asignacionItems.length){toast("Uno o más materiales ya no están disponibles. Actualice e intente de nuevo.",1);await cargar();renderAsignacion();return}
   const mismo=items.filter(m=>m.ubicacionCodigo===ubicacionDestino.codigo||(!m.ubicacionCodigo&&m.ubicacion===ubicacionDestino.nombre&&(!m.ubicacionAlmacenCodigo||m.ubicacionAlmacenCodigo===ubicacionDestino.almacen_codigo)));
-  if(mismo.length){toast(`Ya están en ${ubicacionDestino.nombre}: ${mismo.map(m=>m.codigo).join(", ")}`,1);return}
+  if(mismo.length){toast(`Ya están en ${ubicacionConCodigo(ubicacionDestino)}: ${mismo.map(m=>m.codigo).join(", ")}`,1);return}
   const folio=`UBI-${Date.now()}`;
   const payload=items.map(m=>{const e=existencia(m);return{codigo:m.codigo,existencia:{modo:e.modo,cantidad:e.modo==="pz"?e.rest:e.qty,longitud:e.modo==="long"?e.rest:null,unidad:e.u,peso:e.peso?.peso??null,pesoUnidad:e.peso?.u??null}}});
   $("ubiConfirmar").disabled=true;
@@ -13419,7 +13420,7 @@ async function confirmarAsignacion(){
     asignacionItems=[];renderAsignacion();
     try{await Promise.all([cargar(),cargarUbicaciones()])}
     catch(err){errDB(err,"Traspaso registrado, pero no se pudo actualizar la vista")}
-    toast(`Traspaso registrado a ${ubicacionDestino.nombre} · ${folio}`);
+    toast(`Traspaso registrado a ${ubicacionConCodigo(ubicacionDestino)} · ${folio}`);
   }catch(err){errDB(err,"No se pudo registrar el traspaso");$("ubiConfirmar").disabled=false}
 }
 function renderHistUbicaciones(){
@@ -13458,12 +13459,12 @@ $("almacenForm").addEventListener("submit",async e=>{
 $("ubiAuto").onclick=siguienteCodigoUbicacion;
 $("ubiAlmacen").onchange=renderUbicaciones;
 $("ubiForm").addEventListener("submit",async e=>{
-  e.preventDefault();const codigo=$("ubiCodigo").value.trim(),nombre=$("ubiNombre").value.trim();
+  e.preventDefault();const codigo=$("ubiCodigo").value.trim();
   const almacenCodigo=$("ubiAlmacen").value,almacen=almacenes.find(a=>a.codigo===almacenCodigo);
-  if(!codigo||!nombre||!almacen)return;
+  if(!codigo||!almacen)return;
   $("ubiGuardar").disabled=true;
-  try{const{error}=await sb.from("ubicaciones").insert({codigo,nombre,almacen_codigo:almacenCodigo});if(error)throw error;
-    $("ubiNombre").value="";siguienteCodigoUbicacion();await cargarUbicaciones();$("ubiAlmacen").value=almacenCodigo;renderUbicaciones();toast(`Ubicación guardada en ${almacen.nombre}: ${nombre}`);
+  try{const{error}=await sb.from("ubicaciones").insert({codigo,nombre:codigo,almacen_codigo:almacenCodigo});if(error)throw error;
+    $("ubiCodigo").value="";siguienteCodigoUbicacion();await cargarUbicaciones();$("ubiAlmacen").value=almacenCodigo;renderUbicaciones();toast(`Ubicación guardada en ${almacen.nombre}: ${codigo}`);
   }catch(err){errDB(err,"No se pudo guardar la ubicación")}
   finally{$("ubiGuardar").disabled=false}
 });
