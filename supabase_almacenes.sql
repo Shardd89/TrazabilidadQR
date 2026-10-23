@@ -485,6 +485,85 @@ revoke all on function public.eliminar_almacen_inventario(text) from public, ano
 grant execute on function public.eliminar_ubicacion_vacia(text) to authenticated;
 grant execute on function public.eliminar_almacen_inventario(text) to authenticated;
 
+create or replace function public.corregir_codigo_ubicacion(
+  p_codigo_actual text,
+  p_codigo_nuevo text,
+  p_almacen_codigo text
+)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_ubicacion public.ubicaciones%rowtype;
+  v_materiales integer;
+begin
+  if not public.is_admin() then
+    raise exception 'NO_AUTORIZADO';
+  end if;
+  if coalesce(trim(p_codigo_nuevo), '') !~ '^[0-9]+$' then
+    raise exception 'CODIGO_UBICACION_INVALIDO';
+  end if;
+
+  select * into v_ubicacion
+  from public.ubicaciones
+  where codigo = p_codigo_actual
+  for update;
+  if not found then
+    raise exception 'UBICACION_NO_ENCONTRADA';
+  end if;
+  if v_ubicacion.almacen_codigo <> p_almacen_codigo
+    or lower(trim(v_ubicacion.nombre)) <> lower(trim(p_codigo_nuevo)) then
+    raise exception 'UBICACION_NO_COINCIDE';
+  end if;
+  if exists (
+    select 1 from public.ubicaciones
+    where codigo = trim(p_codigo_nuevo)
+      and codigo <> v_ubicacion.codigo
+  ) then
+    raise exception 'CODIGO_UBICACION_DUPLICADO';
+  end if;
+
+  update public.materiales
+  set data = jsonb_set(
+    jsonb_set(
+      jsonb_set(
+        jsonb_set(coalesce(data, '{}'::jsonb), '{ubicacion}', to_jsonb(v_ubicacion.nombre), true),
+        '{ubicacionCodigo}', to_jsonb(trim(p_codigo_nuevo)), true
+      ),
+      '{ubicacionAlmacenCodigo}', to_jsonb(v_ubicacion.almacen_codigo), true
+    ),
+    '{ubicacionAlmacenNombre}',
+    to_jsonb((select nombre from public.almacenes where codigo = v_ubicacion.almacen_codigo)),
+    true
+  )
+  where data->>'ubicacionCodigo' = v_ubicacion.codigo
+    or (
+      data->>'ubicacionCodigo' is null
+      and lower(trim(data->>'ubicacion')) = lower(trim(v_ubicacion.nombre))
+      and (
+        data->>'ubicacionAlmacenCodigo' is null
+        or data->>'ubicacionAlmacenCodigo' = v_ubicacion.almacen_codigo
+      )
+    );
+  get diagnostics v_materiales = row_count;
+
+  update public.ubicaciones
+  set codigo = trim(p_codigo_nuevo), nombre = trim(p_codigo_nuevo)
+  where codigo = v_ubicacion.codigo;
+
+  return jsonb_build_object(
+    'codigo_anterior', v_ubicacion.codigo,
+    'codigo_nuevo', trim(p_codigo_nuevo),
+    'materiales_actualizados', v_materiales
+  );
+end;
+$$;
+
+revoke all on function public.corregir_codigo_ubicacion(text, text, text) from public, anon;
+grant execute on function public.corregir_codigo_ubicacion(text, text, text) to authenticated;
+
 alter table public.materiales enable row level security;
 alter table public.despachos enable row level security;
 

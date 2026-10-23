@@ -12673,7 +12673,7 @@ body.ficha>.app-layout{display:none!important}
   </form></div></div>
 <header>
   <h1>📦 Trazabilidad de Material · Generador QR</h1>
-  <div class="chips"><span class="chip" id="sTot">0 registros</span><span class="chip" id="sMp">0 materia prima</span><span class="chip" id="sGen">0 generales</span><span class="chip" id="rolUsuario" hidden></span><button type="button" class="chip" id="bSalir" style="border:0;color:#fff;cursor:pointer" title="Cerrar sesión">⏻ Salir</button></div>
+  <div class="chips"><span class="chip" id="sTot">0 registros</span><span class="chip" id="sMp">0 materia prima</span><span class="chip" id="sConsumibles">0 consumibles</span><span class="chip" id="sGen">0 generales</span><span class="chip" id="rolUsuario" hidden></span><button type="button" class="chip" id="bSalir" style="border:0;color:#fff;cursor:pointer" title="Cerrar sesión">⏻ Salir</button></div>
 </header>
 
 <div class="app-layout">
@@ -12705,11 +12705,11 @@ body.ficha>.app-layout{display:none!important}
       <div class="grid">
         <div><label for="ubicacion">Ubicación *</label><input type="text" id="ubicacion" required></div>
         <div><label for="codigo">Código *</label><div class="row"><input type="text" id="codigo" required placeholder="MAT-0001"><button type="button" class="bs" id="btnAuto" title="Siguiente código">Auto</button></div></div>
-        <div><label for="tipoRegistro">Clasificación *</label><select id="tipoRegistro" required><option value="">Seleccione…</option><option value="GENERAL">Material general</option><option value="MP">Materia prima</option></select></div>
+        <div><label for="tipoRegistro">Clasificación *</label><select id="tipoRegistro" required><option value="">Seleccione…</option><option value="GENERAL">Material general</option><option value="MP">Materia prima</option><option value="CONSUMIBLES">Consumibles</option></select></div>
         <div class="na-field"><div class="na-head"><label for="tipoMaterial">Tipo material</label><label class="na-check"><input type="checkbox" data-na="tipoMaterial"> No aplica</label></div><input class="na-value" id="tipoMaterial" type="text"></div>
         <div><label for="descripcion">Descripción *</label><input type="text" id="descripcion" required></div>
         <div class="na-field"><div class="na-head"><label for="especificacionMedida">Especificación medida</label><label class="na-check"><input type="checkbox" data-na="especificacionMedida"> No aplica</label></div><input class="na-value" id="especificacionMedida" type="text"></div>
-        <div><label for="seccionMaterial">Sección</label><select id="seccionMaterial"><option value="">No aplica / Sin especificar</option><option value="SQ">SQ · Barra cuadrada</option><option value="FLAT">FLAT</option><option value="RND">RND · Redonda</option></select></div>
+        <div class="na-field"><div class="na-head"><label for="seccionMaterial">Sección</label><label class="na-check"><input type="checkbox" data-na="seccionMaterial"> No aplica</label></div><select class="na-value" id="seccionMaterial"><option value="">Sin especificar</option><option value="SQ">SQ · Barra cuadrada</option><option value="FLAT">FLAT</option><option value="RND">RND · Redonda</option></select></div>
         <div id="dimensionesLineales" hidden><label>Dimensiones de la sección (mm)</label><div class="row"><input type="number" id="altoMaterial" min="0" step="any" placeholder="Alto (mm)" aria-label="Alto en milímetros"><input type="number" id="anchoMaterial" min="0" step="any" placeholder="Ancho (mm)" aria-label="Ancho en milímetros"></div></div>
         <div id="dimensionRedonda" hidden><label for="diametroMaterial">Diámetro (mm)</label><input type="number" id="diametroMaterial" min="0" step="any"></div>
         <div class="na-field"><div class="na-head"><label for="longitudIndividual">Longitud IND (mm)</label><label class="na-check"><input type="checkbox" data-na="longitudIndividual"> No aplica</label></div><input class="na-value" id="longitudIndividual" type="number" min="0" step="any"></div>
@@ -12737,7 +12737,7 @@ body.ficha>.app-layout{display:none!important}
     <h2>Historial</h2>
     <div class="tools">
       <input type="search" id="buscar" placeholder="🔍 Buscar código, descripción, lote, ubicación…">
-      <select id="ftipo"><option value="">Todos</option><option value="mp">Materia prima</option><option value="gen">General</option></select>
+      <select id="ftipo"><option value="">Todos</option><option value="mp">Materia prima</option><option value="consumibles">Consumibles</option><option value="gen">General</option></select>
     </div>
     <div class="tw"><table>
       <thead><tr><th><input type="checkbox" class="row-select" id="selectAll" aria-label="Seleccionar todos los resultados visibles" title="Seleccionar todos los resultados visibles"></th><th data-k="codigo">Código ⇅</th><th data-k="descripcion">Descripción ⇅</th><th>UM cantidad</th><th data-k="cantidad">Ctd. ⇅</th><th>Existencia</th><th>Tipo</th><th data-k="ubicacion">Ubicación ⇅</th><th data-k="fechaRecibo">Recibo ⇅</th><th>Acciones</th></tr></thead>
@@ -12839,7 +12839,7 @@ body.ficha>.app-layout{display:none!important}
     </div>
     <div class="tools">
       <input type="search" id="invBuscar" placeholder="🔍 Buscar código, descripción o ubicación…">
-      <select id="invTipo"><option value="">Todas las clasificaciones</option><option value="mp">Materia prima</option><option value="gen">General</option></select>
+      <select id="invTipo"><option value="">Todas las clasificaciones</option><option value="mp">Materia prima</option><option value="consumibles">Consumibles</option><option value="gen">General</option></select>
       <select id="invAlmacen" aria-label="Filtrar por almacén"><option value="">Todos los almacenes</option></select>
     </div>
     <div class="tw"><table>
@@ -12927,10 +12927,11 @@ const SB_URL="https://olbcepxgzqtmiqdqpbha.supabase.co",SB_KEY="sb_publishable_k
 const sb=window.supabase?window.supabase.createClient(SB_URL,SB_KEY):null;
 function normalizarMaterial(m){
   const pesoU=m.pesoU||m.pesoUnidad||(["LB","KG"].includes(m.um)?m.um:m.peso!=null&&!m.pesoUnidadPendiente?"LB":null);
-  const tipoRegistro=/^(?:MP|MATERIA PRIMA)$/.test(String(m.tipoRegistro??"").toUpperCase())||m.esMP?"MP":"GENERAL";
+  const tipoRegistro=/^(?:MP|MATERIA PRIMA)$/.test(String(m.tipoRegistro??"").toUpperCase())||m.esMP?"MP":/^CONSUMIBLES?$/.test(String(m.tipoRegistro??"").trim().toUpperCase())?"CONSUMIBLES":"GENERAL";
   const seccionMaterial=normalizarSeccion(m.seccionMaterial)||(m.seccion==="cuadrado"?"SQ":m.seccion==="redondo"?"RND":"");
   return{...m,um:"PZ",pesoU,tipoRegistro,esMP:tipoRegistro==="MP",seccionMaterial};
 }
+const nombreTipoRegistro=tipo=>({MP:"Materia prima",GENERAL:"Material general",CONSUMIBLES:"Consumibles"}[tipo]||"Material general");
 const matData=m=>{const{despachos,...r}=m;return r};
 const desData=d=>{const{t,piezas,...r}=d;return r};
 const desFila=(codigo,d)=>({codigo,t:d.t,data:desData(d),piezas:d.piezas||[]});
@@ -13065,6 +13066,7 @@ function recalcularTotalMM(origen){
 document.querySelectorAll("[data-na]").forEach(c=>c.addEventListener("change",()=>{
   const input=$(c.dataset.na),wrap=input.closest(".na-field").querySelector(".na-value-wrap")||input;
   wrap.hidden=c.checked;if(c.checked)input.value="";
+  if(c.dataset.na==="seccionMaterial")actualizarCamposSeccion();
   if(c.dataset.na==="longitudIndividual")recalcularTotalMM("longitudIndividual");
   if(c.dataset.na==="totalMM"&&!c.checked)recalcularTotalMM();
 }));
@@ -13086,12 +13088,13 @@ $("f").addEventListener("submit",async e=>{
   const idx=$("editIndex").value;
   if(idx!==""&&!esAdmin){toast("Solo el administrador puede editar materiales.",1);resetForm();return}
   const noAplica=Object.fromEntries(CAMPOS_EXTRA.map(([key,id])=>[key,document.querySelector(`input[data-na="${id}"]`).checked]));
+  noAplica.seccionMaterial=document.querySelector('input[data-na="seccionMaterial"]').checked;
   const extra=Object.fromEntries(CAMPOS_EXTRA.map(([key,id])=>[key,noAplica[key]?(["totalMM","longitudIndividual","peso"].includes(key)?null:""): (["totalMM","longitudIndividual","peso"].includes(key)?($(id).value===""?null:Number($(id).value)):$(id).value.trim())]));
   const tipoMaterial=noAplica.tipoMaterial?"":$("tipoMaterial").value.trim(),tipoRegistro=$("tipoRegistro").value;
   const anterior=idx!==""?mats[idx]:null;
   const m={codigo:$("codigo").value.trim(),descripcion:$("descripcion").value.trim(),lote:extra.numeroLoteMP||"",proveedor:"",
     um:$("um").value,cantidad:parseFloat($("cantidad").value),ubicacion:$("ubicacion").value.trim(),fechaRecibo:$("fechaRecibo").value,
-    fechaModificacion:new Date().toLocaleString("es-MX"),tipoRegistro,esMP:tipoRegistro==="MP",seccionMaterial:$("seccionMaterial").value,
+    fechaModificacion:new Date().toLocaleString("es-MX"),tipoRegistro,esMP:tipoRegistro==="MP",seccionMaterial:noAplica.seccionMaterial?"":$("seccionMaterial").value,
     ubicacionCodigo:anterior&&$("ubicacion").value.trim()===anterior.ubicacion?anterior.ubicacionCodigo||null:null,
     ubicacionAlmacenCodigo:anterior&&$("ubicacion").value.trim()===anterior.ubicacion?anterior.ubicacionAlmacenCodigo||null:null,
     ubicacionAlmacenNombre:anterior&&$("ubicacion").value.trim()===anterior.ubicacion?anterior.ubicacionAlmacenNombre||null:null,
@@ -13107,13 +13110,17 @@ $("f").addEventListener("submit",async e=>{
   const dup=mats.findIndex(x=>x.codigo.toLowerCase()===m.codigo.toLowerCase());
   if(dup!==-1&&String(dup)!==idx){toast("⚠ El código ya existe, use otro.",1);return}
   const oldCod=idx!==""?mats[idx].codigo:null;$("btnGuardar").disabled=true;
+  let registrandoUbicacion=true,ubicacionCreada=false,ubicacionCorregida=false;
   try{
+    const destino=await resolverUbicacionRegistro(m.ubicacion,tipoRegistro,anterior?.ubicacionCodigo);
+    registrandoUbicacion=false;
+    if(destino){m.ubicacion=destino.ubicacion.nombre;m.ubicacionCodigo=destino.ubicacion.codigo;m.ubicacionAlmacenCodigo=destino.ubicacion.almacen_codigo;m.ubicacionAlmacenNombre=destino.almacen.nombre;ubicacionCreada=destino.creada;ubicacionCorregida=!!destino.corregida}
     if(idx!==""){
       const{error}=await sb.from("materiales").update({codigo:m.codigo,data:matData(m)}).eq("codigo",oldCod);if(error)throw error;
     }else{const{error}=await sb.from("materiales").insert({codigo:m.codigo,data:matData(m)});if(error)throw error}
-  }catch(err){errDB(err,"No se pudo guardar");$("btnGuardar").disabled=false;await cargar().catch(()=>{});return}
+  }catch(err){errDB(err,registrandoUbicacion?"No se pudo registrar la ubicación":ubicacionCreada?"No se pudo guardar el material; la ubicación quedó registrada":ubicacionCorregida?"No se pudo guardar el material; el código de ubicación y sus materiales anteriores ya se corrigieron":"No se pudo guardar");$("btnGuardar").disabled=false;await cargar().catch(()=>{});return}
   $("btnGuardar").disabled=false;await cargar().catch(()=>{});
-  toast(idx!==""?"Material actualizado ✔":"Material guardado ✔");
+  toast(`${idx!==""?"Material actualizado":"Material guardado"}${ubicacionCreada?" · ubicación agregada a Ubicaciones y QR":ubicacionCorregida?" · código de ubicación corregido a "+m.ubicacionCodigo:""} ✔`);
   const m2=mats.find(x=>x.codigo===m.codigo)||m;resetForm();render();try{mostrar(m2)}catch(err){console.error(err);toast("Guardado, pero falló el QR",1)}
 });
 $("btnCancelar").onclick=()=>{resetForm();toast("Edición cancelada")};
@@ -13186,7 +13193,7 @@ function mostrar(m){
   const txt=qrTexto(m);
   const c=dibujarQR(txt);
   if(c)box.appendChild(c);else{box.textContent="No se pudo generar el QR: los datos son demasiado largos. Acorte descripción o ubicación.";actual=null}
-  const rows=[["Código",m.codigo],["Almacén",m.ubicacionAlmacenNombre||almacenes.find(a=>a.codigo===m.ubicacionAlmacenCodigo)?.nombre],["Ubicación",m.ubicacion],["Clasificación",m.tipoRegistro==="MP"?"Materia prima":"Material general"],["Tipo material",m.tipoMaterial],["Descripción",m.descripcion],
+  const rows=[["Código",m.codigo],["Almacén",m.ubicacionAlmacenNombre||almacenes.find(a=>a.codigo===m.ubicacionAlmacenCodigo)?.nombre],["Ubicación",m.ubicacion],["Clasificación",nombreTipoRegistro(m.tipoRegistro)],["Tipo material",m.tipoMaterial],["Descripción",m.descripcion],
     ["Sección / especificación",seccionEspecificacion(m)],["Longitud IND",m.longitudIndividual!=null?`${m.longitudIndividual} mm`:""],["Manufactura",m.manufactura],["N.º Heat",m.numeroHeat],["N.º lote MP",m.numeroLoteMP||m.lote],["N.º cert.",m.numeroCertificado],["Total mm",m.totalMM],["Fecha de recibo",m.fechaRecibo],["Cantidad",`${m.cantidad} ${m.um}`],
     ["Etiqueta",`MASTER · ${m.cantidad} ${m.um}`+(esIndividual(m)?` (+ ${m.cantidad} QR individuales)`:` (sin QR individuales: la cantidad debe ser entera y de 1 a ${MAX_IND})`)],
     ["Peso",m.peso!=null?`${m.peso}${m.pesoU||m.pesoUnidad?" "+(m.pesoU||m.pesoUnidad):m.pesoUnidadPendiente?" (unidad sin definir)":""}`:""],["Orden",m.ordenMaterial],["PO number",m.poNumber],
@@ -13270,17 +13277,17 @@ $("bPrint").onclick=()=>{if(!actual)return;const u=qrData(actual,0);if(!u){toast
 function render(){
   const codigos=new Set(mats.map(m=>m.codigo));seleccionados.forEach(c=>{if(!codigos.has(c))seleccionados.delete(c)});
   const q=$("buscar").value.toLowerCase().trim(),t=$("ftipo").value;
-  let lista=mats.map((m,i)=>({m,i})).filter(({m})=>(!t||(t==="mp")===!!m.esMP)&&(!q||[m.codigo,m.descripcion,m.lote,m.proveedor,m.ubicacion,m.tipoMaterial,m.especificacionMedida,m.longitudIndividual,m.manufactura,m.numeroHeat,m.numeroLoteMP,m.numeroCertificado,m.totalMM,m.tipoMoneda,m.ordenMaterial,m.poNumber].join(" ").toLowerCase().includes(q)));
+  let lista=mats.map((m,i)=>({m,i})).filter(({m})=>(!t||(t==="mp"?m.esMP:t==="consumibles"?m.tipoRegistro==="CONSUMIBLES":m.tipoRegistro==="GENERAL"))&&(!q||[m.codigo,m.descripcion,m.lote,m.proveedor,m.ubicacion,m.tipoMaterial,m.especificacionMedida,m.longitudIndividual,m.manufactura,m.numeroHeat,m.numeroLoteMP,m.numeroCertificado,m.totalMM,m.tipoMoneda,m.ordenMaterial,m.poNumber].join(" ").toLowerCase().includes(q)));
   if(orden.k)lista.sort((a,b)=>{const x=a.m[orden.k],y=b.m[orden.k];const r=typeof x==="number"?x-y:String(x??"").localeCompare(String(y??""),"es",{numeric:true});return orden.asc?r:-r});
   $("tbody").innerHTML=lista.map(({m,i})=>`<tr>
     <td>${esAdmin?`<input type="checkbox" class="row-select" data-select="${esc(m.codigo)}" aria-label="Seleccionar ${esc(m.codigo)}" ${seleccionados.has(m.codigo)?"checked":""}>`:""}</td>
     <td><b>${esc(m.codigo)}</b></td><td class="l">${esc(m.descripcion)}</td><td>${esc(m.um)}</td><td>${esc(m.cantidad)}</td><td>${esc(existTxt(m))}</td>
-    <td>${m.esMP?'<span class="tag t1">M. PRIMA</span>':'<span class="tag t2">GENERAL</span>'}</td>
+    <td>${m.esMP?'<span class="tag t1">M. PRIMA</span>':m.tipoRegistro==="CONSUMIBLES"?'<span class="tag t2">CONSUMIBLES</span>':'<span class="tag t2">GENERAL</span>'}</td>
     <td>${esc(m.ubicacion||"Sin ubicación")}</td><td>${esc(m.fechaRecibo)}</td>
     <td style="white-space:nowrap"><button type="button" class="ic" data-a="qr" data-i="${i}" title="Ver QR">🔳</button>${esAdmin?`<button type="button" class="ic" data-a="ed" data-i="${i}" title="Editar">✏️</button><button type="button" class="ic" data-a="del" data-i="${i}" title="Eliminar">🗑️</button>`:""}</td></tr>`).join("");
   $("vacio").hidden=lista.length>0;
-  const mp=mats.filter(m=>m.esMP).length;
-  $("sTot").textContent=`${mats.length} registros`;$("sMp").textContent=`${mp} materia prima`;$("sGen").textContent=`${mats.length-mp} generales`;
+  const mp=mats.filter(m=>m.esMP).length,consumibles=mats.filter(m=>m.tipoRegistro==="CONSUMIBLES").length;
+  $("sTot").textContent=`${mats.length} registros`;$("sMp").textContent=`${mp} materia prima`;$("sConsumibles").textContent=`${consumibles} consumibles`;$("sGen").textContent=`${mats.length-mp-consumibles} generales`;
   syncBulkActions();
 }
 function renderInventario(){
@@ -13288,8 +13295,8 @@ function renderInventario(){
   selector.innerHTML='<option value="">Todos los almacenes</option>'+almacenes.map(a=>`<option value="${esc(a.codigo)}">${esc(a.nombre)}</option>`).join("");
   selector.value=almacenes.some(a=>a.codigo===almacenActual)?almacenActual:"";
   const q=$("invBuscar").value.trim().toLocaleLowerCase(),tipo=$("invTipo").value,almacenFiltro=selector.value;
-  const lista=mats.filter(m=>{const loc=ubicaciones.find(x=>x.codigo===m.ubicacionCodigo),almacenCodigo=loc?.almacen_codigo||m.ubicacionAlmacenCodigo,alm=almacenes.find(x=>x.codigo===almacenCodigo);return(!tipo||(tipo==="mp")===!!m.esMP)&&(!almacenFiltro||almacenCodigo===almacenFiltro)&&(!q||[m.codigo,m.descripcion,m.ubicacion,m.ubicacionCodigo,loc?.nombre,alm?.nombre,m.lote,m.numeroHeat,m.numeroLoteMP].join(" ").toLocaleLowerCase().includes(q))});
-  $("invBody").innerHTML=lista.map(m=>{const loc=ubicaciones.find(x=>x.codigo===m.ubicacionCodigo),alm=almacenes.find(x=>x.codigo===(loc?.almacen_codigo||m.ubicacionAlmacenCodigo));return`<tr><td><b>${esc(m.codigo)}</b></td><td>${m.esMP?'<span class="tag t1">M. PRIMA</span>':'<span class="tag t2">GENERAL</span>'}</td><td class="l">${esc(m.descripcion)}</td><td>${esc(existTxt(m))}</td><td>${esc(alm?.nombre||m.ubicacionAlmacenNombre||"Sin almacén")}</td><td>${esc(loc?ubicacionConCodigo(loc):m.ubicacion||"Sin ubicación")}</td></tr>`}).join("");
+  const lista=mats.filter(m=>{const loc=ubicaciones.find(x=>x.codigo===m.ubicacionCodigo),almacenCodigo=loc?.almacen_codigo||m.ubicacionAlmacenCodigo,alm=almacenes.find(x=>x.codigo===almacenCodigo);return(!tipo||(tipo==="mp"?m.esMP:tipo==="consumibles"?m.tipoRegistro==="CONSUMIBLES":m.tipoRegistro==="GENERAL"))&&(!almacenFiltro||almacenCodigo===almacenFiltro)&&(!q||[m.codigo,m.descripcion,m.ubicacion,m.ubicacionCodigo,loc?.nombre,alm?.nombre,m.lote,m.numeroHeat,m.numeroLoteMP].join(" ").toLocaleLowerCase().includes(q))});
+  $("invBody").innerHTML=lista.map(m=>{const loc=ubicaciones.find(x=>x.codigo===m.ubicacionCodigo),alm=almacenes.find(x=>x.codigo===(loc?.almacen_codigo||m.ubicacionAlmacenCodigo));return`<tr><td><b>${esc(m.codigo)}</b></td><td>${m.esMP?'<span class="tag t1">M. PRIMA</span>':m.tipoRegistro==="CONSUMIBLES"?'<span class="tag t2">CONSUMIBLES</span>':'<span class="tag t2">GENERAL</span>'}</td><td class="l">${esc(m.descripcion)}</td><td>${esc(existTxt(m))}</td><td>${esc(alm?.nombre||m.ubicacionAlmacenNombre||"Sin almacén")}</td><td>${esc(loc?ubicacionConCodigo(loc):m.ubicacion||"Sin ubicación")}</td></tr>`}).join("");
   $("invVacio").hidden=lista.length>0;
 }
 $("invBuscar").oninput=$("invTipo").onchange=$("invAlmacen").onchange=renderInventario;
@@ -13311,7 +13318,7 @@ function mostrarMaterialesPorUbicacion(codigo){
   ubiConsultaCodigo=loc.codigo;
   $("ubiConsultaInfo").innerHTML=`${esc(almacen?.nombre||"Sin almacén")} · <b>${esc(ubicacionConCodigo(loc))}</b>`;
   $("ubiConsultaCnt").textContent=`${lista.length} material${lista.length===1?"":"es"}`;
-  $("ubiConsultaBody").innerHTML=lista.map(m=>{const almM=almacenes.find(a=>a.codigo===(ubicaciones.find(x=>x.codigo===m.ubicacionCodigo)?.almacen_codigo||m.ubicacionAlmacenCodigo));return`<tr><td><b>${esc(m.codigo)}</b></td><td class="l">${esc(m.descripcion||"")}</td><td>${m.esMP?'<span class="tag t1">M. PRIMA</span>':'<span class="tag t2">GENERAL</span>'}</td><td>${esc(existTxt(m))}</td><td>${esc(almM?.nombre||m.ubicacionAlmacenNombre||almacen?.nombre||"Sin almacén")}</td></tr>`}).join("");
+  $("ubiConsultaBody").innerHTML=lista.map(m=>{const almM=almacenes.find(a=>a.codigo===(ubicaciones.find(x=>x.codigo===m.ubicacionCodigo)?.almacen_codigo||m.ubicacionAlmacenCodigo));return`<tr><td><b>${esc(m.codigo)}</b></td><td class="l">${esc(m.descripcion||"")}</td><td>${m.esMP?'<span class="tag t1">M. PRIMA</span>':m.tipoRegistro==="CONSUMIBLES"?'<span class="tag t2">CONSUMIBLES</span>':'<span class="tag t2">GENERAL</span>'}</td><td>${esc(existTxt(m))}</td><td>${esc(almM?.nombre||m.ubicacionAlmacenNombre||almacen?.nombre||"Sin almacén")}</td></tr>`}).join("");
   $("ubiConsultaVacio").hidden=lista.length>0;
   $("ubiConsultaBox").hidden=false;
   $("bUbiConsultaLimpiar").hidden=false;
@@ -13509,6 +13516,72 @@ function siguienteCodigoUbicacion(){
   const max=ubicaciones.reduce((n,l)=>Math.max(n,Number(/^(?:UBI-)?(\d+)$/i.exec(l.codigo)?.[1])||0),0);
   $("ubiCodigo").value=`UBI-${String(max+1).padStart(3,"0")}`;
 }
+async function resolverUbicacionRegistro(nombre,tipoRegistro,ubicacionAnteriorCodigo){
+  const almacenCodigo={MP:"61",CONSUMIBLES:"62"}[tipoRegistro],valor=String(nombre||"").trim(),clave=valor.toLocaleLowerCase();
+  if(!clave)throw new Error("La ubicación es obligatoria.");
+  if(almacenesError||ubicacionesError)throw new Error("No se pudieron consultar los almacenes y ubicaciones. Recarga antes de guardar.");
+  const coincideNombre=loc=>[loc.nombre,loc.codigo].some(texto=>String(texto||"").trim().toLocaleLowerCase()===clave);
+  const anterior=ubicaciones.find(loc=>loc.codigo===ubicacionAnteriorCodigo&&coincideNombre(loc));
+  let almacen=almacenes.find(a=>a.codigo===almacenCodigo);
+  if(!almacenCodigo){
+    if(anterior)almacen=almacenes.find(a=>a.codigo===anterior.almacen_codigo);
+    const coincidencias=ubicaciones.filter(coincideNombre);
+    const existente=anterior|| (coincidencias.length===1?coincidencias[0]:null);
+    if(!existente)throw new Error(coincidencias.length>1?"La ubicación existe en más de un almacén. Selecciona Materia prima o Consumibles para indicar el almacén correcto.":"Para crear una ubicación desde el registro, selecciona Materia prima (almacén 61) o Consumibles (almacén 62).");
+    almacen=almacenes.find(a=>a.codigo===existente.almacen_codigo);
+    if(!almacen)throw new Error("No se encontró el almacén de la ubicación seleccionada.");
+    return{ubicacion:existente,almacen,creada:false};
+  }
+  if(!almacen)throw new Error(`No se encontró el almacén ${almacenCodigo} para ${nombreTipoRegistro(tipoRegistro)}.`);
+  const existentePorCodigo=ubicaciones.find(loc=>loc.almacen_codigo===almacenCodigo&&loc.codigo.toLocaleLowerCase()===clave);
+  if(existentePorCodigo)return{ubicacion:existentePorCodigo,almacen,creada:false};
+  const existente=ubicaciones.find(loc=>loc.almacen_codigo===almacenCodigo&&coincideNombre(loc));
+  if(/^\d+$/.test(valor)&&existente){
+    if(!esAdmin)throw new Error(`La ubicación ${valor} ya existe con el código ${existente.codigo}. Pide al administrador que corrija esa ubicación.`);
+    const{data,error}=await sb.rpc("corregir_codigo_ubicacion",{
+      p_codigo_actual:existente.codigo,p_codigo_nuevo:valor,p_almacen_codigo:almacenCodigo
+    });
+    if(error){
+      if(/PGRST202|function.*does not exist|schema cache/i.test(String(error.message||"")))
+        throw new Error("Falta aplicar la versión actualizada de supabase_almacenes.sql para corregir esta ubicación.");
+      throw error;
+    }
+    if(data?.codigo_nuevo!==valor)throw new Error("El servidor no confirmó la corrección del código de ubicación.");
+    const corregida={...existente,codigo:valor,nombre:valor};
+    ubicaciones=ubicaciones.map(loc=>loc.codigo===existente.codigo?corregida:loc);
+    mats.forEach(material=>{
+      if(material.ubicacionCodigo!==existente.codigo)return;
+      material.ubicacionCodigo=valor;material.ubicacion=valor;
+      material.ubicacionAlmacenCodigo=almacenCodigo;material.ubicacionAlmacenNombre=almacen.nombre;
+    });
+    $("ubiAlmacen").value=almacenCodigo;renderAlmacenes();renderUbicaciones();
+    const indice=ubicaciones.indexOf(corregida),tarjeta=[...$("ubiLista").querySelectorAll(".ubicacion-card")].find(item=>item.dataset.codigo===valor);
+    if(tarjeta){tarjeta.open=true;mostrarQrUbicacion(corregida,indice)}
+    return{ubicacion:corregida,almacen,creada:false,corregida:true};
+  }
+  if(existente)return{ubicacion:existente,almacen,creada:false};
+  let codigo=valor;
+  if(!/^\d+$/.test(valor)){
+    const max=ubicaciones.reduce((n,loc)=>Math.max(n,Number(/^(?:UBI-)?(\d+)$/i.exec(loc.codigo)?.[1])||0),0);
+    let numero=max+1;codigo=`UBI-${String(numero).padStart(3,"0")}`;
+    while(ubicaciones.some(loc=>loc.codigo.toLocaleLowerCase()===codigo.toLocaleLowerCase())){numero++;codigo=`UBI-${String(numero).padStart(3,"0")}`}
+  }
+  const{data,error}=await sb.from("ubicaciones").insert({codigo,nombre:valor,almacen_codigo:almacenCodigo}).select("codigo,nombre,almacen_codigo,created_at").single();
+  if(error){
+    if(error.code==="23505"){
+      const actualizadas=await leerTodo("ubicaciones","codigo,nombre,almacen_codigo,created_at",["nombre"]);
+      ubicaciones=actualizadas;
+      const concurrente=ubicaciones.find(loc=>loc.almacen_codigo===almacenCodigo&&coincideNombre(loc));
+      if(concurrente){$("ubiAlmacen").value=almacenCodigo;renderAlmacenes();renderUbicaciones();return{ubicacion:concurrente,almacen,creada:false}}
+    }
+    throw error;
+  }
+  if(!data)throw new Error("El servidor no devolvió la ubicación registrada.");
+  ubicaciones.push(data);$("ubiAlmacen").value=almacenCodigo;renderAlmacenes();renderUbicaciones();
+  const indice=ubicaciones.indexOf(data),tarjeta=[...$("ubiLista").querySelectorAll(".ubicacion-card")].find(item=>item.dataset.codigo===data.codigo);
+  if(tarjeta){tarjeta.open=true;mostrarQrUbicacion(data,indice)}
+  return{ubicacion:data,almacen,creada:true};
+}
 function siguienteCodigoAlmacen(){
   const max=almacenes.reduce((n,a)=>Math.max(n,Number(/^ALM-(\d+)$/i.exec(a.codigo)?.[1])||0),0);
   $("almacenCodigo").value=`ALM-${String(max+1).padStart(3,"0")}`;
@@ -13665,8 +13738,8 @@ function editar(i){
   if(!esAdmin){toast("Solo el administrador puede editar materiales.",1);return}
   activarSubpantalla("vReg","captura");
   const m=mats[i];resetForm();$("editIndex").value=i;
-  const values={codigo:m.codigo,descripcion:m.descripcion,um:m.um,cantidad:m.cantidad,ubicacion:m.ubicacion,fechaRecibo:m.fechaRecibo,tipoRegistro:m.tipoRegistro|| (m.esMP?"MP":"GENERAL"),seccionMaterial:m.seccionMaterial,altoMaterial:m.alto,anchoMaterial:m.ancho,diametroMaterial:m.diametro,
-    tipoMaterial:m.tipoMaterial??(m.esMP?"Materia prima":"Material general"),especificacionMedida:m.especificacionMedida,longitudIndividual:m.longitudIndividual,manufactura:m.manufactura,
+  const values={codigo:m.codigo,descripcion:m.descripcion,um:m.um,cantidad:m.cantidad,ubicacion:m.ubicacion,fechaRecibo:m.fechaRecibo,tipoRegistro:m.tipoRegistro|| (m.esMP?"MP":"GENERAL"),seccionMaterial:m.noAplica?.seccionMaterial?"":m.seccionMaterial,altoMaterial:m.alto,anchoMaterial:m.ancho,diametroMaterial:m.diametro,
+    tipoMaterial:m.tipoMaterial??(m.esMP?"Materia prima":m.tipoRegistro==="CONSUMIBLES"?"Consumibles":"Material general"),especificacionMedida:m.especificacionMedida,longitudIndividual:m.longitudIndividual,manufactura:m.manufactura,
     numeroHeat:m.numeroHeat,numeroLoteMP:m.numeroLoteMP??m.lote,numeroCertificado:m.numeroCertificado,totalMM:m.totalMM,peso:m.peso,ordenMaterial:m.ordenMaterial,poNumber:m.poNumber};
   Object.entries(values).forEach(([id,value])=>$(id).value=value??"");
   actualizarCamposSeccion();
@@ -13677,6 +13750,9 @@ function editar(i){
     checkbox.checked=noAplica;input.value=values[key]??"";
     const wrap=input.closest(".na-field").querySelector(".na-value-wrap")||input;wrap.hidden=noAplica;
   });
+  const seccionNoAplica=!!m.noAplica?.seccionMaterial,seccionCheckbox=document.querySelector('input[data-na="seccionMaterial"]');
+  seccionCheckbox.checked=seccionNoAplica;$("seccionMaterial").hidden=seccionNoAplica;
+  actualizarCamposSeccion();
   $("tituloForm").textContent=`Editando: ${m.codigo}`;$("btnGuardar").textContent="💾 Guardar cambios y regenerar QR";$("btnCancelar").hidden=false;
   window.scrollTo({top:0,behavior:"smooth"});
 }
@@ -13690,8 +13766,8 @@ $("bCsv").onclick=()=>{
   const cols=["UBICACION","CODIGO","CLASIFICACION","TIPO MATERIAL","DESCRIPCION","ESPECIFICACION MEDIDA","SECCION","ALTO (MM)","ANCHO (MM)","DIAMETRO (MM)","LONGITUD IND (MM)","MANUFACTURA","N°HEAT","N°LOTE MP","N°CERT.","TOTAL MM","FECHA DE RECIBO","CTD","PESO","UM","ORDEN","PO NUMBER"];
   const c=v=>{let t=String(v??"");if(/^[=+\-@\t\r]/.test(t))t="'"+t;return `"${t.replace(/"/g,'""')}"`};
   const value=(m,key,v)=>m.noAplica?.[key]?"No aplica":v;
-  const rows=mats.map(m=>[m.ubicacion,m.codigo,m.tipoRegistro==="MP"?"MATERIA PRIMA":"GENERAL",value(m,"tipoMaterial",m.tipoMaterial),m.descripcion,
-    value(m,"especificacionMedida",m.especificacionMedida),m.seccionMaterial,m.alto,m.ancho,m.diametro,value(m,"longitudIndividual",m.longitudIndividual),value(m,"manufactura",m.manufactura),value(m,"numeroHeat",m.numeroHeat),
+  const rows=mats.map(m=>[m.ubicacion,m.codigo,nombreTipoRegistro(m.tipoRegistro).toUpperCase(),value(m,"tipoMaterial",m.tipoMaterial),m.descripcion,
+    value(m,"especificacionMedida",m.especificacionMedida),value(m,"seccionMaterial",m.seccionMaterial),m.alto,m.ancho,m.diametro,value(m,"longitudIndividual",m.longitudIndividual),value(m,"manufactura",m.manufactura),value(m,"numeroHeat",m.numeroHeat),
     value(m,"numeroLoteMP",m.numeroLoteMP||m.lote),value(m,"numeroCertificado",m.numeroCertificado),value(m,"totalMM",m.totalMM),
     m.fechaRecibo,m.cantidad,value(m,"peso",m.peso),m.noAplica?.peso?"No aplica":m.pesoUnidadPendiente?"Sin especificar":m.pesoU||m.pesoUnidad||"LB",
     value(m,"ordenMaterial",m.ordenMaterial),value(m,"poNumber",m.poNumber)]);
@@ -13753,20 +13829,21 @@ function materialDesdeExcel(row,mapped,esMateriaPrima=false){
   const get=key=>valorCelda(row,mapped,key),text=key=>String(get(key)??"").trim(),raw={};
   Object.keys(EXCEL_HEADERS).forEach(key=>raw[key]=get(key));
   const noAplica=Object.fromEntries(CAMPOS_EXTRA.map(([key])=>[key,esNoAplica(raw[key])]));
+  noAplica.seccionMaterial=esNoAplica(get("seccionMaterial"));
   if(esNoAplica(get("um")))noAplica.peso=true;
   const stringValue=key=>noAplica[key]?"":String(raw[key]??"").trim();
   const codigo=text("codigo"),descripcion=text("descripcion"),ubicacion=text("ubicacion");
   const cantidad=numeroExcel(get("cantidad")),peso=numeroExcel(get("peso")),umOriginal=text("um").toUpperCase();
   const pesoUnitMap={LB:"LB",LBS:"LB",LIBRA:"LB",LIBRAS:"LB",KG:"KG",KGS:"KG",KILOGRAM:"KG",KILOGRAMO:"KG",KILOGRAMOS:"KG"};
   const umCantidad=["PZ","PZA","PIEZA","PIEZAS"].includes(umOriginal);
-  const tipoArchivo=text("tipoRegistro").toUpperCase(),esMP=/^(?:MP|MATERIA PRIMA)$/.test(tipoArchivo)||esMateriaPrima||/materia\s*prima|^mp$/i.test(text("tipoMaterial"));
-  const seccionMaterial=normalizarSeccion(get("seccionMaterial"))||inferirSeccion(`${text("especificacionMedida")} ${text("descripcion")}`);
+  const tipoArchivo=text("tipoRegistro").toUpperCase(),esMP=/^(?:MP|MATERIA PRIMA)$/.test(tipoArchivo)||esMateriaPrima||/materia\s*prima|^mp$/i.test(text("tipoMaterial")),esConsumible=/^CONSUMIBLES?$/.test(tipoArchivo);
+  const seccionMaterial=noAplica.seccionMaterial?"":normalizarSeccion(get("seccionMaterial"))||inferirSeccion(`${text("especificacionMedida")} ${text("descripcion")}`);
   const fechaRecibo=fechaExcel(get("fechaRecibo"));
   if(!codigo||!descripcion||cantidad==null||cantidad<0||!fechaRecibo||(umOriginal&&!pesoUnitMap[umOriginal]&&!umCantidad&&!noAplica.peso))return null;
   const extra=Object.fromEntries(CAMPOS_EXTRA.map(([key])=>[key,noAplica[key]?["peso","totalMM","longitudIndividual"].includes(key)?null:"":["peso","totalMM","longitudIndividual"].includes(key)?numeroExcel(raw[key]):stringValue(key)]));
   if(!noAplica.totalMM&&extra.longitudIndividual!=null)extra.totalMM=cantidad*extra.longitudIndividual;
   return{codigo,descripcion,lote:extra.numeroLoteMP,proveedor:"",um:"PZ",cantidad,ubicacion,fechaRecibo,
-    fechaModificacion:new Date().toLocaleString("es-MX"),tipoRegistro:esMP?"MP":"GENERAL",seccionMaterial,esMP,peso,pesoU:extra.peso==null?null:(pesoUnitMap[umOriginal]||null),pesoUnidadPendiente:extra.peso!=null&&umCantidad,longitud:null,longU:null,
+    fechaModificacion:new Date().toLocaleString("es-MX"),tipoRegistro:esMP?"MP":esConsumible?"CONSUMIBLES":"GENERAL",seccionMaterial,esMP,peso,pesoU:extra.peso==null?null:(pesoUnitMap[umOriginal]||null),pesoUnidadPendiente:extra.peso!=null&&umCantidad,longitud:null,longU:null,
     seccion:seccionMaterial==="RND"?"redondo":["SQ","FLAT"].includes(seccionMaterial)?"cuadrado":null,secU:"mm",
     diametro:seccionMaterial==="RND"?numeroExcel(get("diametro")):null,
     alto:["SQ","FLAT"].includes(seccionMaterial)?numeroExcel(get("alto")):null,
@@ -13981,7 +14058,7 @@ function renderSur(){
   h+=surItems.map((item,n)=>{
     const m=mats.find(x=>x.codigo.toLowerCase()===item.codigo.toLowerCase());if(!m)return"";
     const e=existencia(m),lote=m.numeroLoteMP||m.lote||"";
-    return`<section class="mp" style="margin-top:10px"><div class="acts" style="margin:0 0 8px;justify-content:space-between"><b>${n+1}. ${esc(m.codigo)} · ${m.esMP?"Materia prima":"General"}</b><button type="button" class="bd" data-quitar="${item.id}">Quitar</button></div>
+    return`<section class="mp" style="margin-top:10px"><div class="acts" style="margin:0 0 8px;justify-content:space-between"><b>${n+1}. ${esc(m.codigo)} · ${esc(nombreTipoRegistro(m.tipoRegistro))}</b><button type="button" class="bd" data-quitar="${item.id}">Quitar</button></div>
       <div class="d"><b>Descripción</b><span>${esc(m.descripcion)}</span></div>
       ${lote?`<div class="d"><b>Lote / Heat</b><span>${esc([lote,m.numeroHeat].filter(Boolean).join(" / "))}</span></div>`:""}
       <div class="d"><b>Existencia actual</b><span>${esc(existTxt(m))}</span></div>
@@ -14104,7 +14181,7 @@ function imprimirSalidaGrupo(items,folio){
     const restPeso=d.pesoRestante!=null?{peso:d.pesoRestante,u:d.pesoRestanteU}:rest.peso;
     const restantes=`${fmt(restL)} ${restU}${restPeso?` (≈ ${fmt(restPeso.peso)} ${restPeso.u})`:""}`;
     const material=d.material||m;
-    return`<tr><td>${esc(material.codigo)}</td><td>${esc(material.tipoRegistro==="MP"||m.esMP?"Materia prima":"General")}</td><td>${esc(material.descripcion)}</td>
+    return`<tr><td>${esc(material.codigo)}</td><td>${esc(nombreTipoRegistro(material.tipoRegistro||(m.esMP?"MP":"GENERAL")))}</td><td>${esc(material.descripcion)}</td>
       <td>${esc([material.lote,material.numeroHeat].filter(Boolean).join(" / ")||"—")}</td>
       <td>${esc([material.seccionMaterial,material.especificacionMedida].filter(Boolean).join(" · ")||"—")}</td>
       <td>${esc(material.ubicacion||"—")}</td><td>${esc(surtido)}</td>
@@ -14160,13 +14237,13 @@ $("bCsvS").onclick=()=>{
 function limpiaP(o){
   const t=v=>v==null?"":String(v).slice(0,300),n=v=>v==null?null:(Number(v)||0);
   return{codigo:t(o.c),descripcion:t(o.d),lote:t(o.l),proveedor:t(o.p),um:"PZ",cantidad:n(o.q)??0,esMP:!!o.m,ubicacion:t(o.ub),fechaRecibo:t(o.fr),fechaModificacion:t(o.fm),
-    tipoRegistro:o.tr==="MP"||o.m? "MP":"GENERAL",seccionMaterial:["SQ","FLAT","RND"].includes(o.sm)?o.sm:"",tipoMaterial:t(o.tm),especificacionMedida:t(o.em),longitudIndividual:n(o.li),manufactura:t(o.mf),numeroHeat:t(o.nh),numeroLoteMP:t(o.nl),numeroCertificado:t(o.nc),totalMM:n(o.tmm),tipoMoneda:t(o.mon),ordenMaterial:t(o.ord),poNumber:t(o.po),noAplica:o.na&&typeof o.na==="object"?o.na:{},
+    tipoRegistro:o.tr==="MP"||o.m?"MP":o.tr==="CONSUMIBLES"?"CONSUMIBLES":"GENERAL",seccionMaterial:["SQ","FLAT","RND"].includes(o.sm)?o.sm:"",tipoMaterial:t(o.tm),especificacionMedida:t(o.em),longitudIndividual:n(o.li),manufactura:t(o.mf),numeroHeat:t(o.nh),numeroLoteMP:t(o.nl),numeroCertificado:t(o.nc),totalMM:n(o.tmm),tipoMoneda:t(o.mon),ordenMaterial:t(o.ord),poNumber:t(o.po),noAplica:o.na&&typeof o.na==="object"?o.na:{},
     peso:n(o.pe),pesoU:o.pu==="LB"||o.pu==="KG"?o.pu:o.u==="LB"||o.u==="KG"?o.u:null,pesoUnidadPendiente:o.pu==="?",longitud:n(o.lo),longU:okU(o.lu)?o.lu:"mm",seccion:o.s==="cuadrado"?"cuadrado":"redondo",
     secU:["mm","cm","in"].includes(o.su)?o.su:"mm",diametro:n(o.di),alto:n(o.al),ancho:n(o.an),despachos:[],existSnap:t(o.x)}}
 function filasFicha(m,ex,pz){
   const et=pz?`Pieza ${pz.n} de ${pz.t||m.cantidad}`:`MASTER · ${m.cantidad} ${m.um}`;
   const st=pz&&ex?(piezasSurt(m).has(pz.n)?"⚠ SURTIDA":"En existencia"):"";
-  return[["Código",m.codigo],["Etiqueta",et],["Estado de la pieza",st],["Clasificación",m.tipoRegistro==="MP"?"Materia prima":"Material general"],["Tipo material",m.tipoMaterial],["Descripción",m.descripcion],["Proveedor",m.proveedor],
+  return[["Código",m.codigo],["Etiqueta",et],["Estado de la pieza",st],["Clasificación",nombreTipoRegistro(m.tipoRegistro)],["Tipo material",m.tipoMaterial],["Descripción",m.descripcion],["Proveedor",m.proveedor],
     ["Sección / especificación",seccionEspecificacion(m)],["Longitud IND",m.longitudIndividual!=null?`${m.longitudIndividual} mm`:""],["Manufactura",m.manufactura],["N.º Heat",m.numeroHeat],["N.º lote MP",m.numeroLoteMP||m.lote],["N.º cert.",m.numeroCertificado],["Total mm",m.totalMM],["Fecha de recibo",m.fechaRecibo],["Cantidad",`${m.cantidad} ${m.um}`],
     ["Peso",m.peso!=null?`${m.peso}${m.pesoU||m.pesoUnidad?" "+(m.pesoU||m.pesoUnidad):m.pesoUnidadPendiente?" (unidad sin definir)":""}`:""],["Orden",m.ordenMaterial],["PO number",m.poNumber],
     ["Existencia",ex?existTxt(m):""],["Existencia al imprimir la etiqueta",!ex&&m.existSnap?m.existSnap:""],["Últ. modificación",m.fechaModificacion]]}
