@@ -12819,7 +12819,24 @@ body.ficha>.app-layout{display:none!important}
   </nav>
   <section class="card section-content" data-module-screen="existencias">
     <h2>Inventario de materiales</h2>
-    <p style="color:var(--mut);margin-bottom:14px">Consulta existencias disponibles y asigna materiales a ubicaciones escaneando el QR del destino.</p>
+    <p style="color:var(--mut);margin-bottom:14px">Consulta existencias disponibles, filtra por almacén y escanea una ubicación para ver qué materiales tiene asignados.</p>
+    <div class="acts" style="margin:0 0 12px;flex-wrap:wrap">
+      <button type="button" class="bp" id="bCamUbiConsulta">📷 Escanear ubicación para ver materiales</button>
+      <button type="button" class="bs" id="bUbiConsultaLimpiar" hidden>Limpiar consulta</button>
+    </div>
+    <div id="ubiConsultaBox" class="card" style="margin:0 0 14px" hidden>
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
+        <div><b>Ubicación consultada:</b> <span id="ubiConsultaInfo">-</span></div>
+        <div style="color:var(--mut)" id="ubiConsultaCnt">0 materiales</div>
+      </div>
+      <div class="tw" style="margin-top:10px">
+        <table>
+          <thead><tr><th>Código</th><th>Descripción</th><th>Clasificación</th><th>Existencia disponible</th><th>Almacén</th></tr></thead>
+          <tbody id="ubiConsultaBody"></tbody>
+        </table>
+        <div class="empty" id="ubiConsultaVacio" hidden>Esta ubicación no tiene materiales asignados.</div>
+      </div>
+    </div>
     <div class="tools">
       <input type="search" id="invBuscar" placeholder="🔍 Buscar código, descripción o ubicación…">
       <select id="invTipo"><option value="">Todas las clasificaciones</option><option value="mp">Materia prima</option><option value="gen">General</option></select>
@@ -13276,6 +13293,40 @@ function renderInventario(){
   $("invVacio").hidden=lista.length>0;
 }
 $("invBuscar").oninput=$("invTipo").onchange=$("invAlmacen").onchange=renderInventario;
+let ubiConsultaCodigo=null;
+function limpiarConsultaUbicacion(){
+  ubiConsultaCodigo=null;
+  $("ubiConsultaBox").hidden=true;
+  $("bUbiConsultaLimpiar").hidden=true;
+  $("ubiConsultaInfo").textContent="-";
+  $("ubiConsultaCnt").textContent="0 materiales";
+  $("ubiConsultaBody").innerHTML="";
+  $("ubiConsultaVacio").hidden=true;
+}
+function mostrarMaterialesPorUbicacion(codigo){
+  const loc=ubicaciones.find(x=>x.codigo.toLowerCase()===String(codigo||"").toLowerCase());
+  if(!loc){toast("Ubicación no registrada",1);return}
+  const almacen=almacenes.find(a=>a.codigo===loc.almacen_codigo);
+  const lista=listaMaterialesEnUbicacion(loc);
+  ubiConsultaCodigo=loc.codigo;
+  $("ubiConsultaInfo").innerHTML=`${esc(almacen?.nombre||"Sin almacén")} · <b>${esc(ubicacionConCodigo(loc))}</b>`;
+  $("ubiConsultaCnt").textContent=`${lista.length} material${lista.length===1?"":"es"}`;
+  $("ubiConsultaBody").innerHTML=lista.map(m=>{const almM=almacenes.find(a=>a.codigo===(ubicaciones.find(x=>x.codigo===m.ubicacionCodigo)?.almacen_codigo||m.ubicacionAlmacenCodigo));return`<tr><td><b>${esc(m.codigo)}</b></td><td class="l">${esc(m.descripcion||"")}</td><td>${m.esMP?'<span class="tag t1">M. PRIMA</span>':'<span class="tag t2">GENERAL</span>'}</td><td>${esc(existTxt(m))}</td><td>${esc(almM?.nombre||m.ubicacionAlmacenNombre||almacen?.nombre||"Sin almacén")}</td></tr>`}).join("");
+  $("ubiConsultaVacio").hidden=lista.length>0;
+  $("ubiConsultaBox").hidden=false;
+  $("bUbiConsultaLimpiar").hidden=false;
+  document.querySelector('.tab[data-v="vInv"]').click();
+  const tab=document.querySelector('.section-tab[data-module="vInv"][data-page="existencias"]');if(tab)tab.click();
+  $("ubiConsultaBox").scrollIntoView({behavior:"smooth",block:"nearest"});
+}
+$("bCamUbiConsulta").onclick=()=>{modoEscaneo="ubiConsulta";camOn()};
+$("bUbiConsultaLimpiar").onclick=()=>{limpiarConsultaUbicacion()};
+function procesarEscaneoUbiConsulta(txt){
+  const raw=String(txt||"").trim(),prefijo="TRAZABILIDAD-UBICACION:";
+  if(raw.toUpperCase().startsWith(prefijo)){modoEscaneo="inventario";mostrarMaterialesPorUbicacion(raw.slice(prefijo.length).trim());camOff();return true}
+  const loc=ubicaciones.find(x=>x.codigo.toLowerCase()===raw.toLowerCase());if(loc){modoEscaneo="inventario";mostrarMaterialesPorUbicacion(loc.codigo);camOff();return true}
+  toast("Escanee un QR de ubicación válido",1);return false;
+}
 function renderAlmacenes(){
   const estado=$("almacenEstado"),lista=$("almacenLista"),form=$("almacenForm");
   if(almacenesError){estado.innerHTML=`<div class="res bad">${esc(almacenesError)} <a href="./supabase_almacenes.sql" download>Descargar migración</a></div>`;form.hidden=true;lista.innerHTML="";return}
@@ -13836,6 +13887,7 @@ document.querySelectorAll(".tab").forEach(b=>b.onclick=()=>{
   document.querySelectorAll(".tab").forEach(x=>{x.classList.toggle("on",x===b);if(x===b)x.setAttribute("aria-current","page");else x.removeAttribute("aria-current")});
   const vista=b.dataset.v;
   $("vReg").hidden=vista!=="vReg";$("vSur").hidden=vista!=="vSur";$("vInv").hidden=vista!=="vInv";
+  if(vista!=="vInv")limpiarConsultaUbicacion();
   if(vista==="vSur"){activarSubpantalla("vSur","preparar");modoEscaneo="surtido";renderSur();renderHist();enfocar()}else{camOff();if(vista==="vInv"){activarSubpantalla("vInv","existencias");modoEscaneo="inventario";renderInventario();renderUbicaciones();renderHistUbicaciones();renderAsignacion()}else{activarSubpantalla("vReg","captura");modoEscaneo="surtido";render()}}
 });
 function activarSubpantalla(modulo,pagina){
@@ -13849,7 +13901,7 @@ document.querySelectorAll(".section-tab").forEach(b=>b.onclick=()=>activarSubpan
 function enfocar(){if(matchMedia("(pointer:fine)").matches)$("scanIn").focus()}
 
 function escanear(txt){
-  if(modoEscaneo==="inventario"){procesarEscaneoInventario(txt);return}
+  if(modoEscaneo==="ubiConsulta"){procesarEscaneoUbiConsulta(txt);return}
   if(modoEscaneo==="inventario"){procesarEscaneoInventario(txt);return}
   const cod=codDe(txt).toLowerCase();
   const i=mats.findIndex(m=>m.codigo.toLowerCase()===cod);
@@ -13870,10 +13922,10 @@ function agregarSurItem(i,pieza=null){
   surItems.push({id:nextSurItem++,codigo:m.codigo,cantidad:1,longitud,unidad:e.modo==="long"?e.u:"",piezas:pieza?[pieza]:[]});
 }
 const sc=$("scanIn");let sT,ubiScanT;
-sc.addEventListener("input",()=>{clearTimeout(sT);if(/Código:/.test(sc.value)||/#[dc]=/.test(sc.value))sT=setTimeout(()=>{if(sc.value){escanear(sc.value);sc.value=""}},250)});
+sc.addEventListener("input",()=>{clearTimeout(sT);if(/Código:/.test(sc.value)||/#[dc]=/.test(sc.value)||(modoEscaneo==="ubiConsulta"&&/^TRAZABILIDAD/i.test(sc.value)))sT=setTimeout(()=>{if(sc.value){escanear(sc.value);sc.value=""}},250)});
 sc.addEventListener("keydown",e=>{
   if(e.key!=="Enter"||e.shiftKey)return;const v=sc.value.trim();
-  if(!v||/^TRAZABILIDAD/i.test(v))return;
+  if(!v||(/^TRAZABILIDAD/i.test(v)&&modoEscaneo!=="ubiConsulta"))return;
   e.preventDefault();clearTimeout(sT);escanear(v);sc.value="";
 });
 $("ubiScan").addEventListener("input",()=>{clearTimeout(ubiScanT);if($("ubiScan").value.includes("TRAZABILIDAD-UBICACION:")||/#[dc]=/.test($("ubiScan").value))ubiScanT=setTimeout(manejarLectorUbicacion,250)});
