@@ -12703,7 +12703,7 @@ body.ficha>.app-layout{display:none!important}
     <form id="f" autocomplete="off">
       <input type="hidden" id="editIndex">
       <div class="grid">
-        <div><label for="ubicacion">Ubicación *</label><input type="text" id="ubicacion" required></div>
+        <div><label for="ubicacion">Ubicación *</label><input type="text" id="ubicacion" list="ubicacionesDatalist" required autocomplete="off"><datalist id="ubicacionesDatalist"></datalist></div>
         <div><label for="codigo">Código *</label><div class="row"><input type="text" id="codigo" required placeholder="MAT-0001"><button type="button" class="bs" id="btnAuto" title="Siguiente código">Auto</button></div></div>
         <div><label for="tipoRegistro">Clasificación *</label><select id="tipoRegistro" required><option value="">Seleccione…</option><option value="GENERAL">Material general</option><option value="MP">Materia prima</option><option value="CONSUMIBLES">Consumibles</option></select></div>
         <div class="na-field"><div class="na-head"><label for="tipoMaterial">Tipo material</label><label class="na-check"><input type="checkbox" data-na="tipoMaterial"> No aplica</label></div><input class="na-value" id="tipoMaterial" type="text"></div>
