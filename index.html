@@ -12955,27 +12955,37 @@ async function subirLista(ms,ds){
   const filas=ds.map(x=>desFila(x.codigo,x.d));
   for(let i=0;i<filas.length;i+=200){const{error}=await sb.from("despachos").upsert(filas.slice(i,i+200),{onConflict:"codigo,t",ignoreDuplicates:true});if(error)throw error}
 }
-let rtT=null;
+let rtT=null,canalRT=null;
+function dejarCanal(){const c=canalRT;canalRT=null;if(!sb||!c)return;try{sb.removeChannel(c).catch(()=>{})}catch{}}
 function suscribir(){
-  if(!sb)return;sb.removeAllChannels();
+  if(!sb||canalRT)return;
   const rt=()=>{clearTimeout(rtT);rtT=setTimeout(()=>{cargar().catch(()=>{});cargarUbicaciones()},400)};
-  sb.channel("cambios").on("postgres_changes",{event:"*",schema:"public",table:"materiales"},rt).on("postgres_changes",{event:"*",schema:"public",table:"despachos"},rt).on("postgres_changes",{event:"*",schema:"public",table:"almacenes"},rt).on("postgres_changes",{event:"*",schema:"public",table:"ubicaciones"},rt).on("postgres_changes",{event:"*",schema:"public",table:"movimientos_ubicacion"},rt).subscribe();
+  canalRT=sb.channel("cambios").on("postgres_changes",{event:"*",schema:"public",table:"materiales"},rt).on("postgres_changes",{event:"*",schema:"public",table:"despachos"},rt).on("postgres_changes",{event:"*",schema:"public",table:"almacenes"},rt).on("postgres_changes",{event:"*",schema:"public",table:"ubicaciones"},rt).on("postgres_changes",{event:"*",schema:"public",table:"movimientos_ubicacion"},rt).subscribe(estado=>{if((estado==="CHANNEL_ERROR"||estado==="TIMED_OUT")&&canalRT){const c=canalRT;canalRT=null;try{sb.removeChannel(c).catch(()=>{})}catch{}}});
 }
 // --- Sesión ---
 function lgMostrar(msg){$("lgCarga").hidden=true;$("lgF").hidden=false;$("lgMsg").hidden=!msg;$("lgMsg").textContent=msg||""}
-function salirUI(){esStaff=false;esAdmin=false;seleccionados.clear();$("rolUsuario").hidden=true;$("bImp").hidden=$("bExcel").hidden=false;document.body.classList.remove("auth");if(sb)sb.removeAllChannels();camOff();mats=[];surItems=[];almacenes=[];ubicaciones=[];movimientosUbicacion=[];almacenesError="";ubicacionesError="";movimientosError="";ubicacionDestino=null;asignacionItems=[];actual=null;render();lgMostrar()}
+function limpiarSesionLocal(){try{Object.keys(localStorage).filter(k=>k.indexOf("sb-")===0&&k.indexOf("-auth-token")>0).forEach(k=>localStorage.removeItem(k))}catch{}}
+function errorSesion(e){const c=Number(e?.status||e?.code||0);return c===401||c===403||/jwt|token|session|sesi[oó]n/i.test(String(e?.message||""))}
+async function cerrarSesion(){try{const{error}=await sb.auth.signOut();if(error)throw error}catch(e){console.warn("No se pudo revocar la sesión en el servidor; se cierra localmente.",e)}limpiarSesionLocal();salirUI()}
+function salirUI(){esStaff=false;esAdmin=false;seleccionados.clear();$("rolUsuario").hidden=true;$("bImp").hidden=$("bExcel").hidden=false;document.body.classList.remove("auth");dejarCanal();camOff();mats=[];surItems=[];almacenes=[];ubicaciones=[];movimientosUbicacion=[];almacenesError="";ubicacionesError="";movimientosError="";ubicacionDestino=null;asignacionItems=[];actual=null;render();lgMostrar()}
+let entrando=false;
 async function entrar(){
-  const admin=await sb.rpc("is_admin");
-  if(admin.error){await sb.auth.signOut();lgMostrar("No se pudieron verificar los permisos del administrador. Ejecute la migración actualizada supabase_almacenes.sql.");return false}
-  const r=await sb.rpc("is_staff");
-  if((r.error||r.data!==true)&&admin.data!==true){await sb.auth.signOut();lgMostrar("Este usuario no tiene autorización. Pida al administrador que agregue su correo.");return false}
-  esStaff=true;esAdmin=admin.data===true;document.body.classList.add("auth");
-  $("rolUsuario").textContent=esAdmin?"Administrador":"Personal";$("rolUsuario").hidden=false;
-  $("bDelSel").hidden=$("bDelAll").hidden=$("selectAll").hidden=!esAdmin;
-  $("bImp").hidden=$("bExcel").hidden=!esAdmin;
-  try{await cargar()}catch(e){errDB(e,"No se pudo cargar los datos")}
-  await cargarUbicaciones();
-  suscribir();await migrarLocal();return true}
+  if(!sb||entrando)return false;
+  entrando=true;
+  try{
+    const admin=await sb.rpc("is_admin");
+    if(admin.error){const expirada=errorSesion(admin.error);await cerrarSesion();lgMostrar(expirada?"Tu sesión expiró. Vuelve a iniciar sesión.":"No se pudieron verificar los permisos del administrador. Ejecute la migración actualizada supabase_almacenes.sql.");return false}
+    const r=await sb.rpc("is_staff");
+    if((r.error||r.data!==true)&&admin.data!==true){const expirada=errorSesion(r.error);await cerrarSesion();lgMostrar(expirada?"Tu sesión expiró. Vuelve a iniciar sesión.":"Este usuario no tiene autorización. Pida al administrador que agregue su correo.");return false}
+    esStaff=true;esAdmin=admin.data===true;document.body.classList.add("auth");
+    $("rolUsuario").textContent=esAdmin?"Administrador":"Personal";$("rolUsuario").hidden=false;
+    $("bDelSel").hidden=$("bDelAll").hidden=$("selectAll").hidden=!esAdmin;
+    $("bImp").hidden=$("bExcel").hidden=!esAdmin;
+    try{await cargar()}catch(e){errDB(e,"No se pudo cargar los datos")}
+    await cargarUbicaciones();
+    suscribir();await migrarLocal();return true;
+  }finally{entrando=false}
+}
 // Datos que el navegador tenía guardados antes de usar Supabase
 async function migrarLocal(){
   if(mats.length||sessionStorage.getItem("mig_omitido"))return;
@@ -12988,13 +12998,15 @@ async function migrarLocal(){
   catch(e){errDB(e,"No se pudo subir")}
 }
 $("lgF").addEventListener("submit",async e=>{
-  e.preventDefault();$("lgMsg").hidden=true;$("lgBtn").disabled=true;
-  const{error}=await sb.auth.signInWithPassword({email:$("lgMail").value.trim(),password:$("lgPass").value});
-  $("lgBtn").disabled=false;
-  if(error){lgMostrar("Correo o contraseña incorrectos.");return}
-  $("lgPass").value="";await entrar();
+  e.preventDefault();if($("lgBtn").disabled)return;
+  $("lgMsg").hidden=true;$("lgBtn").disabled=true;
+  try{
+    const{error}=await sb.auth.signInWithPassword({email:$("lgMail").value.trim(),password:$("lgPass").value});
+    if(error){lgMostrar("Correo o contraseña incorrectos.");return}
+    $("lgPass").value="";await entrar();
+  }finally{$("lgBtn").disabled=false}
 });
-$("bSalir").onclick=()=>{if(sb)sb.auth.signOut()};
+$("bSalir").onclick=()=>{cerrarSesion()};
 async function arrancar(){
   const ficha=/#(?:[^#]*&)?[dc]=/.test(location.hash);if(ficha)document.body.classList.add("ficha");
   if(!sb){lgMostrar("No se pudo cargar Supabase. Revise su conexión a internet y recargue la página.");if(ficha)iniciarFicha();return}
