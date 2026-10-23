@@ -28,20 +28,6 @@ create unique index if not exists almacenes_nombre_lower_uidx
 
 alter table public.almacenes enable row level security;
 
-drop policy if exists almacenes_staff_access on public.almacenes;
-drop policy if exists almacenes_staff_select on public.almacenes;
-drop policy if exists almacenes_staff_insert on public.almacenes;
-drop policy if exists almacenes_admin_update on public.almacenes;
-drop policy if exists almacenes_admin_delete on public.almacenes;
-create policy almacenes_staff_select on public.almacenes
-  for select to authenticated using (public.is_staff() or public.is_admin());
-create policy almacenes_staff_insert on public.almacenes
-  for insert to authenticated with check (public.is_staff() or public.is_admin());
-create policy almacenes_admin_update on public.almacenes
-  for update to authenticated using (public.is_admin()) with check (public.is_admin());
-create policy almacenes_admin_delete on public.almacenes
-  for delete to authenticated using (public.is_admin());
-
 grant select, insert, update, delete on public.almacenes to authenticated;
 
 insert into public.almacenes (codigo, nombre, clasificacion)
@@ -165,6 +151,21 @@ begin
   end loop;
 end;
 $$;
+
+-- Las políticas deben crearse después del bloque anterior que borra las antiguas.
+drop policy if exists almacenes_staff_access on public.almacenes;
+drop policy if exists almacenes_staff_select on public.almacenes;
+drop policy if exists almacenes_staff_insert on public.almacenes;
+drop policy if exists almacenes_admin_update on public.almacenes;
+drop policy if exists almacenes_admin_delete on public.almacenes;
+create policy almacenes_staff_select on public.almacenes
+  for select to authenticated using (public.is_staff() or public.is_admin());
+create policy almacenes_staff_insert on public.almacenes
+  for insert to authenticated with check (public.is_staff() or public.is_admin());
+create policy almacenes_admin_update on public.almacenes
+  for update to authenticated using (public.is_admin()) with check (public.is_admin());
+create policy almacenes_admin_delete on public.almacenes
+  for delete to authenticated using (public.is_admin());
 
 drop policy if exists ubicaciones_staff_access on public.ubicaciones;
 drop policy if exists ubicaciones_staff_select on public.ubicaciones;
