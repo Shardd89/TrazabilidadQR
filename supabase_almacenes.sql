@@ -119,21 +119,53 @@ begin
   into v_conflictos
   from ubicaciones_prefijo_mapa m
   join public.ubicaciones_codigos_alias alias
-    on lower(alias.codigo_alias) = lower(m.codigo_nuevo)
-  where alias.ubicacion_codigo <> m.codigo_anterior;
-  if v_conflictos is not null then
-    raise exception 'UBICACION_ALIAS_CONFLICTO: el código destino UBI- ya está reservado para otra ubicación: %', v_conflictos;
-  end if;
-
-  select string_agg(m.codigo_anterior, ', ' order by m.codigo_anterior)
-  into v_conflictos
-  from ubicaciones_prefijo_mapa m
-  join public.ubicaciones_codigos_alias alias
     on lower(alias.codigo_alias) = lower(trim(m.codigo_anterior))
   where alias.ubicacion_codigo <> m.codigo_anterior;
   if v_conflictos is not null then
     raise exception 'UBICACION_ALIAS_CONFLICTO: los códigos ya pertenecen a otro QR: %', v_conflictos;
   end if;
+end;
+$$;
+
+do $$
+declare
+  v_max integer;
+  v_codigo text;
+  v_mapa record;
+begin
+  select greatest(
+    coalesce((select max(substring(upper(codigo) from '^UBI-([0-9]+)$')::integer) from public.ubicaciones where codigo ~* '^UBI-[0-9]+$'), 0),
+    coalesce((select max(substring(upper(codigo_alias) from '^UBI-([0-9]+)$')::integer) from public.ubicaciones_codigos_alias where codigo_alias ~* '^UBI-[0-9]+$'), 0),
+    coalesce((select max(substring(upper(codigo_nuevo) from '^UBI-([0-9]+)$')::integer) from ubicaciones_prefijo_mapa), 0)
+  ) into v_max;
+
+  for v_mapa in
+    select mapa.codigo_anterior
+    from ubicaciones_prefijo_mapa mapa
+    join public.ubicaciones_codigos_alias alias
+      on lower(alias.codigo_alias) = lower(mapa.codigo_nuevo)
+    where alias.ubicacion_codigo <> mapa.codigo_anterior
+    order by mapa.codigo_anterior
+  loop
+    loop
+      v_max := v_max + 1;
+      v_codigo := 'UBI-' || lpad(v_max::text, 3, '0');
+      exit when not exists (
+        select 1 from public.ubicaciones
+        where lower(codigo) = lower(v_codigo)
+      ) and not exists (
+        select 1 from public.ubicaciones_codigos_alias
+        where lower(codigo_alias) = lower(v_codigo)
+      ) and not exists (
+        select 1 from ubicaciones_prefijo_mapa
+        where lower(codigo_nuevo) = lower(v_codigo)
+      );
+    end loop;
+
+    update ubicaciones_prefijo_mapa
+    set codigo_nuevo = v_codigo
+    where codigo_anterior = v_mapa.codigo_anterior;
+  end loop;
 end;
 $$;
 

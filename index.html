@@ -13316,14 +13316,21 @@ function limpiarConsultaUbicacion(){
 function ubicacionPorCodigo(codigo){
   const clave=String(codigo||"").trim().toLocaleLowerCase();
   const canonica=normalizarCodigoUbicacion(codigo).toLocaleLowerCase();
-  const directa=ubicaciones.find(loc=>loc.codigo.toLocaleLowerCase()===clave||normalizarCodigoUbicacion(loc.codigo).toLocaleLowerCase()===canonica);
+  const directa=ubicaciones.find(loc=>loc.codigo.toLocaleLowerCase()===clave);
   if(directa)return directa;
-  const alias=ubicacionesAlias.find(item=>item.codigo_alias.toLocaleLowerCase()===clave||normalizarCodigoUbicacion(item.codigo_alias).toLocaleLowerCase()===canonica);
-  return alias?ubicaciones.find(loc=>loc.codigo===alias.ubicacion_codigo):null;
+  const alias=ubicacionesAlias.find(item=>item.codigo_alias.toLocaleLowerCase()===clave);
+  const destinoAlias=alias&&ubicaciones.find(loc=>loc.codigo===alias.ubicacion_codigo);
+  if(destinoAlias)return destinoAlias;
+  const directaCanonica=ubicaciones.find(loc=>normalizarCodigoUbicacion(loc.codigo).toLocaleLowerCase()===canonica);
+  if(directaCanonica)return directaCanonica;
+  const aliasCanonico=ubicacionesAlias.find(item=>normalizarCodigoUbicacion(item.codigo_alias).toLocaleLowerCase()===canonica);
+  const destinoCanonico=aliasCanonico&&ubicaciones.find(loc=>loc.codigo===aliasCanonico.ubicacion_codigo);
+  if(destinoCanonico)return destinoCanonico;
+  return ubicaciones.find(loc=>String(loc.nombre||"").trim().toLocaleLowerCase()===clave)||null;
 }
 function mostrarMaterialesPorUbicacion(codigo){
   const loc=ubicacionPorCodigo(codigo);
-  if(!loc){toast(ubicacionesAliasError||"Ubicación no registrada",1);return}
+  if(!loc){toast(ubicacionesError||ubicacionesAliasError||`Ubicación no registrada: ${codigo}`,1);return}
   const almacen=almacenes.find(a=>a.codigo===loc.almacen_codigo);
   const lista=listaMaterialesEnUbicacion(loc);
   ubiConsultaCodigo=loc.codigo;
@@ -13340,7 +13347,7 @@ function mostrarMaterialesPorUbicacion(codigo){
 $("bCamUbiConsulta").onclick=()=>{modoEscaneo="ubiConsulta";camOn()};
 $("bUbiConsultaLimpiar").onclick=()=>{limpiarConsultaUbicacion()};
 function procesarEscaneoUbiConsulta(txt){
-  const raw=String(txt||"").trim(),prefijo="TRAZABILIDAD-UBICACION:";
+  const raw=String(txt||"").replace(/^\uFEFF/,"").trim(),prefijo="TRAZABILIDAD-UBICACION:";
   if(raw.toUpperCase().startsWith(prefijo)){modoEscaneo="inventario";mostrarMaterialesPorUbicacion(raw.slice(prefijo.length).trim());camOff();return true}
   const loc=ubicacionPorCodigo(raw);if(loc){modoEscaneo="inventario";mostrarMaterialesPorUbicacion(loc.codigo);camOff();return true}
   toast("Escanee un QR de ubicación válido",1);return false;
