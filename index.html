@@ -14289,7 +14289,12 @@ function activarSubpantalla(modulo,pagina){
   const visibles=MAPA_SUBPANTALLAS[modulo]?.[pagina]||[pagina];
   vista.querySelectorAll("[data-module-screen]").forEach(panel=>{panel.hidden=!visibles.includes(panel.dataset.moduleScreen)&&!(modulo==="vReg"&&(pagina==="captura"||pagina==="historial")&&panel.dataset.moduleScreen==="qr")});
   vista.querySelectorAll(".section-tab").forEach(b=>{if(b.dataset.page===pagina)b.setAttribute("aria-current","page");else b.removeAttribute("aria-current")});
-  if(modulo==="vInv"&&pagina!=="asignar"&&modoEscaneo==="inventario")camOff();
+  if(modulo==="vInv"){
+    if(pagina==="almacenes"){renderAlmacenes();renderUbicaciones();}
+    if(pagina==="asignar"){renderAsignacion();renderHistUbicaciones();}
+    if(pagina==="existencias"){renderInventario();}
+    if(pagina!=="asignar"&&modoEscaneo==="inventario")camOff();
+  }
   if(modulo==="vSur"&&pagina!=="preparar")camOff();
 }
 document.querySelectorAll(".section-tab").forEach(b=>b.onclick=()=>activarSubpantalla(b.dataset.module,b.dataset.page));
