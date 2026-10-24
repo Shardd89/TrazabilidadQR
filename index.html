@@ -12971,6 +12971,7 @@ body.ficha>.app-layout{display:none!important}
   <section class="card section-content" data-module-screen="ubicaciones" hidden>
     <h2>Ubicaciones y códigos QR</h2>
     <div id="ubiEstado"></div>
+    <div class="acts"><button type="button" class="bs" id="bUbiExportar" hidden>⬇️ Exportar todos los QR (ZIP)</button></div>
     <form id="ubiForm" class="grid" autocomplete="off">
       <div><label for="ubiAlmacen">Almacén *</label><select id="ubiAlmacen" required></select></div>
       <div><label for="ubiCodigo">Código de ubicación *</label><div class="row"><input id="ubiCodigo" required placeholder="UBI-001"><button type="button" class="bs" id="ubiAuto">Auto</button></div></div>
@@ -13142,7 +13143,7 @@ function lgMostrar(msg){$("lgCarga").hidden=true;$("lgF").hidden=false;$("lgMsg"
 function limpiarSesionLocal(){try{Object.keys(localStorage).filter(k=>k.indexOf("sb-")===0&&k.indexOf("-auth-token")>0).forEach(k=>localStorage.removeItem(k))}catch{}}
 function errorSesion(e){const c=Number(e?.status||e?.code||0);return c===401||c===403||/jwt|token|session|sesi[oó]n/i.test(String(e?.message||""))}
 async function cerrarSesion(){try{const{error}=await sb.auth.signOut();if(error)throw error}catch(e){console.warn("No se pudo revocar la sesión en el servidor; se cierra localmente.",e)}limpiarSesionLocal();salirUI()}
-function actualizarVisibilidadAdmin(){["bJson","bCsv","bImp","bExcel","bCsvS","ubicacionesImportar","btnGuardar"].forEach(id=>$(id).hidden=!esAdmin);$("registroAdminAviso").hidden=esAdmin}
+function actualizarVisibilidadAdmin(){["bJson","bCsv","bImp","bExcel","bCsvS","bUbiExportar","ubicacionesImportar","btnGuardar"].forEach(id=>$(id).hidden=!esAdmin);$("registroAdminAviso").hidden=esAdmin}
 function salirUI(){esStaff=false;esAdmin=false;actualizarVisibilidadAdmin();seleccionados.clear();$("rolUsuario").hidden=true;$("conteoEstado").hidden=true;document.body.classList.remove("auth");dejarCanal();camOff();if($("conteoDialog").open)$("conteoDialog").close();mats=[];surItems=[];almacenes=[];ubicaciones=[];ubicacionesAlias=[];movimientosUbicacion=[];ajustesInventarioError="";almacenesError="";ubicacionesError="";ubicacionesAliasError="";movimientosError="";ubicacionDestino=null;asignacionItems=[];actual=null;render();lgMostrar()}
 let entrando=false;
 async function entrar(){
@@ -13763,6 +13764,18 @@ function mostrarQrUbicacion(loc,i){
   box.querySelector("[data-ubi-descargar]").onclick=()=>{const a=document.createElement("a");a.href=qr.toDataURL("image/png");a.download=`QR_${normalizarCodigoUbicacion(loc.codigo)}.png`;a.click()};
   box.querySelector("[data-ubi-imprimir]").onclick=()=>imprimirEtiquetaUbicacion(loc,qr.toDataURL("image/png"),almacen);
 }
+$("bUbiExportar").onclick=()=>{
+  if(!esAdmin){toast("Solo el administrador puede exportar información.",1);return}
+  if(!ubicaciones.length){toast("No hay ubicaciones para exportar.",1);return}
+  const archivos=[];
+  for(const loc of ubicaciones){
+    const qr=dibujarQR(codigoQrUbicacion(loc.codigo),600);
+    if(!qr){toast(`No se pudo generar el QR de ${normalizarCodigoUbicacion(loc.codigo)}. No se exportó el archivo.`,1);return}
+    archivos.push({name:`QR_${safeN(normalizarCodigoUbicacion(loc.codigo))}.png`,data:durl(qr.toDataURL("image/png"))});
+  }
+  bajarBlob("QR_ubicaciones.zip",zipBytes(archivos));
+  toast(`${archivos.length} QR de ubicaciones exportados ⬇️`);
+};
 function imprimirEtiquetaUbicacion(loc,src,almacen){
   const codigoVisible=normalizarCodigoUbicacion(loc.codigo),nombreVisible=nombreUbicacion(loc);
   const e=$("etiqueta");e.className="hoja";e.innerHTML=`<div class="pz"><img src="${src}" alt="QR ${esc(codigoVisible)}"><div class="tx"><b class="cd">${esc(codigoVisible)}</b><span class="tg">UBICACIÓN</span><small>${esc(almacen?.nombre||"Sin almacén")}</small>${nombreVisible!==codigoVisible?`<small>${esc(nombreVisible)}</small>`:""}</div></div>`;
