@@ -12834,6 +12834,11 @@ body.ficha>.app-layout{display:none!important}
         <div><b>Ubicación consultada:</b> <span id="ubiConsultaInfo">-</span></div>
         <div style="color:var(--mut)" id="ubiConsultaCnt">0 materiales</div>
       </div>
+      <div id="ubiConsultaBusqueda" style="margin-top:12px" hidden>
+        <label for="ubiConsultaBuscar">Buscar material registrado por código o descripción</label>
+        <input type="search" id="ubiConsultaBuscar" placeholder="Escribe un código o parte de la descripción…" autocomplete="off">
+        <div id="ubiConsultaResultados" class="ubicacion-material-list" aria-live="polite"></div>
+      </div>
       <div class="tw" style="margin-top:10px">
         <table>
           <thead><tr><th>Código</th><th>Descripción</th><th>Clasificación</th><th>Existencia disponible</th><th>Almacén</th><th>Conteo cíclico</th></tr></thead>
@@ -13353,6 +13358,9 @@ function limpiarConsultaUbicacion(){
   $("ubiConsultaCnt").textContent="0 materiales";
   $("ubiConsultaBody").innerHTML="";
   $("ubiConsultaVacio").hidden=true;
+  $("ubiConsultaBuscar").value="";
+  $("ubiConsultaBusqueda").hidden=true;
+  $("ubiConsultaResultados").innerHTML="";
 }
 function ubicacionPorCodigo(codigo){
   const clave=String(codigo||"").trim().toLocaleLowerCase();
@@ -13378,6 +13386,9 @@ function mostrarMaterialesPorUbicacion(codigo){
   $("ubiConsultaInfo").innerHTML=`${esc(almacen?.nombre||"Sin almacén")} · <b>${esc(ubicacionConCodigo(loc))}</b>`;
   $("ubiConsultaCnt").textContent=`${lista.length} material${lista.length===1?"":"es"}`;
   actualizarEstadoConteoCiclico();
+  $("ubiConsultaBusqueda").hidden=!esAdmin;
+  $("ubiConsultaBuscar").value="";
+  $("ubiConsultaResultados").innerHTML='<p class="ubicaciones-ayuda">Busca en el catálogo del módulo Registro. Para ajustar existencias, el material debe estar asignado a esta ubicación.</p>';
   $("ubiConsultaBody").innerHTML=lista.map(m=>{const almM=almacenes.find(a=>a.codigo===(ubicaciones.find(x=>x.codigo===m.ubicacionCodigo)?.almacen_codigo||m.ubicacionAlmacenCodigo));return`<tr><td><b>${esc(m.codigo)}</b></td><td class="l">${esc(m.descripcion||"")}</td><td>${m.esMP?'<span class="tag t1">M. PRIMA</span>':m.tipoRegistro==="CONSUMIBLES"?'<span class="tag t2">CONSUMIBLES</span>':'<span class="tag t2">GENERAL</span>'}</td><td>${esc(existTxt(m))}</td><td>${esc(almM?.nombre||m.ubicacionAlmacenNombre||almacen?.nombre||"Sin almacén")}</td><td>${esAdmin?`<button type="button" class="bs" data-conteo="${esc(m.codigo)}" ${ajustesInventarioError?"disabled title=\"No se pudo cargar el historial de conteos\"":""}>📋 Conteo cíclico</button>`:"—"}</td></tr>`}).join("");
   $("ubiConsultaBody").querySelectorAll("[data-conteo]").forEach(btn=>btn.onclick=()=>abrirConteoCiclico(btn.dataset.conteo,loc));
   $("ubiConsultaVacio").hidden=lista.length>0;
@@ -13389,6 +13400,29 @@ function mostrarMaterialesPorUbicacion(codigo){
 }
 $("bCamUbiConsulta").onclick=()=>{modoEscaneo="ubiConsulta";camOn()};
 $("bUbiConsultaLimpiar").onclick=()=>{limpiarConsultaUbicacion()};
+function buscarMaterialesParaConteo(){
+  const resultados=$("ubiConsultaResultados"),consulta=$("ubiConsultaBuscar").value.trim().toLocaleLowerCase();
+  if(!consulta){
+    resultados.innerHTML='<p class="ubicaciones-ayuda">Busca en el catálogo del módulo Registro por código o descripción.</p>';
+    return;
+  }
+  const coincidencias=mats.filter(material=>[material.codigo,material.descripcion].some(valor=>String(valor||"").toLocaleLowerCase().includes(consulta)));
+  if(!coincidencias.length){
+    resultados.innerHTML='<p class="ubicaciones-ayuda">No se encontró ningún material registrado con ese código o descripción.</p>';
+    return;
+  }
+  const ubicacion=ubicaciones.find(loc=>loc.codigo===ubiConsultaCodigo);
+  if(!ubicacion){resultados.innerHTML='<p class="ubicaciones-ayuda">Escanea de nuevo una ubicación para consultar los materiales.</p>';return}
+  const visibles=coincidencias.slice(0,20);
+  resultados.innerHTML=visibles.map(material=>{
+    const enUbicacion=listaMaterialesEnUbicacion(ubicacion).some(item=>item.codigo===material.codigo);
+    const ubicacionActual=ubicaciones.find(loc=>loc.codigo===material.ubicacionCodigo);
+    const ubicacionTexto=ubicacionActual?ubicacionConCodigo(ubicacionActual):material.ubicacion||"Sin ubicación";
+    return`<div class="ubicacion-material"><span><b>${esc(material.codigo)}</b><span>${esc(material.descripcion||"Sin descripción")} · ${esc(existTxt(material))}<br><small>${enUbicacion?"Asignado a esta ubicación":`Ubicación actual: ${esc(ubicacionTexto)}`}</small></span></span>${enUbicacion?`<button type="button" class="bs" data-conteo-busqueda="${esc(material.codigo)}" ${ajustesInventarioError?"disabled title=\"No se pudo cargar el historial de conteos\"":""}>📋 Conteo cíclico</button>`:'<button type="button" class="bs" disabled>No está en esta ubicación</button>'}</div>`;
+  }).join("")+(coincidencias.length>visibles.length?`<p class="ubicaciones-ayuda">Se muestran los primeros ${visibles.length} resultados de ${coincidencias.length}. Afina la búsqueda para encontrar el material.</p>`:"");
+  resultados.querySelectorAll("[data-conteo-busqueda]").forEach(btn=>btn.onclick=()=>abrirConteoCiclico(btn.dataset.conteoBusqueda,ubicacion));
+}
+$("ubiConsultaBuscar").addEventListener("input",buscarMaterialesParaConteo);
 function abrirConteoCiclico(codigo,loc){
   if(!esAdmin){toast("Solo el administrador puede ajustar existencias.",1);return}
   if(ajustesInventarioError){toast(ajustesInventarioError,1);return}
