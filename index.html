@@ -12700,7 +12700,7 @@ body.ficha>.app-layout{display:none!important}
 .section-content>h2:first-child:not(#tituloForm){display:none}
 .section-content>p[style*="color:var(--mut)"]{display:none}
 #sMp,#sConsumibles,#sGen{display:none}
-#vReg:has(>.section-nav [data-page="captura"][aria-current="page"])>[data-module-screen="qr"]{display:none}
+#vReg:not(.qr-visible):has(>.section-nav [data-page="captura"][aria-current="page"])>[data-module-screen="qr"]{display:none}
 
 @media(min-width:701px){
   .app-layout{grid-template-columns:minmax(0,1fr);padding:8px 14px;gap:8px}
@@ -13333,6 +13333,7 @@ function dibujarQR(txt,px=240){
 function mostrar(m){
   const pagina=document.querySelector('.section-tab[data-module="vReg"][aria-current="page"]')?.dataset.page;
   activarSubpantalla("vReg",pagina==="historial"?"historial":"captura");
+  $("vReg").classList.add("qr-visible");
   actual=m;const box=$("qrBox");box.innerHTML="";
   const txt=qrTexto(m);
   const c=dibujarQR(txt);
@@ -14013,6 +14014,7 @@ function alternarQrMaterial(m){
   const panel=$("vReg").querySelector('[data-module-screen="qr"]');
   if(actual?.codigo===m.codigo&&!panel.hidden){
     panel.hidden=true;actual=null;
+    $("vReg").classList.remove("qr-visible");
     $("qrBox").innerHTML="Guarde o seleccione un material para generar su QR";
     $("ficha").innerHTML="";
     $("bPrint").disabled=$("bPng").disabled=true;
@@ -14328,7 +14330,9 @@ function escanear(txt){
     camOff();
     const material=mats.find(m=>m.codigo.toLowerCase()===cod);
     if(!material){toast(cod?`Código no registrado: ${cod}`:"El QR no contiene un código de material válido.",1);return}
-    mostrar(material);toast(`Material encontrado: ${material.codigo}`);return
+    mostrar(material);
+    $("vReg").querySelector('[data-module-screen="qr"]').scrollIntoView({behavior:"smooth",block:"start"});
+    toast(`Material encontrado: ${material.codigo}`);return
   }
   const i=mats.findIndex(m=>m.codigo.toLowerCase()===cod);
   if(i<0){toast(`Código no registrado: ${cod}`,1);return}
