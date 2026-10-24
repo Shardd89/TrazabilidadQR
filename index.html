@@ -12470,7 +12470,7 @@ button{cursor:pointer;border:none;border-radius:8px;font-size:.88rem;font-weight
 .tools{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
 .tools input,.tools select{flex:1;min-width:130px}
 .tw{max-height:380px;overflow:auto;border:1px solid var(--line);border-radius:8px}
-table{width:100%;border-collapse:collapse;font-size:.82rem;min-width:760px}
+table{width:100%;border-collapse:collapse;font-size:.82rem;min-width:640px}
 th{background:var(--pri2);color:#fff;padding:8px;position:sticky;top:0;cursor:pointer;white-space:nowrap}
 td{padding:7px 8px;border-bottom:1px solid var(--line);text-align:center}
 tbody tr:hover td{background:var(--soft)}
@@ -12664,6 +12664,37 @@ body.ficha>.app-layout{display:none!important}
 #salidaView .renglones thead{display:table-header-group}
 #salidaView .renglones tr{break-inside:avoid;page-break-inside:avoid}
 .noprint{display:none!important}}
+/* ===== Compactación v1 ===== */
+.view-heading,.section-title,.sidebar-note,.sidebar-label,.tab-copy small{display:none}
+.section-content>h2:first-child:not(#tituloForm){display:none}
+.section-content>p[style*="color:var(--mut)"]{display:none}
+#sMp,#sConsumibles,#sGen{display:none}
+#vReg:has(>.section-nav [data-page="captura"][aria-current="page"])>[data-module-screen="qr"]{display:none}
+
+@media(min-width:701px){
+  .app-layout{grid-template-columns:minmax(0,1fr);padding:8px 14px;gap:8px}
+  .sidebar{position:static}
+  .sidebar-group{padding:4px}
+  .tabs{display:flex;gap:4px}
+  .tab{width:auto;padding:6px 12px}
+  .tab-icon{width:24px;height:24px;flex-basis:24px}
+  header{padding:6px 14px}
+  .card{padding:12px;margin-bottom:10px}
+  .grid{grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:8px 10px}
+  input,select,textarea{padding:6px 8px}
+  .section-nav{padding:3px}
+  .section-tab{flex:0 1 auto;min-height:34px;padding:6px 14px}
+  .tw{max-height:calc(100dvh - 250px)}
+}
+
+@media(min-width:1100px){
+  #vReg{grid-template-columns:minmax(0,1.2fr) minmax(300px,.8fr)}
+  #vReg>.section-nav{grid-column:1/-1;grid-row:1}
+  #vReg [data-module-screen="captura"]{grid-column:1/-1;grid-row:2}
+  #vReg .section-content[data-module-screen="historial"]{grid-column:1;grid-row:2}
+  #vReg>[data-module-screen="qr"]{grid-column:2;grid-row:2;align-self:start;margin-top:0}
+}
+#detTraza>summary{cursor:pointer;font-weight:600;color:var(--pri);padding:6px 0}
 </style>
 </head>
 <body>
@@ -12698,7 +12729,6 @@ body.ficha>.app-layout{display:none!important}
 <nav class="section-nav" aria-label="Pantallas de Registro">
   <button type="button" class="section-tab" data-module="vReg" data-page="captura" aria-current="page">✍️ <strong>Capturar material</strong></button>
   <button type="button" class="section-tab" data-module="vReg" data-page="historial">📋 <strong>Historial</strong></button>
-  <button type="button" class="section-tab" data-module="vReg" data-page="qr">🔳 <strong>Etiquetas QR</strong></button>
 </nav>
 <div>
   <div class="section-title" data-module-screen="captura"><div><h3>Alta de material</h3><p>Completa los datos de identificación, dimensiones y existencia.</p></div></div>
@@ -12710,24 +12740,29 @@ body.ficha>.app-layout{display:none!important}
         <div><label for="ubicacion">Ubicación *</label><input type="text" id="ubicacion" list="ubicacionesDatalist" required autocomplete="off"><datalist id="ubicacionesDatalist"></datalist></div>
         <div><label for="codigo">Código *</label><div class="row"><input type="text" id="codigo" required placeholder="MAT-0001"><button type="button" class="bs" id="btnAuto" title="Siguiente código">Auto</button></div></div>
         <div><label for="tipoRegistro">Clasificación *</label><select id="tipoRegistro" required><option value="">Seleccione…</option><option value="GENERAL">Material general</option><option value="MP">Materia prima</option><option value="CONSUMIBLES">Consumibles</option></select></div>
-        <div class="na-field"><div class="na-head"><label for="tipoMaterial">Tipo material</label><label class="na-check"><input type="checkbox" data-na="tipoMaterial"> No aplica</label></div><input class="na-value" id="tipoMaterial" type="text"></div>
         <div><label for="descripcion">Descripción *</label><input type="text" id="descripcion" required></div>
-        <div class="na-field"><div class="na-head"><label for="especificacionMedida">Especificación medida</label><label class="na-check"><input type="checkbox" data-na="especificacionMedida"> No aplica</label></div><input class="na-value" id="especificacionMedida" type="text"></div>
-        <div class="na-field"><div class="na-head"><label for="seccionMaterial">Sección</label><label class="na-check"><input type="checkbox" data-na="seccionMaterial"> No aplica</label></div><select class="na-value" id="seccionMaterial"><option value="">Sin especificar</option><option value="SQ">SQ · Barra cuadrada</option><option value="FLAT">FLAT</option><option value="RND">RND · Redonda</option></select></div>
-        <div id="dimensionesLineales" hidden><label>Dimensiones de la sección (mm)</label><div class="row"><input type="number" id="altoMaterial" min="0" step="any" placeholder="Alto (mm)" aria-label="Alto en milímetros"><input type="number" id="anchoMaterial" min="0" step="any" placeholder="Ancho (mm)" aria-label="Ancho en milímetros"></div></div>
-        <div id="dimensionRedonda" hidden><label for="diametroMaterial">Diámetro (mm)</label><input type="number" id="diametroMaterial" min="0" step="any"></div>
-        <div class="na-field"><div class="na-head"><label for="longitudIndividual">Longitud IND (mm)</label><label class="na-check"><input type="checkbox" data-na="longitudIndividual"> No aplica</label></div><input class="na-value" id="longitudIndividual" type="number" min="0" step="any"></div>
-        <div class="na-field"><div class="na-head"><label for="manufactura">Manufactura</label><label class="na-check"><input type="checkbox" data-na="manufactura"> No aplica</label></div><input class="na-value" id="manufactura" type="text"></div>
-        <div class="na-field"><div class="na-head"><label for="numeroHeat">N.º Heat</label><label class="na-check"><input type="checkbox" data-na="numeroHeat"> No aplica</label></div><input class="na-value" id="numeroHeat" type="text"></div>
-        <div class="na-field"><div class="na-head"><label for="numeroLoteMP">N.º lote MP</label><label class="na-check"><input type="checkbox" data-na="numeroLoteMP"> No aplica</label></div><input class="na-value" id="numeroLoteMP" type="text"></div>
-        <div class="na-field"><div class="na-head"><label for="numeroCertificado">N.º cert.</label><label class="na-check"><input type="checkbox" data-na="numeroCertificado"> No aplica</label></div><input class="na-value" id="numeroCertificado" type="text"></div>
-        <div class="na-field"><div class="na-head"><label for="totalMM">Total mm (auto)</label><label class="na-check"><input type="checkbox" data-na="totalMM"> No aplica</label></div><input class="na-value" id="totalMM" type="number" min="0" step="any" readonly></div>
         <div><label for="fechaRecibo">Fecha de recibo *</label><input type="date" id="fechaRecibo" required></div>
         <div><label for="cantidad">Cantidad (PZ) *</label><input type="number" id="cantidad" min="0" step="any" required></div>
+        <input type="hidden" id="um" value="PZ">
         <div class="na-field"><div class="na-head"><label for="peso">Peso</label><label class="na-check"><input type="checkbox" data-na="peso"> No aplica</label></div><div class="na-value-wrap row"><input class="na-value" id="peso" type="number" min="0" step="any"><select id="pesoU" aria-label="Unidad de peso"><option value="LB">LB</option><option value="KG">KG</option><option value="">Sin unidad</option></select></div></div>
-        <div><label for="um">UM de cantidad</label><input type="text" value="PZ · Pieza" readonly aria-label="Unidad de cantidad fija: piezas"><input type="hidden" id="um" value="PZ"></div>
-        <div class="na-field"><div class="na-head"><label for="ordenMaterial">Orden</label><label class="na-check"><input type="checkbox" data-na="ordenMaterial"> No aplica</label></div><input class="na-value" id="ordenMaterial" type="text"></div>
-        <div class="na-field"><div class="na-head"><label for="poNumber">PO number</label><label class="na-check"><input type="checkbox" data-na="poNumber"> No aplica</label></div><input class="na-value" id="poNumber" type="text"></div>
+        <details id="detTraza" class="full">
+          <summary>Datos de trazabilidad (opcional)</summary>
+          <div class="grid">
+            <div class="na-field"><div class="na-head"><label for="tipoMaterial">Tipo material</label><label class="na-check"><input type="checkbox" data-na="tipoMaterial"> No aplica</label></div><input class="na-value" id="tipoMaterial" type="text"></div>
+            <div class="na-field"><div class="na-head"><label for="especificacionMedida">Especificación medida</label><label class="na-check"><input type="checkbox" data-na="especificacionMedida"> No aplica</label></div><input class="na-value" id="especificacionMedida" type="text"></div>
+            <div class="na-field"><div class="na-head"><label for="seccionMaterial">Sección</label><label class="na-check"><input type="checkbox" data-na="seccionMaterial"> No aplica</label></div><select class="na-value" id="seccionMaterial"><option value="">Sin especificar</option><option value="SQ">SQ · Barra cuadrada</option><option value="FLAT">FLAT</option><option value="RND">RND · Redonda</option></select></div>
+            <div id="dimensionesLineales" hidden><label>Dimensiones de la sección (mm)</label><div class="row"><input type="number" id="altoMaterial" min="0" step="any" placeholder="Alto (mm)" aria-label="Alto en milímetros"><input type="number" id="anchoMaterial" min="0" step="any" placeholder="Ancho (mm)" aria-label="Ancho en milímetros"></div></div>
+            <div id="dimensionRedonda" hidden><label for="diametroMaterial">Diámetro (mm)</label><input type="number" id="diametroMaterial" min="0" step="any"></div>
+            <div class="na-field"><div class="na-head"><label for="longitudIndividual">Longitud IND (mm)</label><label class="na-check"><input type="checkbox" data-na="longitudIndividual"> No aplica</label></div><input class="na-value" id="longitudIndividual" type="number" min="0" step="any"></div>
+            <div class="na-field"><div class="na-head"><label for="manufactura">Manufactura</label><label class="na-check"><input type="checkbox" data-na="manufactura"> No aplica</label></div><input class="na-value" id="manufactura" type="text"></div>
+            <div class="na-field"><div class="na-head"><label for="numeroHeat">N.º Heat</label><label class="na-check"><input type="checkbox" data-na="numeroHeat"> No aplica</label></div><input class="na-value" id="numeroHeat" type="text"></div>
+            <div class="na-field"><div class="na-head"><label for="numeroLoteMP">N.º lote MP</label><label class="na-check"><input type="checkbox" data-na="numeroLoteMP"> No aplica</label></div><input class="na-value" id="numeroLoteMP" type="text"></div>
+            <div class="na-field"><div class="na-head"><label for="numeroCertificado">N.º cert.</label><label class="na-check"><input type="checkbox" data-na="numeroCertificado"> No aplica</label></div><input class="na-value" id="numeroCertificado" type="text"></div>
+            <div class="na-field"><div class="na-head"><label for="totalMM">Total mm (auto)</label><label class="na-check"><input type="checkbox" data-na="totalMM"> No aplica</label></div><input class="na-value" id="totalMM" type="number" min="0" step="any" readonly></div>
+            <div class="na-field"><div class="na-head"><label for="ordenMaterial">Orden</label><label class="na-check"><input type="checkbox" data-na="ordenMaterial"> No aplica</label></div><input class="na-value" id="ordenMaterial" type="text"></div>
+            <div class="na-field"><div class="na-head"><label for="poNumber">PO number</label><label class="na-check"><input type="checkbox" data-na="poNumber"> No aplica</label></div><input class="na-value" id="poNumber" type="text"></div>
+          </div>
+        </details>
       </div>
       <div class="acts">
         <button type="submit" class="bp" id="btnGuardar">💾 Guardar y generar QR</button>
@@ -12744,7 +12779,7 @@ body.ficha>.app-layout{display:none!important}
       <select id="ftipo"><option value="">Todos</option><option value="mp">Materia prima</option><option value="consumibles">Consumibles</option><option value="gen">General</option></select>
     </div>
     <div class="tw"><table>
-      <thead><tr><th><input type="checkbox" class="row-select" id="selectAll" aria-label="Seleccionar todos los resultados visibles" title="Seleccionar todos los resultados visibles"></th><th data-k="codigo">Código ⇅</th><th data-k="descripcion">Descripción ⇅</th><th>UM cantidad</th><th data-k="cantidad">Ctd. ⇅</th><th>Existencia</th><th>Tipo</th><th data-k="ubicacion">Ubicación ⇅</th><th data-k="fechaRecibo">Recibo ⇅</th><th>Acciones</th></tr></thead>
+      <thead><tr><th><input type="checkbox" class="row-select" id="selectAll" aria-label="Seleccionar todos los resultados visibles" title="Seleccionar todos los resultados visibles"></th><th data-k="codigo">Código ⇅</th><th data-k="descripcion">Descripción ⇅</th><th data-k="cantidad">Ctd. / Existencia</th><th>Tipo</th><th data-k="ubicacion">Ubicación ⇅</th><th data-k="fechaRecibo">Recibo ⇅</th><th>Acciones</th></tr></thead>
       <tbody id="tbody"></tbody></table>
       <div class="empty" id="vacio" hidden>Sin resultados</div></div>
     <div class="acts" style="align-items:center">
@@ -12816,10 +12851,8 @@ body.ficha>.app-layout{display:none!important}
   <div class="view-heading"><div><span class="view-kicker">Módulo 03 · Almacén</span><h2>Control de inventario</h2><p>Consulta existencias, administra ubicaciones y mueve materiales con trazabilidad.</p></div><span class="chip">Existencias y ubicaciones</span></div>
   <nav class="section-nav" aria-label="Pantallas de Inventario">
     <button type="button" class="section-tab" data-module="vInv" data-page="existencias" aria-current="page">📦 <strong>Existencias</strong></button>
-    <button type="button" class="section-tab" data-module="vInv" data-page="almacenes">🏭 <strong>Almacenes</strong></button>
-    <button type="button" class="section-tab" data-module="vInv" data-page="ubicaciones">📍 <strong>Ubicaciones y QR</strong></button>
-    <button type="button" class="section-tab" data-module="vInv" data-page="asignar">🔄 <strong>Traspasos</strong></button>
-    <button type="button" class="section-tab" data-module="vInv" data-page="historial">📋 <strong>Movimientos</strong></button>
+    <button type="button" class="section-tab" data-module="vInv" data-page="almacenes">🏭 <strong>Almacenes y ubicaciones</strong></button>
+    <button type="button" class="section-tab" data-module="vInv" data-page="asignar">🔄 <strong>Traspasos y movimientos</strong></button>
   </nav>
   <section class="card section-content" data-module-screen="existencias">
     <h2>Inventario de materiales</h2>
@@ -12827,25 +12860,30 @@ body.ficha>.app-layout{display:none!important}
     <div class="res bad" id="conteoEstado" hidden></div>
     <div class="acts" style="margin:0 0 12px;flex-wrap:wrap">
       <button type="button" class="bp" id="bCamUbiConsulta">📷 Escanear ubicación para ver materiales</button>
-      <button type="button" class="bs" id="bUbiConsultaLimpiar" hidden>Limpiar consulta</button>
     </div>
-    <div id="ubiConsultaBox" class="card" style="margin:0 0 14px" hidden>
+    <div id="ubiConsultaBox" class="card" style="margin:0 0 8px;padding:8px 12px" hidden>
       <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
         <div><b>Ubicación consultada:</b> <span id="ubiConsultaInfo">-</span></div>
-        <div style="color:var(--mut)" id="ubiConsultaCnt">0 materiales</div>
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+          <span style="color:var(--mut)" id="ubiConsultaCnt">0 materiales</span>
+          <button type="button" class="bs" id="bUbiConsultaLimpiar" hidden title="Limpiar consulta" aria-label="Limpiar consulta">✕</button>
+        </div>
       </div>
-      <div id="ubiConsultaBusqueda" style="margin-top:12px" hidden>
+      <div id="ubiConsultaBusqueda" style="margin-top:8px" hidden>
         <label for="ubiConsultaBuscar">Buscar material registrado por código o descripción</label>
         <input type="search" id="ubiConsultaBuscar" placeholder="Escribe un código o parte de la descripción…" autocomplete="off">
         <div id="ubiConsultaResultados" class="ubicacion-material-list" aria-live="polite"></div>
       </div>
-      <div class="tw" style="margin-top:10px">
-        <table>
-          <thead><tr><th>Código</th><th>Descripción</th><th>Clasificación</th><th>Existencia disponible</th><th>Almacén</th><th>Conteo cíclico</th></tr></thead>
-          <tbody id="ubiConsultaBody"></tbody>
-        </table>
-        <div class="empty" id="ubiConsultaVacio" hidden>Esta ubicación no tiene materiales asignados.</div>
-      </div>
+      <details open style="margin-top:8px">
+        <summary style="cursor:pointer;font-size:.86rem;color:var(--mut)">Materiales en la ubicación</summary>
+        <div class="tw" style="margin-top:8px">
+          <table>
+            <thead><tr><th>Código</th><th>Descripción</th><th>Clasificación</th><th>Existencia disponible</th><th>Almacén</th><th>Conteo cíclico</th></tr></thead>
+            <tbody id="ubiConsultaBody"></tbody>
+          </table>
+          <div class="empty" id="ubiConsultaVacio" hidden>Esta ubicación no tiene materiales asignados.</div>
+        </div>
+      </details>
     </div>
     <div class="tools">
       <input type="search" id="invBuscar" placeholder="🔍 Buscar código, descripción o ubicación…">
@@ -12853,7 +12891,7 @@ body.ficha>.app-layout{display:none!important}
       <select id="invAlmacen" aria-label="Filtrar por almacén"><option value="">Todos los almacenes</option></select>
     </div>
     <div class="tw"><table>
-      <thead><tr><th>Código</th><th>Clasificación</th><th>Descripción</th><th>Existencia disponible</th><th>Almacén</th><th>Ubicación</th></tr></thead>
+      <thead><tr><th>Código</th><th>Descripción</th><th>Existencia disponible</th><th>Almacén › Ubicación</th></tr></thead>
       <tbody id="invBody"></tbody>
     </table><div class="empty" id="invVacio" hidden>Sin materiales que coincidan.</div></div>
   </section>
@@ -13123,8 +13161,9 @@ function actualizarCamposSeccion(){
 $("seccionMaterial").addEventListener("change",actualizarCamposSeccion);
 $("btnAuto").onclick=()=>{let n=0;mats.forEach(m=>{const x=/^MAT-(\d+)$/i.exec(m.codigo);if(x)n=Math.max(n,+x[1])});$("codigo").value="MAT-"+String(n+1).padStart(4,"0")};
 
-function resetForm(){$("f").reset();document.querySelectorAll("[data-na]").forEach(c=>{c.checked=false;$(c.dataset.na).closest(".na-field").querySelector(".na-value-wrap")?.removeAttribute("hidden");$(c.dataset.na).hidden=false});CAMPOS_EXTRA.forEach(([,id])=>$(id).hidden=false);actualizarCamposSeccion();$("editIndex").value="";$("fechaRecibo").value=hoy();$("tituloForm").textContent="Registro de material";$("btnGuardar").textContent="💾 Guardar y generar QR";$("btnCancelar").hidden=true}
+function resetForm(){$("f").reset();document.querySelectorAll("[data-na]").forEach(c=>{c.checked=false;$(c.dataset.na).closest(".na-field").querySelector(".na-value-wrap")?.removeAttribute("hidden");$(c.dataset.na).hidden=false});CAMPOS_EXTRA.forEach(([,id])=>$(id).hidden=false);actualizarCamposSeccion();$("editIndex").value="";$("fechaRecibo").value=hoy();$("tituloForm").textContent="Registro de material";$("btnGuardar").textContent="💾 Guardar y generar QR";$("btnCancelar").hidden=true;$("detTraza").open=false}
 
+$("f").addEventListener("invalid",()=>{$("detTraza").open=true},true);
 $("f").addEventListener("submit",async e=>{
   e.preventDefault();
   recalcularTotalMM();
@@ -13231,7 +13270,8 @@ function dibujarQR(txt,px=240){
   return c;
 }
 function mostrar(m){
-  activarSubpantalla("vReg","qr");
+  const pagina=document.querySelector('.section-tab[data-module="vReg"][aria-current="page"]')?.dataset.page;
+  activarSubpantalla("vReg",pagina==="historial"?"historial":"captura");
   actual=m;const box=$("qrBox");box.innerHTML="";
   const txt=qrTexto(m);
   const c=dibujarQR(txt);
@@ -13324,7 +13364,7 @@ function render(){
   if(orden.k)lista.sort((a,b)=>{const x=a.m[orden.k],y=b.m[orden.k];const r=typeof x==="number"?x-y:String(x??"").localeCompare(String(y??""),"es",{numeric:true});return orden.asc?r:-r});
   $("tbody").innerHTML=lista.map(({m,i})=>`<tr>
     <td>${esAdmin?`<input type="checkbox" class="row-select" data-select="${esc(m.codigo)}" aria-label="Seleccionar ${esc(m.codigo)}" ${seleccionados.has(m.codigo)?"checked":""}>`:""}</td>
-    <td><b>${esc(m.codigo)}</b></td><td class="l">${esc(m.descripcion)}</td><td>${esc(m.um)}</td><td>${esc(m.cantidad)}</td><td>${esc(existTxt(m))}</td>
+    <td><b>${esc(m.codigo)}</b></td><td class="l">${esc(m.descripcion)}</td><td>${esc(m.cantidad)} PZ · ${esc(existTxt(m))}</td>
     <td>${m.esMP?'<span class="tag t1">M. PRIMA</span>':m.tipoRegistro==="CONSUMIBLES"?'<span class="tag t2">CONSUMIBLES</span>':'<span class="tag t2">GENERAL</span>'}</td>
     <td>${esc(m.ubicacion||"Sin ubicación")}</td><td>${esc(m.fechaRecibo)}</td>
     <td style="white-space:nowrap"><button type="button" class="ic" data-a="qr" data-i="${i}" title="Ver QR">🔳</button>${esAdmin?`<button type="button" class="ic" data-a="ed" data-i="${i}" title="Editar">✏️</button><button type="button" class="ic" data-a="del" data-i="${i}" title="Eliminar">🗑️</button>`:""}</td></tr>`).join("");
@@ -13338,8 +13378,10 @@ function renderInventario(){
   selector.innerHTML='<option value="">Todos los almacenes</option>'+almacenes.map(a=>`<option value="${esc(a.codigo)}">${esc(a.nombre)}</option>`).join("");
   selector.value=almacenes.some(a=>a.codigo===almacenActual)?almacenActual:"";
   const q=$("invBuscar").value.trim().toLocaleLowerCase(),tipo=$("invTipo").value,almacenFiltro=selector.value;
-  const lista=mats.filter(m=>{const loc=ubicaciones.find(x=>x.codigo===m.ubicacionCodigo),almacenCodigo=loc?.almacen_codigo||m.ubicacionAlmacenCodigo,alm=almacenes.find(x=>x.codigo===almacenCodigo);return(!tipo||(tipo==="mp"?m.esMP:tipo==="consumibles"?m.tipoRegistro==="CONSUMIBLES":m.tipoRegistro==="GENERAL"))&&(!almacenFiltro||almacenCodigo===almacenFiltro)&&(!q||[m.codigo,m.descripcion,m.ubicacion,m.ubicacionCodigo,loc?.nombre,alm?.nombre,m.lote,m.numeroHeat,m.numeroLoteMP].join(" ").toLocaleLowerCase().includes(q))});
-  $("invBody").innerHTML=lista.map(m=>{const loc=ubicaciones.find(x=>x.codigo===m.ubicacionCodigo),alm=almacenes.find(x=>x.codigo===(loc?.almacen_codigo||m.ubicacionAlmacenCodigo));return`<tr><td><b>${esc(m.codigo)}</b></td><td>${m.esMP?'<span class="tag t1">M. PRIMA</span>':m.tipoRegistro==="CONSUMIBLES"?'<span class="tag t2">CONSUMIBLES</span>':'<span class="tag t2">GENERAL</span>'}</td><td class="l">${esc(m.descripcion)}</td><td>${esc(existTxt(m))}</td><td>${esc(alm?.nombre||m.ubicacionAlmacenNombre||"Sin almacén")}</td><td>${esc(loc?ubicacionConCodigo(loc):m.ubicacion||"Sin ubicación")}</td></tr>`}).join("");
+  const ubiLoc=ubiFiltroCodigo?ubicaciones.find(loc=>loc.codigo===ubiFiltroCodigo):null;
+  const permitidos=ubiLoc?new Set(listaMaterialesEnUbicacion(ubiLoc).map(m=>m.codigo)):null;
+  const lista=mats.filter(m=>{const loc=ubicaciones.find(x=>x.codigo===m.ubicacionCodigo),almacenCodigo=loc?.almacen_codigo||m.ubicacionAlmacenCodigo,alm=almacenes.find(x=>x.codigo===almacenCodigo);return(!permitidos||permitidos.has(m.codigo))&&(!tipo||(tipo==="mp"?m.esMP:tipo==="consumibles"?m.tipoRegistro==="CONSUMIBLES":m.tipoRegistro==="GENERAL"))&&(!almacenFiltro||almacenCodigo===almacenFiltro)&&(!q||[m.codigo,m.descripcion,m.ubicacion,m.ubicacionCodigo,loc?.nombre,alm?.nombre,m.lote,m.numeroHeat,m.numeroLoteMP].join(" ").toLocaleLowerCase().includes(q))});
+  $("invBody").innerHTML=lista.map(m=>{const loc=ubicaciones.find(x=>x.codigo===m.ubicacionCodigo),alm=almacenes.find(x=>x.codigo===(loc?.almacen_codigo||m.ubicacionAlmacenCodigo)),tag=m.esMP?'<span class="tag t1">M. PRIMA</span>':m.tipoRegistro==="CONSUMIBLES"?'<span class="tag t2">CONSUMIBLES</span>':'<span class="tag t2">GENERAL</span>';return`<tr><td><b>${esc(m.codigo)}</b><br><small>${tag}</small></td><td class="l">${esc(m.descripcion)}</td><td>${esc(existTxt(m))}</td><td class="l">${esc(alm?.nombre||m.ubicacionAlmacenNombre||"Sin almacén")} › ${esc(loc?ubicacionConCodigo(loc):m.ubicacion||"Sin ubicación")}</td></tr>`}).join("");
   $("invVacio").hidden=lista.length>0;
   actualizarEstadoConteoCiclico();
 }
@@ -13349,9 +13391,10 @@ function actualizarEstadoConteoCiclico(){
   estado.textContent=ajustesInventarioError;
 }
 $("invBuscar").oninput=$("invTipo").onchange=$("invAlmacen").onchange=renderInventario;
-let ubiConsultaCodigo=null,conteoTrasladadoPendiente=false;
+let ubiConsultaCodigo=null,ubiFiltroCodigo=null,conteoTrasladadoPendiente=false;
 function limpiarConsultaUbicacion(){
   ubiConsultaCodigo=null;
+  ubiFiltroCodigo=null;
   $("ubiConsultaBox").hidden=true;
   $("bUbiConsultaLimpiar").hidden=true;
   $("ubiConsultaInfo").textContent="-";
@@ -13361,6 +13404,7 @@ function limpiarConsultaUbicacion(){
   $("ubiConsultaBuscar").value="";
   $("ubiConsultaBusqueda").hidden=true;
   $("ubiConsultaResultados").innerHTML="";
+  renderInventario();
 }
 function ubicacionPorCodigo(codigo){
   const clave=String(codigo||"").trim().toLocaleLowerCase();
@@ -13383,6 +13427,7 @@ function mostrarMaterialesPorUbicacion(codigo){
   const almacen=almacenes.find(a=>a.codigo===loc.almacen_codigo);
   const lista=listaMaterialesEnUbicacion(loc);
   ubiConsultaCodigo=loc.codigo;
+  ubiFiltroCodigo=loc.codigo;
   $("ubiConsultaInfo").innerHTML=`${esc(almacen?.nombre||"Sin almacén")} · <b>${esc(ubicacionConCodigo(loc))}</b>`;
   $("ubiConsultaCnt").textContent=`${lista.length} material${lista.length===1?"":"es"}`;
   actualizarEstadoConteoCiclico();
@@ -13397,6 +13442,7 @@ function mostrarMaterialesPorUbicacion(codigo){
   document.querySelector('.tab[data-v="vInv"]').click();
   const tab=document.querySelector('.section-tab[data-module="vInv"][data-page="existencias"]');if(tab)tab.click();
   $("ubiConsultaBox").scrollIntoView({behavior:"smooth",block:"nearest"});
+  renderInventario();
 }
 $("bCamUbiConsulta").onclick=()=>{modoEscaneo="ubiConsulta";camOn()};
 $("bUbiConsultaLimpiar").onclick=()=>{limpiarConsultaUbicacion()};
@@ -13902,14 +13948,36 @@ $("tbody").addEventListener("change",e=>{
   if(c.checked)seleccionados.add(c.dataset.select);else seleccionados.delete(c.dataset.select);
   syncBulkActions();
 });
-$("tbody").addEventListener("click",async e=>{
-  const b=e.target.closest("button");if(!b)return;const i=+b.dataset.i,m=mats[i];
-  if(b.dataset.a==="qr")mostrar(m);
-  else if(b.dataset.a==="ed"){if(esAdmin)editar(i);else toast("Solo el administrador puede editar materiales.",1)}
-  else if(b.dataset.a==="del"){
-    if(!esAdmin){toast("Solo el administrador puede eliminar materiales.",1);return}
-    if(confirm(`¿Eliminar el material ${m.codigo}? También se borran sus surtidos.`)){try{const{error}=await sb.from("materiales").delete().eq("codigo",m.codigo);if(error)throw error;await cargar();toast("Material eliminado")}catch(err){errDB(err,"No se pudo eliminar")}}
+function alternarQrMaterial(m){
+  const panel=$("vReg").querySelector('[data-module-screen="qr"]');
+  if(actual?.codigo===m.codigo&&!panel.hidden){
+    panel.hidden=true;actual=null;
+    $("qrBox").innerHTML="Guarde o seleccione un material para generar su QR";
+    $("ficha").innerHTML="";
+    $("bPrint").disabled=$("bPng").disabled=true;
+    $("piezasBox").hidden=true;
+    $("pzGrid").innerHTML="";
+    return;
   }
+  mostrar(m);
+}
+$("tbody").addEventListener("click",async e=>{
+  const b=e.target.closest("button");
+  if(b){
+    const i=+b.dataset.i,m=mats[i];
+    if(b.dataset.a==="qr"){alternarQrMaterial(m);return}
+    if(b.dataset.a==="ed"){if(esAdmin)editar(i);else toast("Solo el administrador puede editar materiales.",1);return}
+    if(b.dataset.a==="del"){
+      if(!esAdmin){toast("Solo el administrador puede eliminar materiales.",1);return}
+      if(confirm(`¿Eliminar el material ${m.codigo}? También se borran sus surtidos.`)){try{const{error}=await sb.from("materiales").delete().eq("codigo",m.codigo);if(error)throw error;await cargar();toast("Material eliminado")}catch(err){errDB(err,"No se pudo eliminar")}}
+    }
+    return;
+  }
+  if(e.target.closest("input,select,textarea,a"))return;
+  const fila=e.target.closest("tr"),botonQr=fila?.querySelector('button[data-a="qr"]');
+  if(!botonQr)return;
+  const m=mats[+botonQr.dataset.i];
+  if(m)alternarQrMaterial(m);
 });
 async function eliminarEnLotes(codigos){
  if(!esAdmin)throw new Error("Solo el administrador puede eliminar materiales.");
@@ -13959,6 +14027,7 @@ function editar(i){
   actualizarCamposSeccion();
   $("tituloForm").textContent=`Editando: ${m.codigo}`;$("btnGuardar").textContent="💾 Guardar cambios y regenerar QR";$("btnCancelar").hidden=false;
   window.scrollTo({top:0,behavior:"smooth"});
+  $("detTraza").open=true;
 }
 
 // --- Exportar / Importar ---
@@ -14172,9 +14241,11 @@ document.querySelectorAll(".tab").forEach(b=>b.onclick=()=>{
   if(vista!=="vInv")limpiarConsultaUbicacion();
   if(vista==="vSur"){activarSubpantalla("vSur","preparar");modoEscaneo="surtido";renderSur();renderHist();enfocar()}else{camOff();if(vista==="vInv"){activarSubpantalla("vInv","existencias");modoEscaneo="inventario";renderInventario();renderUbicaciones();renderHistUbicaciones();renderAsignacion()}else{activarSubpantalla("vReg","captura");modoEscaneo="surtido";render()}}
 });
+const MAPA_SUBPANTALLAS={vInv:{existencias:["existencias"],almacenes:["almacenes","ubicaciones"],asignar:["asignar","historial"]}};
 function activarSubpantalla(modulo,pagina){
   const vista=$(modulo);if(!vista)return;
-  vista.querySelectorAll("[data-module-screen]").forEach(panel=>{panel.hidden=panel.dataset.moduleScreen!==pagina});
+  const visibles=MAPA_SUBPANTALLAS[modulo]?.[pagina]||[pagina];
+  vista.querySelectorAll("[data-module-screen]").forEach(panel=>{panel.hidden=!visibles.includes(panel.dataset.moduleScreen)&&!(modulo==="vReg"&&(pagina==="captura"||pagina==="historial")&&panel.dataset.moduleScreen==="qr")});
   vista.querySelectorAll(".section-tab").forEach(b=>{if(b.dataset.page===pagina)b.setAttribute("aria-current","page");else b.removeAttribute("aria-current")});
   if(modulo==="vInv"&&pagina!=="asignar"&&modoEscaneo==="inventario")camOff();
   if(modulo==="vSur"&&pagina!=="preparar")camOff();
