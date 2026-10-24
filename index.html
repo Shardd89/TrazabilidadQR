@@ -12579,18 +12579,24 @@ body.ficha>#login{display:none!important}
 #fNota{font-size:.78rem;color:var(--mut);margin-top:14px;line-height:1.45}
 #fichaView .acts button{flex:1;min-width:150px}
 #salidaView{display:none}
-.salida{max-width:190mm;margin:0 auto;color:#111;font-family:Arial,sans-serif;font-size:10pt}
-.salida h1{font-size:19pt;margin:0 0 4mm}
-.salida h2{font-size:12pt;color:#111;border-bottom:1px solid #555;margin:6mm 0 2mm;padding-bottom:1mm}
-.salida .salida-top{display:flex;justify-content:space-between;gap:8mm;border-bottom:2px solid #111;padding-bottom:4mm}
-.salida .folio{font-weight:700;font-size:12pt;text-align:right}
+.salida{page:salida;max-width:260mm;margin:0 auto;color:#111;font-family:Arial,sans-serif;font-size:9pt}
+.salida h1{font-size:12pt;margin:0 0 1mm}
+.salida h2{font-size:9pt;color:#111;border-bottom:1px solid #777;margin:3mm 0 1.5mm;padding-bottom:1mm}
+.salida .salida-top{display:flex;justify-content:space-between;align-items:flex-end;gap:8mm;border-bottom:1.2mm solid #111;padding:0 0 2mm}
+.salida .salida-meta{text-align:right}
+.salida .doc-code{font-size:7pt;font-style:italic;margin-bottom:4mm}
+.salida .folio{font-weight:700;font-size:9pt}
 .salida table{width:100%;min-width:0;border-collapse:collapse}
-.salida th,.salida td{border:1px solid #777;padding:2.5mm;text-align:left;vertical-align:top}
-.salida th{width:25%;background:#f0f0f0}
-.salida .renglones{font-size:8pt;table-layout:fixed;word-break:break-word}
-.salida .salida-nota{min-height:18mm;white-space:pre-wrap}
-.salida .firmas{display:grid;grid-template-columns:1fr 1fr;gap:18mm;margin-top:22mm;text-align:center}
-.salida .firma-linea{height:16mm;border-top:1px solid #111}
+.salida th,.salida td{border:1px solid #777;padding:1mm 1.2mm;text-align:left;vertical-align:top}
+.salida .datos th{width:23%;background:#fff}
+.salida .datos td{width:77%}
+.salida .renglones{font-size:7pt;table-layout:fixed;word-break:break-word}
+.salida .renglones th,.salida .renglones td{text-align:center;padding:.8mm .6mm}
+.salida .renglones th{width:auto;background:#fff}
+.salida .salida-nota{height:10mm;border-bottom:1px solid #888;white-space:pre-wrap}
+.salida .firmas{display:grid;grid-template-columns:1fr 1fr;gap:18mm;margin-top:12mm;text-align:center;font-size:8pt;font-weight:600}
+.salida .firma-linea{height:7mm}
+.salida .salida-pie{margin:8mm 0 0;text-align:center;font-size:6.5pt}
 .sur-groups{display:grid;gap:8px;min-width:0}
 .sur-group{border:1px solid var(--line);border-radius:8px;background:var(--card);overflow:hidden}
 .sur-group summary{display:grid;grid-template-columns:12px minmax(120px,.8fr) minmax(120px,1fr) minmax(130px,1fr);gap:10px;align-items:center;padding:10px 12px;cursor:pointer;list-style:none}
@@ -12665,7 +12671,7 @@ body.ficha>#login{display:none!important}
 @media(max-width:1024px){.app-layout{padding:16px;grid-template-columns:minmax(0,1fr);gap:12px}.sidebar{position:static}.sidebar-note{display:none}.tabs{grid-template-columns:repeat(3,minmax(0,1fr))}.tab{padding:10px}#vInv{grid-template-columns:minmax(0,1fr)}#surPreparar>div{grid-template-columns:minmax(0,1fr)}}
 @media(max-width:700px){.app-layout{padding:12px 10px}.view-heading{align-items:flex-start;flex-direction:column;gap:6px}.view-heading p{font-size:.82rem}.section-nav{margin-bottom:2px}.section-tab{flex:1 0 126px;min-height:44px;padding:9px 12px}.section-title{flex-direction:column;gap:5px}.section-title .chip{white-space:normal}}
 body.ficha>.app-layout{display:none!important}
-@media print{@page{margin:12mm}body>*:not(#etiqueta):not(#fichaView):not(#salidaView){display:none!important}
+@media print{@page{margin:12mm}@page salida{size:A4 landscape;margin:10mm}body>*:not(#etiqueta):not(#fichaView):not(#salidaView){display:none!important}
 #etiqueta{display:block;text-align:center;font-family:Arial,sans-serif;color:#000}
 #etiqueta.hoja{display:block}
 #etiqueta .pz{display:flex;box-sizing:border-box;overflow:hidden;break-after:page;page-break-after:always;font-family:Arial,sans-serif}
@@ -12683,8 +12689,9 @@ body.ficha>.app-layout{display:none!important}
 #fichaView .fbody{border:0;padding:8px 0}
 #fichaView .d{border-bottom:1px solid #999}
 #salidaView{display:block!important;position:static!important}
-#salidaView .salida{max-width:none}
-#salidaView .salida th{background:#eee!important}
+#salidaView .salida{max-width:230mm;margin:0 auto}
+#salidaView .salida,#salidaView .salida *{color:#111!important;box-shadow:none!important}
+#salidaView .salida th{background:#fff!important}
 #salidaView .renglones thead{display:table-header-group}
 #salidaView .renglones tr{break-inside:avoid;page-break-inside:avoid}
 .noprint{display:none!important}}
@@ -14488,18 +14495,21 @@ function imprimirSalidaGrupo(items,folio){
       <td>${esc(p?`${fmt(p.peso)} ${p.u}`:"—")}</td><td>${esc(restantes)}</td></tr>`;
   }).join("");
   $("salidaView").innerHTML=`<article class="salida">
-    <div class="salida-top"><div><h1>Comprobante de salida de materiales</h1><div>Trazabilidad de materiales · Surtido a Producción</div></div><div class="folio">Folio<br>${esc(folio)}</div></div>
-    <h2>Datos de la salida</h2><table><tbody>${encabezados.map(([k,v])=>`<tr><th>${esc(k)}</th><td>${esc(v||"—")}</td></tr>`).join("")}
+    <div class="salida-top"><div><h1>Comprobante de salida de materiales</h1><div>Trazabilidad de materiales · Surtido a Producción</div></div><div class="salida-meta"><div class="doc-code">Doc-N-FAL-0102R0</div><div class="folio">Folio ${esc(folio)}</div></div></div>
+    <h2>Datos de la salida</h2><table class="datos"><tbody>${encabezados.map(([k,v])=>`<tr><th>${esc(k)}</th><td>${esc(v||"—")}</td></tr>`).join("")}
       <tr><th>Entrega · Almacén</th><td>${esc(base.entrega||"—")}</td></tr><tr><th>Recibe · Producción</th><td>${esc(base.recibe||"—")}</td></tr></tbody></table>
     <h2>Materiales surtidos · ${items.length} renglón(es)</h2><table class="renglones"><thead><tr><th>Código</th><th>Clasificación</th><th>Descripción</th><th>Lote / Heat</th><th>Sección / especificación</th><th>Ubicación</th><th>Surtido</th><th>Peso eq.</th><th>Existencia restante</th></tr></thead><tbody>${renglones}</tbody></table>
     <h2>Observaciones</h2><div class="salida-nota">${esc(base.observaciones||"")}</div>
-    <div class="firmas"><div><div class="firma-linea"></div><div>Firma de quien entrega · Almacén</div><div>${esc(base.entrega||"Nombre: ____________________")}</div></div>
-    <div><div class="firma-linea"></div><div>Firma de quien recibe · Producción</div><div>${esc(base.recibe||"Nombre: ____________________")}</div></div></div>
-    <p style="margin-top:8mm;font-size:8pt">Conserve este comprobante como evidencia de entrega. El folio identifica todos los movimientos agrupados en esta salida.</p>
+    <div class="firmas"><div><div class="firma-linea"></div><div>Firma de quien entrega · Almacén ${esc(base.entrega||"")}</div></div>
+    <div><div class="firma-linea"></div><div>Firma de quien recibe · Producción ${esc(base.recibe||"")}</div></div></div>
+    <p class="salida-pie">Conserve este comprobante como evidencia de entrega. El folio identifica todos los movimientos agrupados en esta salida.</p>
   </article>`;
   $("salidaView").hidden=false;
-  window.print();
-  $("salidaView").hidden=true;
+  const estiloImpresion=document.createElement("style");
+  estiloImpresion.textContent="@page{size:A4 landscape;margin:10mm}";
+  document.head.append(estiloImpresion);
+  try{window.print()}
+  finally{$("salidaView").hidden=true;estiloImpresion.remove()}
 }
 function imprimirFolio(folio){
   const items=movs().filter(({d})=>(d.folio||folioSalida(d.t))===folio);
