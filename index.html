@@ -14569,7 +14569,11 @@ async function iniciarFicha(){
   let m=mats.find(k=>String(k.codigo).toLowerCase()===cod.toLowerCase())||null,live=!!m,red=false,noReg=false;
   if(!m){
     try{if(!sb)throw 0;const r=await sb.rpc("ficha_publica",{p_codigo:cod});if(r.error)throw r.error;
-      if(r.data){m={...r.data.m,despachos:(r.data.d||[]).map(desDeFila)};live=true}else noReg=true}
+      if(r.data){
+        const a=await sb.rpc("ficha_existencia_publica",{p_codigo:cod});if(a.error)throw a.error;
+        const diferencia=Number(a.data);if(a.data==null||!Number.isFinite(diferencia))throw new Error("La respuesta del ajuste de inventario no es válida.");
+        m={...r.data.m,despachos:(r.data.d||[]).map(desDeFila),ajustesInventario:[{diferencia}]};live=true
+      }else noReg=true}
     catch{red=true}
   }
   let solo=false;if(!m){if(snap)m=snap;else{m={codigo:cod};solo=true}}

@@ -954,4 +954,26 @@ revoke all on function public.registrar_conteo_ciclico(text, text, numeric, nume
 grant execute on function public.registrar_conteo_ciclico(text, text, numeric, numeric, text, text)
   to authenticated;
 
+create or replace function public.ficha_existencia_publica(p_codigo text)
+returns numeric
+language sql
+stable
+security definer
+set search_path = pg_catalog, public
+as $$
+  select case
+    when exists (
+      select 1 from public.materiales where codigo = p_codigo
+    ) then coalesce((
+      select sum(diferencia)
+      from public.ajustes_inventario_ciclico
+      where codigo_material = p_codigo
+    ), 0)
+    else null
+  end;
+$$;
+
+revoke all on function public.ficha_existencia_publica(text) from public, anon;
+grant execute on function public.ficha_existencia_publica(text) to anon, authenticated;
+
 commit;
