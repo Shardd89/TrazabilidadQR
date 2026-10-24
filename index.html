@@ -12787,6 +12787,7 @@ body.ficha>.app-layout{display:none!important}
   <div class="section-title" data-module-screen="captura"><div><h3>Alta de material</h3><p>Completa los datos de identificación, dimensiones y existencia.</p></div></div>
   <section class="card section-content" data-module-screen="captura">
     <h2 id="tituloForm">Registro de material</h2>
+    <p id="registroAdminAviso" class="res bad" hidden>Solo el administrador puede registrar o editar materiales.</p>
     <form id="f" autocomplete="off">
       <input type="hidden" id="editIndex">
       <div class="grid">
@@ -12818,7 +12819,7 @@ body.ficha>.app-layout{display:none!important}
         </details>
       </div>
       <div class="acts">
-        <button type="submit" class="bp" id="btnGuardar">💾 Guardar y generar QR</button>
+        <button type="submit" class="bp" id="btnGuardar" hidden>💾 Guardar y generar QR</button>
         <button type="button" class="bd" id="btnCancelar" hidden>✖ Cancelar edición</button>
       </div>
     </form>
@@ -12841,10 +12842,10 @@ body.ficha>.app-layout{display:none!important}
       <button type="button" class="bd" id="bDelAll" disabled>🗑️ Eliminar todos</button>
     </div>
     <div class="acts">
-      <button type="button" class="bs" id="bJson">⬇️ JSON</button>
-      <button type="button" class="bs" id="bCsv">⬇️ CSV (Excel)</button>
-      <button type="button" class="bs" id="bImp">⬆️ Importar JSON</button>
-      <button type="button" class="bs" id="bExcel">📊 Importar Excel</button>
+      <button type="button" class="bs" id="bJson" hidden>⬇️ JSON</button>
+      <button type="button" class="bs" id="bCsv" hidden>⬇️ CSV (Excel)</button>
+      <button type="button" class="bs" id="bImp" hidden>⬆️ Importar JSON</button>
+      <button type="button" class="bs" id="bExcel" hidden>📊 Importar Excel</button>
       <input type="file" id="fileImp" accept=".json,application/json" hidden>
       <input type="file" id="fileExcel" accept=".xlsx,.xls,.csv" hidden>
     </div>
@@ -12897,7 +12898,7 @@ body.ficha>.app-layout{display:none!important}
 </div>
 <section class="card section-content" id="surHistorial" data-module-screen="historial" hidden><h2>Movimientos de surtido</h2>
   <div class="tw"><div id="hBody" class="sur-groups"></div><div class="empty" id="hVacio">Sin surtidos</div></div>
-  <div class="acts"><button type="button" class="bs" id="bCsvS">⬇️ CSV de surtidos</button></div>
+  <div class="acts"><button type="button" class="bs" id="bCsvS" hidden>⬇️ CSV de surtidos</button></div>
 </section>
 </main>
 
@@ -12969,7 +12970,7 @@ body.ficha>.app-layout{display:none!important}
       <div><label for="ubiCodigo">Código de ubicación *</label><div class="row"><input id="ubiCodigo" required placeholder="UBI-001"><button type="button" class="bs" id="ubiAuto">Auto</button></div></div>
       <div class="full"><button type="submit" class="bp" id="ubiGuardar">Guardar ubicación</button></div>
     </form>
-    <details>
+    <details id="ubicacionesImportar" hidden>
       <summary>Importar ubicaciones (Excel / JSON)</summary>
       <div class="acts" style="margin-top:12px;flex-wrap:wrap">
         <button type="button" class="bs" id="bUbiExcel">📥 Importar ubicaciones (Excel)</button>
@@ -13135,7 +13136,8 @@ function lgMostrar(msg){$("lgCarga").hidden=true;$("lgF").hidden=false;$("lgMsg"
 function limpiarSesionLocal(){try{Object.keys(localStorage).filter(k=>k.indexOf("sb-")===0&&k.indexOf("-auth-token")>0).forEach(k=>localStorage.removeItem(k))}catch{}}
 function errorSesion(e){const c=Number(e?.status||e?.code||0);return c===401||c===403||/jwt|token|session|sesi[oó]n/i.test(String(e?.message||""))}
 async function cerrarSesion(){try{const{error}=await sb.auth.signOut();if(error)throw error}catch(e){console.warn("No se pudo revocar la sesión en el servidor; se cierra localmente.",e)}limpiarSesionLocal();salirUI()}
-function salirUI(){esStaff=false;esAdmin=false;seleccionados.clear();$("rolUsuario").hidden=true;$("conteoEstado").hidden=true;$("bImp").hidden=$("bExcel").hidden=false;document.body.classList.remove("auth");dejarCanal();camOff();if($("conteoDialog").open)$("conteoDialog").close();mats=[];surItems=[];almacenes=[];ubicaciones=[];ubicacionesAlias=[];movimientosUbicacion=[];ajustesInventarioError="";almacenesError="";ubicacionesError="";ubicacionesAliasError="";movimientosError="";ubicacionDestino=null;asignacionItems=[];actual=null;render();lgMostrar()}
+function actualizarVisibilidadAdmin(){["bJson","bCsv","bImp","bExcel","bCsvS","ubicacionesImportar","btnGuardar"].forEach(id=>$(id).hidden=!esAdmin);$("registroAdminAviso").hidden=esAdmin}
+function salirUI(){esStaff=false;esAdmin=false;actualizarVisibilidadAdmin();seleccionados.clear();$("rolUsuario").hidden=true;$("conteoEstado").hidden=true;document.body.classList.remove("auth");dejarCanal();camOff();if($("conteoDialog").open)$("conteoDialog").close();mats=[];surItems=[];almacenes=[];ubicaciones=[];ubicacionesAlias=[];movimientosUbicacion=[];ajustesInventarioError="";almacenesError="";ubicacionesError="";ubicacionesAliasError="";movimientosError="";ubicacionDestino=null;asignacionItems=[];actual=null;render();lgMostrar()}
 let entrando=false;
 async function entrar(){
   if(!sb||entrando)return false;
@@ -13148,7 +13150,7 @@ async function entrar(){
     esStaff=true;esAdmin=admin.data===true;document.body.classList.add("auth");
     $("rolUsuario").textContent=esAdmin?"Administrador":"Personal";$("rolUsuario").hidden=false;
     $("bDelSel").hidden=$("bDelAll").hidden=$("selectAll").hidden=!esAdmin;
-    $("bImp").hidden=$("bExcel").hidden=!esAdmin;
+    actualizarVisibilidadAdmin();
     try{await cargar()}catch(e){errDB(e,"No se pudo cargar los datos")}
     await cargarUbicaciones();
     suscribir();await migrarLocal();return true;
@@ -13223,9 +13225,9 @@ function resetForm(){$("f").reset();document.querySelectorAll("[data-na]").forEa
 $("f").addEventListener("invalid",()=>{$("detTraza").open=true},true);
 $("f").addEventListener("submit",async e=>{
   e.preventDefault();
+  if(!esAdmin){toast("Solo el administrador puede registrar o editar materiales.",1);return}
   recalcularTotalMM();
   const idx=$("editIndex").value;
-  if(idx!==""&&!esAdmin){toast("Solo el administrador puede editar materiales.",1);resetForm();return}
   const noAplica=Object.fromEntries(CAMPOS_EXTRA.map(([key,id])=>[key,document.querySelector(`input[data-na="${id}"]`).checked]));
   noAplica.seccionMaterial=document.querySelector('input[data-na="seccionMaterial"]').checked;
   const extra=Object.fromEntries(CAMPOS_EXTRA.map(([key,id])=>[key,noAplica[key]?(["totalMM","longitudIndividual","peso"].includes(key)?null:""): (["totalMM","longitudIndividual","peso"].includes(key)?($(id).value===""?null:Number($(id).value)):$(id).value.trim())]));
@@ -14091,8 +14093,9 @@ function editar(i){
 async function bajar(nombre,contenido,tipo){
   if(matchMedia("(pointer:coarse)").matches){try{const f=new File([contenido],nombre,{type:tipo.split(";")[0]});if(navigator.canShare&&navigator.canShare({files:[f]})){await navigator.share({files:[f],title:nombre});return}}catch(e){if(e.name==="AbortError")return}}
   const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([contenido],{type:tipo}));a.download=nombre;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}
-$("bJson").onclick=()=>{bajar("trazabilidad_materiales.json",JSON.stringify(mats,null,2),"application/json");toast("JSON exportado ⬇️")};
+$("bJson").onclick=()=>{if(!esAdmin){toast("Solo el administrador puede exportar información.",1);return}bajar("trazabilidad_materiales.json",JSON.stringify(mats,null,2),"application/json");toast("JSON exportado ⬇️")};
 $("bCsv").onclick=()=>{
+  if(!esAdmin){toast("Solo el administrador puede exportar información.",1);return}
   const cols=["UBICACION","CODIGO","CLASIFICACION","TIPO MATERIAL","DESCRIPCION","ESPECIFICACION MEDIDA","SECCION","ALTO (MM)","ANCHO (MM)","DIAMETRO (MM)","LONGITUD IND (MM)","MANUFACTURA","N°HEAT","N°LOTE MP","N°CERT.","TOTAL MM","FECHA DE RECIBO","CTD","PESO","UM","ORDEN","PO NUMBER"];
   const c=v=>{let t=String(v??"");if(/^[=+\-@\t\r]/.test(t))t="'"+t;return `"${t.replace(/"/g,'""')}"`};
   const value=(m,key,v)=>m.noAplica?.[key]?"No aplica":v;
@@ -14568,6 +14571,7 @@ $("hBody").addEventListener("click",async e=>{
   if(confirm(`¿Anular el surtido de ${m.codigo} (${surTxt(m,d)})? La existencia se restituye.`)){try{const{error}=await sb.from("despachos").delete().eq("codigo",m.codigo).eq("t",d.t);if(error)throw error;await cargar();renderHist();renderSur();toast("Surtido anulado")}catch(err){errDB(err,"No se pudo anular")}}
 });
 $("bCsvS").onclick=()=>{
+  if(!esAdmin){toast("Solo el administrador puede exportar información.",1);return}
   const c=v=>{let t=String(v??"");if(/^[=+\-@\t\r]/.test(t))t="'"+t;return `"${t.replace(/"/g,'""')}"`};
   const f=movs().map(({m,d})=>{const p=d.modo==="longitud"?pesoSurtido(m,d):null;return[d.folio||folioSalida(d.t),d.fecha,d.orden,d.entrega,d.recibe,d.maquina,d.motivo,d.observaciones,m.codigo,m.descripcion,d.modo,d.cantidad,m.um,d.longitud??"",d.unidad??"",p?.peso??"",p?.u??"",(d.piezas||[]).join(" ")].map(c).join(",")});
   bajar("surtidos.csv","\ufeff"+["folio,fecha,orden,entrega,recibe,maquina,motivo,observaciones,codigo,descripcion,modo,cantidad,um,longitud,unidad,peso_equivalente,peso_um,piezas",...f].join("\r\n"),"text/csv;charset=utf-8");toast("CSV exportado ⬇️");

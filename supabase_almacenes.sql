@@ -737,8 +737,8 @@ $$;
 
 create policy materiales_staff_select on public.materiales
   for select to authenticated using (public.is_staff() or public.is_admin());
-create policy materiales_staff_insert on public.materiales
-  for insert to authenticated with check (public.is_staff() or public.is_admin());
+create policy materiales_admin_insert on public.materiales
+  for insert to authenticated with check (public.is_admin());
 create policy materiales_admin_update on public.materiales
   for update to authenticated using (public.is_admin()) with check (public.is_admin());
 create policy materiales_admin_delete on public.materiales
