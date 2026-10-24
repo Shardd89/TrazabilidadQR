@@ -12787,6 +12787,8 @@ body.ficha>.app-layout{display:none!important}
   <div class="section-title" data-module-screen="captura"><div><h3>Alta de material</h3><p>Completa los datos de identificación, dimensiones y existencia.</p></div></div>
   <section class="card section-content" data-module-screen="captura">
     <h2 id="tituloForm">Registro de material</h2>
+    <div class="acts"><button type="button" class="bp" id="bCamReg">📷 Escanear código y ver información</button></div>
+    <div class="res bad" id="regCamAviso" hidden>⚠ El escáner con cámara requiere HTTPS (o localhost).</div>
     <p id="registroAdminAviso" class="res bad" hidden>Solo el administrador puede registrar o editar materiales.</p>
     <form id="f" autocomplete="off">
       <input type="hidden" id="editIndex">
@@ -14322,6 +14324,12 @@ function escanear(txt){
   if(modoEscaneo==="ubiConsulta"){procesarEscaneoUbiConsulta(txt);return}
   if(modoEscaneo==="inventario"){procesarEscaneoInventario(txt);return}
   const cod=codDe(txt).toLowerCase();
+  if(modoEscaneo==="registro"){
+    camOff();
+    const material=mats.find(m=>m.codigo.toLowerCase()===cod);
+    if(!material){toast(cod?`Código no registrado: ${cod}`:"El QR no contiene un código de material válido.",1);return}
+    mostrar(material);toast(`Material encontrado: ${material.codigo}`);return
+  }
   const i=mats.findIndex(m=>m.codigo.toLowerCase()===cod);
   if(i<0){toast(`Código no registrado: ${cod}`,1);return}
   const pz=pzDe(txt);if(pz){escanearPieza(i,pz.n);return}
@@ -14354,7 +14362,7 @@ try{if("BarcodeDetector" in window)det=new BarcodeDetector({formats:["qr_code"]}
 function compacto(){try{return localStorage.getItem("qr_compacto2")!=="0"}catch{return true}}
 $("qrCompacto").checked=compacto();
 $("qrCompacto").onchange=()=>{try{localStorage.setItem("qr_compacto2",$("qrCompacto").checked?"1":"0")}catch{}if(actual)mostrar(actual)};
-if(!window.isSecureContext||!navigator.mediaDevices){$("camAviso").hidden=false;$("invCamAviso").hidden=false}
+if(!window.isSecureContext||!navigator.mediaDevices){$("camAviso").hidden=false;$("invCamAviso").hidden=false;$("regCamAviso").hidden=false}
 if(matchMedia("(pointer:fine)").matches)$("manual").open=true;
 function feedback(){
   navigator.vibrate&&navigator.vibrate(60);
@@ -14362,21 +14370,22 @@ function feedback(){
   const w=$("camWrap");w.classList.add("ok");setTimeout(()=>w.classList.remove("ok"),300);
 }
 async function camOn(){
-  if(!window.isSecureContext||!navigator.mediaDevices){$("camAviso").hidden=false;$("invCamAviso").hidden=false;toast("La cámara en vivo requiere HTTPS",1);return}
+  if(!window.isSecureContext||!navigator.mediaDevices){$("camAviso").hidden=false;$("invCamAviso").hidden=false;$("regCamAviso").hidden=false;toast("La cámara en vivo requiere HTTPS",1);return}
   try{
     audioCtx=audioCtx||new(window.AudioContext||window.webkitAudioContext)();
     stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:"environment"},width:{ideal:1920},height:{ideal:1080}},audio:false});
     const tr=stream.getVideoTracks()[0],cap=tr.getCapabilities?tr.getCapabilities():{};
     if(cap.focusMode&&cap.focusMode.includes("continuous"))tr.applyConstraints({advanced:[{focusMode:"continuous"}]}).catch(()=>{});
     torchOn=false;$("bTorch").hidden=!cap.torch;
-    $("video").srcObject=stream;await $("video").play();$("camWrap").hidden=false;scanning=true;$("bCam").textContent="⏹ Detener cámara";$("bCamInv").textContent="⏹ Detener cámara";
+    $("video").srcObject=stream;await $("video").play();$("camWrap").hidden=false;scanning=true;$("bCam").textContent="⏹ Detener cámara";$("bCamInv").textContent="⏹ Detener cámara";$("bCamReg").textContent="⏹ Detener cámara";
     try{wake=await navigator.wakeLock.request("screen")}catch{}
     bucle();
   }catch(e){toast(e.name==="NotAllowedError"?"Permiso de cámara denegado. Actívelo en los ajustes del navegador.":"No se pudo abrir la cámara.",1)}
 }
-function camOff(){scanning=false;if(stream)stream.getTracks().forEach(t=>t.stop());stream=null;if(wake){wake.release().catch(()=>{});wake=null}$("camWrap").hidden=true;$("bCam").textContent="📷 Escanear con cámara";$("bCamInv").textContent="📷 Escanear ubicación y materiales"}
+function camOff(){scanning=false;if(stream)stream.getTracks().forEach(t=>t.stop());stream=null;if(wake){wake.release().catch(()=>{});wake=null}$("camWrap").hidden=true;$("bCam").textContent="📷 Escanear con cámara";$("bCamInv").textContent="📷 Escanear ubicación y materiales";$("bCamReg").textContent="📷 Escanear código y ver información"}
 $("bCam").onclick=()=>{if(scanning){camOff();return}modoEscaneo="surtido";camOn()};
 $("bCamInv").onclick=()=>{if(scanning){camOff();return}modoEscaneo="inventario";camOn()};
+$("bCamReg").onclick=()=>{if(scanning){camOff();return}modoEscaneo="registro";camOn()};
 $("bCamClose").onclick=camOff;
 $("bTorch").onclick=()=>{torchOn=!torchOn;stream.getVideoTracks()[0].applyConstraints({advanced:[{torch:torchOn}]}).catch(()=>toast("Linterna no disponible",1))};
 document.addEventListener("visibilitychange",()=>{if(document.hidden)camOff()});
