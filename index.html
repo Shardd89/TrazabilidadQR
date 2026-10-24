@@ -12445,6 +12445,10 @@ main>div,main>.card{min-width:0}
 .sticky{position:sticky;top:14px}
 @media(max-width:1024px){.sticky{position:static}}
 h2{font-size:1rem;margin-bottom:12px;color:var(--pri);border-bottom:2px solid var(--pri);padding-bottom:6px}
+.form-toggle{display:flex;align-items:center;justify-content:space-between;gap:10px;cursor:pointer}
+.form-toggle::after{content:"＋";font-size:1.15rem}
+.form-toggle[aria-expanded="true"]::after{content:"−"}
+.form-toggle:focus-visible{outline:2px solid var(--pri);outline-offset:3px}
 .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 @media(max-width:520px){.grid{grid-template-columns:1fr}}
 .full{grid-column:1/-1}
@@ -12786,11 +12790,11 @@ body.ficha>.app-layout{display:none!important}
 <div>
   <div class="section-title" data-module-screen="captura"><div><h3>Alta de material</h3><p>Completa los datos de identificación, dimensiones y existencia.</p></div></div>
   <section class="card section-content" data-module-screen="captura">
-    <h2 id="tituloForm">Registro de material</h2>
+    <h2 id="tituloForm" class="form-toggle" role="button" tabindex="0" aria-controls="f" aria-expanded="false">Registro de material</h2>
     <div class="acts"><button type="button" class="bp" id="bCamReg">📷 Escanear código y ver información</button></div>
     <div class="res bad" id="regCamAviso" hidden>⚠ El escáner con cámara requiere HTTPS (o localhost).</div>
     <p id="registroAdminAviso" class="res bad" hidden>Solo el administrador puede registrar o editar materiales.</p>
-    <form id="f" autocomplete="off">
+    <form id="f" autocomplete="off" hidden>
       <input type="hidden" id="editIndex">
       <div class="grid">
         <div><label for="ubicacion">Ubicación *</label><input type="text" id="ubicacion" list="ubicacionesDatalist" required autocomplete="off"><datalist id="ubicacionesDatalist"></datalist></div>
@@ -13222,7 +13226,10 @@ function actualizarCamposSeccion(){
 $("seccionMaterial").addEventListener("change",actualizarCamposSeccion);
 $("btnAuto").onclick=()=>{let n=0;mats.forEach(m=>{const x=/^MAT-(\d+)$/i.exec(m.codigo);if(x)n=Math.max(n,+x[1])});$("codigo").value="MAT-"+String(n+1).padStart(4,"0")};
 
-function resetForm(){$("f").reset();document.querySelectorAll("[data-na]").forEach(c=>{c.checked=false;$(c.dataset.na).closest(".na-field").querySelector(".na-value-wrap")?.removeAttribute("hidden");$(c.dataset.na).hidden=false});CAMPOS_EXTRA.forEach(([,id])=>$(id).hidden=false);actualizarCamposSeccion();$("editIndex").value="";$("fechaRecibo").value=hoy();$("tituloForm").textContent="Registro de material";$("btnGuardar").textContent="💾 Guardar y generar QR";$("btnCancelar").hidden=true;$("detTraza").open=false}
+function establecerFormularioAbierto(abierto){$("f").hidden=!abierto;$("tituloForm").setAttribute("aria-expanded",String(abierto))}
+$("tituloForm").addEventListener("click",()=>establecerFormularioAbierto($("f").hidden));
+$("tituloForm").addEventListener("keydown",e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();establecerFormularioAbierto($("f").hidden)}});
+function resetForm(){$("f").reset();document.querySelectorAll("[data-na]").forEach(c=>{c.checked=false;$(c.dataset.na).closest(".na-field").querySelector(".na-value-wrap")?.removeAttribute("hidden");$(c.dataset.na).hidden=false});CAMPOS_EXTRA.forEach(([,id])=>$(id).hidden=false);actualizarCamposSeccion();$("editIndex").value="";$("fechaRecibo").value=hoy();$("tituloForm").textContent="Registro de material";$("btnGuardar").textContent="💾 Guardar y generar QR";$("btnCancelar").hidden=true;$("detTraza").open=false;establecerFormularioAbierto(false)}
 
 $("f").addEventListener("invalid",()=>{$("detTraza").open=true},true);
 $("f").addEventListener("submit",async e=>{
@@ -14089,7 +14096,7 @@ function editar(i){
   seccionCheckbox.checked=seccionNoAplica;$("seccionMaterial").hidden=seccionNoAplica;
   actualizarCamposSeccion();
   $("tituloForm").textContent=`Editando: ${m.codigo}`;$("btnGuardar").textContent="💾 Guardar cambios y regenerar QR";$("btnCancelar").hidden=false;
-  window.scrollTo({top:0,behavior:"smooth"});
+  establecerFormularioAbierto(true);window.scrollTo({top:0,behavior:"smooth"});
   $("detTraza").open=true;
 }
 
