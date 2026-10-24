@@ -12736,6 +12736,18 @@ body.ficha>.app-layout{display:none!important}
 }
 #vInv [data-module-screen="asignar"]>p{display:block;font-size:.8rem;margin-bottom:8px}
 #vInv [data-module-screen="historial"] h2[style]{margin-top:12px!important}
+/* ===== Almacenes y ubicaciones compacto ===== */
+#vInv [data-module-screen="almacenes"] #almacenForm,
+#vInv [data-module-screen="ubicaciones"] #ubiForm{
+  grid-template-columns:repeat(auto-fit,minmax(160px,1fr));
+  gap:8px;
+}
+#vInv [data-module-screen="almacenes"] #almacenForm .full,
+#vInv [data-module-screen="ubicaciones"] #ubiForm .full{grid-column:auto;align-self:end}
+#almacenLista,#ubiLista{max-height:55dvh;overflow:auto;margin-top:8px}
+.ubicacion-card>summary{padding:8px 12px}
+.ubicaciones-ayuda{margin-top:4px;font-size:.74rem}
+#vInv [data-module-screen="ubicaciones"]>p.ubicaciones-ayuda{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 </style>
 </head>
 <body>
@@ -12957,13 +12969,16 @@ body.ficha>.app-layout{display:none!important}
       <div><label for="ubiCodigo">Código de ubicación *</label><div class="row"><input id="ubiCodigo" required placeholder="UBI-001"><button type="button" class="bs" id="ubiAuto">Auto</button></div></div>
       <div class="full"><button type="submit" class="bp" id="ubiGuardar">Guardar ubicación</button></div>
     </form>
-    <div class="acts" style="margin-top:12px;flex-wrap:wrap">
-      <button type="button" class="bs" id="bUbiExcel">📥 Importar ubicaciones (Excel)</button>
-      <button type="button" class="bs" id="bUbiJson">📥 Importar ubicaciones (JSON)</button>
-      <input type="file" id="fileUbiExcel" accept=".xlsx,.xls,.csv" hidden>
-      <input type="file" id="fileUbiJson" accept=".json,application/json" hidden>
-    </div>
-    <p class="ubicaciones-ayuda">Formato Excel/CSV: columnas <b>codigo</b> o <b>ubicacion</b> y <b>almacen_codigo</b> o <b>almacen</b>. En JSON: <code>[{"codigo":"UBI-001","almacen_codigo":"ALM-MP"}]</code>. Los códigos duplicados se omiten.</p>
+    <details>
+      <summary>Importar ubicaciones (Excel / JSON)</summary>
+      <div class="acts" style="margin-top:12px;flex-wrap:wrap">
+        <button type="button" class="bs" id="bUbiExcel">📥 Importar ubicaciones (Excel)</button>
+        <button type="button" class="bs" id="bUbiJson">📥 Importar ubicaciones (JSON)</button>
+        <input type="file" id="fileUbiExcel" accept=".xlsx,.xls,.csv" hidden>
+        <input type="file" id="fileUbiJson" accept=".json,application/json" hidden>
+      </div>
+      <p class="ubicaciones-ayuda">Formato Excel/CSV: columnas <b>codigo</b> o <b>ubicacion</b> y <b>almacen_codigo</b> o <b>almacen</b>. En JSON: <code>[{"codigo":"UBI-001","almacen_codigo":"ALM-MP"}]</code>. Los códigos duplicados se omiten.</p>
+    </details>
     <p class="ubicaciones-ayuda">Selecciona una ubicación para desplegar su código QR y las opciones para descargarlo o imprimirlo.</p>
     <div id="ubiLista"></div>
   </section>
