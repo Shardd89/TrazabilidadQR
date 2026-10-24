@@ -12726,6 +12726,16 @@ body.ficha>.app-layout{display:none!important}
   #vReg>[data-module-screen="qr"]{grid-column:2;grid-row:2;align-self:start;margin-top:0}
 }
 #detTraza>summary{cursor:pointer;font-weight:600;color:var(--pri);padding:6px 0}
+/* ===== Excepciones: pantallas con varios paneles ===== */
+#vInv .section-content>h2:first-child,
+#vReg [data-module-screen="qr"]>h2:first-child{
+  display:block;
+  font-size:.92rem;
+  margin-bottom:8px;
+  padding-bottom:4px;
+}
+#vInv [data-module-screen="asignar"]>p{display:block;font-size:.8rem;margin-bottom:8px}
+#vInv [data-module-screen="historial"] h2[style]{margin-top:12px!important}
 </style>
 </head>
 <body>
