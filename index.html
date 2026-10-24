@@ -12485,6 +12485,10 @@ input.row-select{width:18px;height:18px;padding:0;vertical-align:middle;accent-c
 .d b{min-width:118px;color:var(--mut);font-weight:600}
 .toast{position:fixed;bottom:calc(20px + env(safe-area-inset-bottom,0px));left:50%;transform:translateX(-50%);background:var(--ok);color:#fff;padding:11px 20px;border-radius:8px;font-size:.86rem;opacity:0;pointer-events:none;transition:.3s;z-index:99}
 .toast.show{opacity:1}.toast.err{background:var(--bad)}
+.conteo-dialog{width:min(480px,calc(100% - 24px));max-height:calc(100% - 24px);padding:20px;border:1px solid var(--line);border-radius:12px;background:var(--card);color:var(--tx)}
+.conteo-dialog::backdrop{background:rgba(0,0,0,.58)}
+.conteo-dialog p{color:var(--mut);line-height:1.5}
+.conteo-dialog .acts{justify-content:flex-end}
 #video{width:100%;max-height:260px;object-fit:cover;border-radius:10px;background:#000;margin-bottom:12px}
 #sCnt{text-align:center;font-size:1.4rem;font-weight:700}.res{margin:10px 0;padding:10px;border-radius:8px;background:var(--soft);font-size:.86rem;line-height:1.5}.res.bad{background:var(--badbg);color:var(--bad)}
 #camWrap{position:relative;margin-bottom:12px;overflow:hidden;border-radius:10px}#camWrap #video{margin:0;display:block}
@@ -12820,6 +12824,7 @@ body.ficha>.app-layout{display:none!important}
   <section class="card section-content" data-module-screen="existencias">
     <h2>Inventario de materiales</h2>
     <p style="color:var(--mut);margin-bottom:14px">Consulta existencias disponibles, filtra por almacén y escanea una ubicación para ver qué materiales tiene asignados.</p>
+    <div class="res bad" id="conteoEstado" hidden></div>
     <div class="acts" style="margin:0 0 12px;flex-wrap:wrap">
       <button type="button" class="bp" id="bCamUbiConsulta">📷 Escanear ubicación para ver materiales</button>
       <button type="button" class="bs" id="bUbiConsultaLimpiar" hidden>Limpiar consulta</button>
@@ -12831,7 +12836,7 @@ body.ficha>.app-layout{display:none!important}
       </div>
       <div class="tw" style="margin-top:10px">
         <table>
-          <thead><tr><th>Código</th><th>Descripción</th><th>Clasificación</th><th>Existencia disponible</th><th>Almacén</th></tr></thead>
+          <thead><tr><th>Código</th><th>Descripción</th><th>Clasificación</th><th>Existencia disponible</th><th>Almacén</th><th>Conteo cíclico</th></tr></thead>
           <tbody id="ubiConsultaBody"></tbody>
         </table>
         <div class="empty" id="ubiConsultaVacio" hidden>Esta ubicación no tiene materiales asignados.</div>
@@ -12892,6 +12897,8 @@ body.ficha>.app-layout{display:none!important}
     <h2>Historial de ubicaciones</h2>
     <div id="ubiHistEstado"></div>
     <div class="tw"><table><thead><tr><th>Fecha</th><th>Folio</th><th>Código</th><th>Almacén anterior</th><th>Desde</th><th>Almacén destino</th><th>Hacia</th><th>Existencia al mover</th></tr></thead><tbody id="ubiHistBody"></tbody></table><div class="empty" id="ubiHistVacio" hidden>Sin movimientos de ubicación.</div></div>
+    <h2 style="margin-top:20px">Historial de conteos cíclicos</h2>
+    <div class="tw"><table><thead><tr><th>Fecha</th><th>Material</th><th>Ubicación</th><th>Existencia anterior</th><th>Existencia contada</th><th>Ajuste</th><th>Observaciones</th><th>Administrador</th></tr></thead><tbody id="conteoHistBody"></tbody></table><div class="empty" id="conteoHistVacio" hidden>Sin conteos cíclicos.</div></div>
   </section>
 </main>
 
@@ -12909,6 +12916,21 @@ body.ficha>.app-layout{display:none!important}
 <div id="camWrap" hidden><div id="camPanel"><video id="video" playsinline muted></video><div class="vf"></div><button type="button" class="bs" id="bTorch" hidden>🔦</button><button type="button" class="bd" id="bCamClose">✕ Cerrar</button><canvas id="camCv" hidden></canvas></div></div>
 <div id="etiqueta"></div>
 <div class="toast" id="toast"></div>
+<dialog id="conteoDialog" class="conteo-dialog" aria-labelledby="conteoTitulo">
+  <h2 id="conteoTitulo">Conteo cíclico</h2>
+  <p id="conteoMaterial"></p>
+  <p><b>Existencia actual:</b> <span id="conteoActual"></span></p>
+  <form id="conteoForm">
+    <input type="hidden" id="conteoCodigo">
+    <input type="hidden" id="conteoUbicacion">
+    <input type="hidden" id="conteoAnterior">
+    <label for="conteoCantidad">Existencia contada (<span id="conteoUnidad"></span>) *</label>
+    <input type="number" id="conteoCantidad" min="0" step="any" inputmode="decimal" required>
+    <label for="conteoMotivo" style="margin-top:12px">Observaciones</label>
+    <textarea id="conteoMotivo" rows="2" maxlength="300" placeholder="Opcional"></textarea>
+    <div class="acts"><button type="button" class="bs" id="conteoCancelar">Cancelar</button><button type="submit" class="bp" id="conteoGuardar">Guardar conteo</button></div>
+  </form>
+</dialog>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.4/dist/umd/supabase.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
@@ -12919,7 +12941,7 @@ const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&
 const hoy=()=>new Date(Date.now()-new Date().getTimezoneOffset()*6e4).toISOString().slice(0,10);
 const fmt=n=>Number(n).toLocaleString("es-MX",{maximumFractionDigits:3});
 function totalTxt(m){return m.esMP&&m.um==="PZ"&&m.cantidad>0&&m.longitud>0?`${fmt(m.cantidad*m.longitud)} ${m.longU||m.longitudUnidad||"mm"}`:""}
-let mats=[],actual=null,orden={k:null,asc:true},esStaff=false,esAdmin=false,almacenes=[],ubicaciones=[],ubicacionesAlias=[],movimientosUbicacion=[],almacenesError="",ubicacionesError="",ubicacionesAliasError="",movimientosError="",ubicacionDestino=null,asignacionItems=[];
+let mats=[],actual=null,orden={k:null,asc:true},esStaff=false,esAdmin=false,almacenes=[],ubicaciones=[],ubicacionesAlias=[],movimientosUbicacion=[],ajustesInventarioError="",almacenesError="",ubicacionesError="",ubicacionesAliasError="",movimientosError="",ubicacionDestino=null,asignacionItems=[];
 const seleccionados=new Set();
 
 // --- Supabase ---
@@ -12932,22 +12954,35 @@ function normalizarMaterial(m){
   return{...m,um:"PZ",pesoU,tipoRegistro,esMP:tipoRegistro==="MP",seccionMaterial};
 }
 const nombreTipoRegistro=tipo=>({MP:"Materia prima",GENERAL:"Material general",CONSUMIBLES:"Consumibles"}[tipo]||"Material general");
-const matData=m=>{const{despachos,...r}=m;return r};
+const matData=m=>{const{despachos,ajustesInventario,...r}=m;return r};
 const desData=d=>{const{t,piezas,...r}=d;return r};
 const desFila=(codigo,d)=>({codigo,t:d.t,data:desData(d),piezas:d.piezas||[]});
 const desDeFila=r=>({...r.data,t:Number(r.t),...(r.piezas&&r.piezas.length?{piezas:r.piezas}:{})});
 function errDB(e,msg){console.error(e);const t=String((e&&e.message)||e||"");
-  toast(/PIEZA_YA_SURTIDA/.test(t)?"⚠ Una de esas piezas ya fue surtida desde otro equipo":/duplicate|23505/.test(t+((e&&e.code)||""))?"⚠ El código ya existe, use otro.":`${msg} (${t.slice(0,90)})`,1)}
+  toast(/EXISTENCIA_CAMBIO_DURANTE_CONTEO/.test(t)?"La existencia cambió mientras realizabas el conteo. Actualiza la consulta e inténtalo de nuevo.":/PIEZA_YA_SURTIDA/.test(t)?"⚠ Una de esas piezas ya fue surtida desde otro equipo":/duplicate|23505/.test(t+((e&&e.code)||""))?"⚠ El código ya existe, use otro.":`${msg} (${t.slice(0,90)})`,1)}
 async function leerTodo(tabla,cols,ord){const out=[];
   for(let i=0;;i+=1000){let q=sb.from(tabla).select(cols);ord.forEach(o=>{q=q.order(o)});const{data,error}=await q.range(i,i+999);if(error)throw error;out.push(...data);if(data.length<1000)break}
   return out}
 // Recarga los datos y conserva la edición, el QR y los renglones pendientes.
 async function cargar(){
-  const[A,B]=await Promise.all([leerTodo("materiales","codigo,data",["codigo"]),leerTodo("despachos","codigo,t,data,piezas",["t","id"])]);
+  const[materialesResultado,despachosResultado,ajustesResultado]=await Promise.allSettled([
+    leerTodo("materiales","codigo,data",["codigo"]),
+    leerTodo("despachos","codigo,t,data,piezas",["t","id"]),
+    leerTodo("ajustes_inventario_ciclico","id,codigo_material,ubicacion_codigo,ubicacion_nombre,existencia_anterior,existencia_contada,diferencia,unidad,motivo,usuario,created_at",["id"])
+  ]);
+  if(materialesResultado.status==="rejected")throw materialesResultado.reason;
+  if(despachosResultado.status==="rejected")throw despachosResultado.reason;
+  const A=materialesResultado.value,B=despachosResultado.value;
+  ajustesInventarioError=ajustesResultado.status==="rejected"
+    ?(/PGRST205|42P01|does not exist|schema cache/i.test(String(ajustesResultado.reason?.message||ajustesResultado.reason))?"Falta aplicar o actualizar la migración supabase_almacenes.sql para habilitar los conteos cíclicos.":`No se pudieron cargar los conteos cíclicos: ${String(ajustesResultado.reason?.message||ajustesResultado.reason)}`)
+    :"";
+  if(ajustesResultado.status==="rejected")console.error(ajustesResultado.reason);
+  const ajustesPor={};
+  if(ajustesResultado.status==="fulfilled")ajustesResultado.value.forEach(a=>{(ajustesPor[a.codigo_material]=ajustesPor[a.codigo_material]||[]).push(a)});
   const por={};B.forEach(r=>{(por[r.codigo]=por[r.codigo]||[]).push(desDeFila(r))});
   const edI=$("editIndex").value,edCod=edI!==""&&mats[+edI]?mats[+edI].codigo:null;
   const act=actual,actAntes=act?JSON.stringify(act):"";
-  mats=A.map(r=>({...normalizarMaterial(r.data),codigo:r.codigo,despachos:por[r.codigo]||[]}));
+  mats=A.map(r=>({...normalizarMaterial(r.data),codigo:r.codigo,despachos:por[r.codigo]||[],ajustesInventario:ajustesPor[r.codigo]||[]}));
   if(edCod){const i=mats.findIndex(x=>x.codigo===edCod);if(i<0)resetForm();else $("editIndex").value=i}
   surItems=surItems.filter(item=>mats.some(x=>x.codigo.toLowerCase()===item.codigo.toLowerCase()));
   surItems.forEach(item=>{const m=mats.find(x=>x.codigo.toLowerCase()===item.codigo.toLowerCase());if(item.piezas?.some(n=>piezasSurt(m).has(n)))item.errorPieza=true});
@@ -12993,14 +13028,14 @@ function dejarCanal(){const c=canalRT;canalRT=null;if(!sb||!c)return;try{sb.remo
 function suscribir(){
   if(!sb||canalRT)return;
   const rt=()=>{clearTimeout(rtT);rtT=setTimeout(()=>{cargar().catch(()=>{});cargarUbicaciones()},400)};
-  canalRT=sb.channel("cambios").on("postgres_changes",{event:"*",schema:"public",table:"materiales"},rt).on("postgres_changes",{event:"*",schema:"public",table:"despachos"},rt).on("postgres_changes",{event:"*",schema:"public",table:"almacenes"},rt).on("postgres_changes",{event:"*",schema:"public",table:"ubicaciones"},rt).on("postgres_changes",{event:"*",schema:"public",table:"ubicaciones_codigos_alias"},rt).on("postgres_changes",{event:"*",schema:"public",table:"movimientos_ubicacion"},rt).subscribe(estado=>{if((estado==="CHANNEL_ERROR"||estado==="TIMED_OUT")&&canalRT){const c=canalRT;canalRT=null;try{sb.removeChannel(c).catch(()=>{})}catch{}}});
+  canalRT=sb.channel("cambios").on("postgres_changes",{event:"*",schema:"public",table:"materiales"},rt).on("postgres_changes",{event:"*",schema:"public",table:"despachos"},rt).on("postgres_changes",{event:"*",schema:"public",table:"almacenes"},rt).on("postgres_changes",{event:"*",schema:"public",table:"ubicaciones"},rt).on("postgres_changes",{event:"*",schema:"public",table:"ubicaciones_codigos_alias"},rt).on("postgres_changes",{event:"*",schema:"public",table:"movimientos_ubicacion"},rt).on("postgres_changes",{event:"*",schema:"public",table:"ajustes_inventario_ciclico"},rt).subscribe(estado=>{if((estado==="CHANNEL_ERROR"||estado==="TIMED_OUT")&&canalRT){const c=canalRT;canalRT=null;try{sb.removeChannel(c).catch(()=>{})}catch{}}});
 }
 // --- Sesión ---
 function lgMostrar(msg){$("lgCarga").hidden=true;$("lgF").hidden=false;$("lgMsg").hidden=!msg;$("lgMsg").textContent=msg||""}
 function limpiarSesionLocal(){try{Object.keys(localStorage).filter(k=>k.indexOf("sb-")===0&&k.indexOf("-auth-token")>0).forEach(k=>localStorage.removeItem(k))}catch{}}
 function errorSesion(e){const c=Number(e?.status||e?.code||0);return c===401||c===403||/jwt|token|session|sesi[oó]n/i.test(String(e?.message||""))}
 async function cerrarSesion(){try{const{error}=await sb.auth.signOut();if(error)throw error}catch(e){console.warn("No se pudo revocar la sesión en el servidor; se cierra localmente.",e)}limpiarSesionLocal();salirUI()}
-function salirUI(){esStaff=false;esAdmin=false;seleccionados.clear();$("rolUsuario").hidden=true;$("bImp").hidden=$("bExcel").hidden=false;document.body.classList.remove("auth");dejarCanal();camOff();mats=[];surItems=[];almacenes=[];ubicaciones=[];ubicacionesAlias=[];movimientosUbicacion=[];almacenesError="";ubicacionesError="";ubicacionesAliasError="";movimientosError="";ubicacionDestino=null;asignacionItems=[];actual=null;render();lgMostrar()}
+function salirUI(){esStaff=false;esAdmin=false;seleccionados.clear();$("rolUsuario").hidden=true;$("conteoEstado").hidden=true;$("bImp").hidden=$("bExcel").hidden=false;document.body.classList.remove("auth");dejarCanal();camOff();if($("conteoDialog").open)$("conteoDialog").close();mats=[];surItems=[];almacenes=[];ubicaciones=[];ubicacionesAlias=[];movimientosUbicacion=[];ajustesInventarioError="";almacenesError="";ubicacionesError="";ubicacionesAliasError="";movimientosError="";ubicacionDestino=null;asignacionItems=[];actual=null;render();lgMostrar()}
 let entrando=false;
 async function entrar(){
   if(!sb||entrando)return false;
@@ -13301,6 +13336,12 @@ function renderInventario(){
   const lista=mats.filter(m=>{const loc=ubicaciones.find(x=>x.codigo===m.ubicacionCodigo),almacenCodigo=loc?.almacen_codigo||m.ubicacionAlmacenCodigo,alm=almacenes.find(x=>x.codigo===almacenCodigo);return(!tipo||(tipo==="mp"?m.esMP:tipo==="consumibles"?m.tipoRegistro==="CONSUMIBLES":m.tipoRegistro==="GENERAL"))&&(!almacenFiltro||almacenCodigo===almacenFiltro)&&(!q||[m.codigo,m.descripcion,m.ubicacion,m.ubicacionCodigo,loc?.nombre,alm?.nombre,m.lote,m.numeroHeat,m.numeroLoteMP].join(" ").toLocaleLowerCase().includes(q))});
   $("invBody").innerHTML=lista.map(m=>{const loc=ubicaciones.find(x=>x.codigo===m.ubicacionCodigo),alm=almacenes.find(x=>x.codigo===(loc?.almacen_codigo||m.ubicacionAlmacenCodigo));return`<tr><td><b>${esc(m.codigo)}</b></td><td>${m.esMP?'<span class="tag t1">M. PRIMA</span>':m.tipoRegistro==="CONSUMIBLES"?'<span class="tag t2">CONSUMIBLES</span>':'<span class="tag t2">GENERAL</span>'}</td><td class="l">${esc(m.descripcion)}</td><td>${esc(existTxt(m))}</td><td>${esc(alm?.nombre||m.ubicacionAlmacenNombre||"Sin almacén")}</td><td>${esc(loc?ubicacionConCodigo(loc):m.ubicacion||"Sin ubicación")}</td></tr>`}).join("");
   $("invVacio").hidden=lista.length>0;
+  actualizarEstadoConteoCiclico();
+}
+function actualizarEstadoConteoCiclico(){
+  const estado=$("conteoEstado");
+  estado.hidden=!ajustesInventarioError;
+  estado.textContent=ajustesInventarioError;
 }
 $("invBuscar").oninput=$("invTipo").onchange=$("invAlmacen").onchange=renderInventario;
 let ubiConsultaCodigo=null;
@@ -13336,7 +13377,9 @@ function mostrarMaterialesPorUbicacion(codigo){
   ubiConsultaCodigo=loc.codigo;
   $("ubiConsultaInfo").innerHTML=`${esc(almacen?.nombre||"Sin almacén")} · <b>${esc(ubicacionConCodigo(loc))}</b>`;
   $("ubiConsultaCnt").textContent=`${lista.length} material${lista.length===1?"":"es"}`;
-  $("ubiConsultaBody").innerHTML=lista.map(m=>{const almM=almacenes.find(a=>a.codigo===(ubicaciones.find(x=>x.codigo===m.ubicacionCodigo)?.almacen_codigo||m.ubicacionAlmacenCodigo));return`<tr><td><b>${esc(m.codigo)}</b></td><td class="l">${esc(m.descripcion||"")}</td><td>${m.esMP?'<span class="tag t1">M. PRIMA</span>':m.tipoRegistro==="CONSUMIBLES"?'<span class="tag t2">CONSUMIBLES</span>':'<span class="tag t2">GENERAL</span>'}</td><td>${esc(existTxt(m))}</td><td>${esc(almM?.nombre||m.ubicacionAlmacenNombre||almacen?.nombre||"Sin almacén")}</td></tr>`}).join("");
+  actualizarEstadoConteoCiclico();
+  $("ubiConsultaBody").innerHTML=lista.map(m=>{const almM=almacenes.find(a=>a.codigo===(ubicaciones.find(x=>x.codigo===m.ubicacionCodigo)?.almacen_codigo||m.ubicacionAlmacenCodigo));return`<tr><td><b>${esc(m.codigo)}</b></td><td class="l">${esc(m.descripcion||"")}</td><td>${m.esMP?'<span class="tag t1">M. PRIMA</span>':m.tipoRegistro==="CONSUMIBLES"?'<span class="tag t2">CONSUMIBLES</span>':'<span class="tag t2">GENERAL</span>'}</td><td>${esc(existTxt(m))}</td><td>${esc(almM?.nombre||m.ubicacionAlmacenNombre||almacen?.nombre||"Sin almacén")}</td><td>${esAdmin?`<button type="button" class="bs" data-conteo="${esc(m.codigo)}" ${ajustesInventarioError?"disabled title=\"No se pudo cargar el historial de conteos\"":""}>📋 Conteo cíclico</button>`:"—"}</td></tr>`}).join("");
+  $("ubiConsultaBody").querySelectorAll("[data-conteo]").forEach(btn=>btn.onclick=()=>abrirConteoCiclico(btn.dataset.conteo,loc));
   $("ubiConsultaVacio").hidden=lista.length>0;
   $("ubiConsultaBox").hidden=false;
   $("bUbiConsultaLimpiar").hidden=false;
@@ -13346,6 +13389,45 @@ function mostrarMaterialesPorUbicacion(codigo){
 }
 $("bCamUbiConsulta").onclick=()=>{modoEscaneo="ubiConsulta";camOn()};
 $("bUbiConsultaLimpiar").onclick=()=>{limpiarConsultaUbicacion()};
+function abrirConteoCiclico(codigo,loc){
+  if(!esAdmin){toast("Solo el administrador puede ajustar existencias.",1);return}
+  if(ajustesInventarioError){toast(ajustesInventarioError,1);return}
+  const material=mats.find(m=>m.codigo===codigo);
+  if(!material||!listaMaterialesEnUbicacion(loc).some(m=>m.codigo===codigo)){toast("El material ya no está asignado a esta ubicación. Actualiza la consulta.",1);return}
+  const e=existencia(material);
+  $("conteoCodigo").value=material.codigo;
+  $("conteoUbicacion").value=loc.codigo;
+  $("conteoAnterior").value=String(e.rest);
+  $("conteoMaterial").textContent=`${material.codigo} · ${material.descripcion||""} · ${ubicacionConCodigo(loc)}`;
+  $("conteoActual").textContent=existTxt(material);
+  $("conteoUnidad").textContent=e.u;
+  $("conteoCantidad").value=String(Math.max(0,e.rest));
+  $("conteoMotivo").value="";
+  $("conteoDialog").showModal();
+  $("conteoCantidad").focus();
+}
+$("conteoCancelar").onclick=()=>$("conteoDialog").close();
+$("conteoForm").addEventListener("submit",async event=>{
+  event.preventDefault();
+  if(!esAdmin){toast("Solo el administrador puede ajustar existencias.",1);$("conteoDialog").close();return}
+  const codigo=$("conteoCodigo").value,ubicacionCodigo=$("conteoUbicacion").value,anterior=Number($("conteoAnterior").value),contada=r4(Number($("conteoCantidad").value));
+  const material=mats.find(m=>m.codigo===codigo),ubicacion=ubicaciones.find(loc=>loc.codigo===ubicacionCodigo);
+  if(!material||!ubicacion||!listaMaterialesEnUbicacion(ubicacion).some(m=>m.codigo===codigo)){toast("El material cambió de ubicación. Escanea la ubicación de nuevo.",1);$("conteoDialog").close();return}
+  if(!Number.isFinite(contada)||contada<0){toast("Ingresa una existencia contada válida.",1);return}
+  const actualCalculado=existencia(material);
+  if(Math.abs(actualCalculado.rest-anterior)>0.0001){toast("La existencia cambió mientras realizabas el conteo. Vuelve a abrir el ajuste.",1);$("conteoDialog").close();return}
+  $("conteoGuardar").disabled=true;
+  try{
+    const{error}=await sb.rpc("registrar_conteo_ciclico",{p_codigo_material:codigo,p_ubicacion_codigo:ubicacionCodigo,p_existencia_anterior:anterior,p_existencia_contada:contada,p_unidad:actualCalculado.u,p_motivo:$("conteoMotivo").value.trim()});
+    if(error)throw error;
+    $("conteoDialog").close();
+    try{await cargar()}catch(err){errDB(err,"Conteo guardado, pero no se pudo actualizar el inventario");return}
+    renderHistUbicaciones();
+    if(ubiConsultaCodigo)mostrarMaterialesPorUbicacion(ubiConsultaCodigo);
+    toast(`Conteo guardado para ${codigo}. Ajuste: ${fmt(contada-anterior)} ${actualCalculado.u}`);
+  }catch(err){errDB(err,"No se pudo guardar el conteo cíclico")}
+  finally{$("conteoGuardar").disabled=false}
+});
 function procesarEscaneoUbiConsulta(txt){
   const raw=String(txt||"").replace(/^\uFEFF/,"").trim(),prefijo="TRAZABILIDAD-UBICACION:";
   if(raw.toUpperCase().startsWith(prefijo)){modoEscaneo="inventario";mostrarMaterialesPorUbicacion(raw.slice(prefijo.length).trim());camOff();return true}
@@ -13534,10 +13616,13 @@ async function confirmarAsignacion(){
   }catch(err){errDB(err,"No se pudo registrar el traspaso");$("ubiConfirmar").disabled=false}
 }
 function renderHistUbicaciones(){
-  $("ubiHistEstado").innerHTML=movimientosError?`<div class="res bad">${esc(movimientosError)}</div>`:"";
+  $("ubiHistEstado").innerHTML=[movimientosError,ajustesInventarioError].filter(Boolean).map(error=>`<div class="res bad">${esc(error)}</div>`).join("");
   const filas=movimientosUbicacion.slice().sort((a,b)=>new Date(b.created_at)-new Date(a.created_at));
   $("ubiHistBody").innerHTML=filas.map(x=>{const anterior=almacenes.find(a=>a.codigo===x.ubicacion_anterior_almacen_codigo),nueva=almacenes.find(a=>a.codigo===x.ubicacion_nueva_almacen_codigo),desde=`${esc(x.ubicacion_anterior||"Sin ubicación")}${x.ubicacion_anterior_codigo?` <small>(${esc(x.ubicacion_anterior_codigo)})</small>`:""}`,hacia=`${esc(x.ubicacion_nueva)}${x.ubicacion_nueva_codigo?` <small>(${esc(x.ubicacion_nueva_codigo)})</small>`:""}`;return`<tr><td>${esc(new Date(x.created_at).toLocaleString("es-MX"))}</td><td>${esc(x.folio)}</td><td>${esc(x.codigo_material)}</td><td>${esc(anterior?.nombre||"Sin almacén")}</td><td>${desde}</td><td>${esc(nueva?.nombre||"Sin almacén")}</td><td>${hacia}</td><td>${esc(resumenExistencia(x.existencia))}</td></tr>`}).join("");
   $("ubiHistVacio").hidden=filas.length>0;
+  const conteos=mats.flatMap(m=>(m.ajustesInventario||[]).map(ajuste=>({...ajuste,codigo_material:m.codigo}))).sort((a,b)=>new Date(b.created_at)-new Date(a.created_at));
+  $("conteoHistBody").innerHTML=conteos.map(x=>`<tr><td>${esc(new Date(x.created_at).toLocaleString("es-MX"))}</td><td><b>${esc(x.codigo_material)}</b></td><td>${esc(x.ubicacion_nombre||x.ubicacion_codigo||"")}</td><td>${esc(fmt(Number(x.existencia_anterior)))} ${esc(x.unidad)}</td><td>${esc(fmt(Number(x.existencia_contada)))} ${esc(x.unidad)}</td><td>${esc(fmt(Number(x.diferencia)))} ${esc(x.unidad)}</td><td class="l">${esc(x.motivo||"—")}</td><td>${esc(x.usuario||"—")}</td></tr>`).join("");
+  $("conteoHistVacio").hidden=conteos.length>0;
 }
 function resumenExistencia(e){
   if(!e)return"";
@@ -13991,12 +14076,13 @@ function pesoEquivalente(m,longitud,total){
 }
 function existencia(m){
   const ds=m.despachos||[];
+  const ajustes=(m.ajustesInventario||[]).reduce((s,a)=>s+Number(a.diferencia||0),0);
   if(modoLong(m)){
     const{L,u}=longBase(m),total=m.cantidad*L;
-    const surtido=ds.reduce((s,d)=>s+longitudEnBase(d,u),0),rest=r4(total-surtido);
+    const surtido=ds.reduce((s,d)=>s+longitudEnBase(d,u),0),rest=r4(total-surtido+ajustes);
     return{modo:"long",u,L,total,rest,qty:r4(rest/L),peso:pesoEquivalente(m,rest,total)};
   }
-  return{modo:"pz",u:m.um,rest:r4(m.cantidad-ds.reduce((s,d)=>s+(d.cantidad||0),0))}
+  return{modo:"pz",u:m.um,rest:r4(m.cantidad-ds.reduce((s,d)=>s+(d.cantidad||0),0)+ajustes)}
 }
 function existTxt(m){const e=existencia(m);return e.modo==="long"?`${fmt(e.rest)} ${e.u} (≈${fmt(e.qty)} pz)${e.peso?` · ${fmt(e.peso.peso)} ${e.peso.u}`:""}`:`${fmt(e.rest)} ${e.u}`}
 let surItems=[],nextSurItem=1,stream=null,scanning=false,modoEscaneo="surtido";
