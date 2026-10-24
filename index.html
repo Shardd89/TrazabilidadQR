@@ -12461,6 +12461,30 @@ input:focus,select:focus{outline:none;border-color:var(--pri);box-shadow:0 0 0 3
 .radios label{display:flex;align-items:center;gap:6px;font-weight:500;color:var(--tx);cursor:pointer;margin:0}
 .radios input{width:auto}
 .mp{background:var(--soft);border:1px solid var(--line);border-radius:10px;padding:14px}
+.sur-controls{display:flex;align-items:end;gap:10px;flex-wrap:wrap;margin-bottom:12px}
+.sur-controls>.acts{margin:0}
+.sur-controls>.acts .bp{flex:0 0 auto}
+.sur-order{flex:1 1 220px;min-width:180px}
+.sur-order label,.sur-entry label{margin-bottom:3px}
+.sur-order input{margin:0!important}
+.sur-controls>#manual{flex:1 1 220px;min-width:180px}
+.sur-controls>#manual textarea{display:block;margin-top:4px}
+.sur-fields{grid-template-columns:repeat(auto-fit,minmax(150px,1fr));margin-bottom:12px}
+.sur-fields>details{grid-column:1/-1}
+.sur-fields>details summary{cursor:pointer}
+#sPanel .mp{padding:9px 12px;margin-top:8px!important}
+.sur-item-head{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.sur-item-head b{min-width:0;overflow-wrap:anywhere}
+.sur-item-head button{flex:0 0 auto;padding:5px 9px}
+.sur-item-meta{display:block;color:var(--mut);margin:2px 0 5px}
+.sur-item-qty{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.sur-item-qty>span{font-size:.82rem}
+.sur-entry{display:flex;align-items:center;gap:6px;flex:1 1 270px;min-width:0}
+.sur-entry label{flex:0 1 auto;white-space:nowrap;font-size:.76rem}
+.sur-entry input{flex:1 1 100px;min-width:70px}
+.sur-entry select{flex:0 0 76px;padding:6px}
+.sur-item-qty>#sCnt{flex:0 1 150px}
+#sPanel .sur-actions{position:sticky;bottom:calc(8px + env(safe-area-inset-bottom,0px));z-index:5;background:var(--card);padding:8px 0;margin:8px 0 0;border-top:1px solid var(--line)}
 button{cursor:pointer;border:none;border-radius:8px;font-size:.88rem;font-weight:600;padding:10px 14px;transition:.15s;color:var(--tx)}
 .bp{background:var(--pri);color:#fff}.bp:hover{background:var(--pri2)}.bp:disabled{opacity:.45;cursor:not-allowed}
 .bs{background:var(--soft);color:var(--pri)}.bs:hover{filter:brightness(.95)}
@@ -12632,7 +12656,7 @@ body.ficha>#login{display:none!important}
 #vReg>div:not(.view-heading){display:contents}
 #vReg>[data-module-screen]{grid-column:1/-1;min-width:0}
 #vSur>#surPreparar{grid-column:1/-1}
-#surPreparar>div{display:grid;grid-template-columns:minmax(240px,.72fr) minmax(0,1.28fr);gap:20px;align-items:start}
+#surPreparar>div{display:grid;grid-template-columns:minmax(0,1fr);gap:20px;align-items:start}
 #surPreparar .card,#vSur>#surHistorial{min-width:0}
 #vSur>#surHistorial,#vInv>[data-module-screen]{grid-column:1/-1}
 #vInv>[data-module-screen]{min-width:0}
@@ -12824,22 +12848,23 @@ body.ficha>.app-layout{display:none!important}
   <button type="button" class="section-tab" data-module="vSur" data-page="historial">📋 <strong>Historial de salidas</strong></button>
 </nav>
 <div id="surPreparar" data-module-screen="preparar">
-  <section class="card"><h2>Escaneo de QR</h2>
-    <div class="acts" style="margin:0 0 12px"><button type="button" class="bp" id="bCam">📷 Escanear con cámara</button></div>
+  <section class="card"><h2>Surtido</h2>
+    <div class="sur-controls">
+      <div class="acts"><button type="button" class="bp" id="bCam">📷 Escanear con cámara</button></div>
+      <div class="sur-order"><label for="orden">Orden de producción *</label><input type="text" id="orden" placeholder="Ej. OT-1234"></div>
+      <details id="manual"><summary style="cursor:pointer;font-size:.84rem;color:var(--mut);padding:4px 0">⌨️ Pistola lectora / código manual</summary>
+        <textarea id="scanIn" rows="2" placeholder="Escanee aquí, o escriba el código y presione Enter"></textarea></details>
+    </div>
     <div class="res bad" id="camAviso" hidden>⚠ La cámara en vivo requiere HTTPS (o localhost). Aloje este archivo en un sitio con HTTPS para usar el escáner.</div>
-    <details id="manual"><summary style="cursor:pointer;font-size:.84rem;color:var(--mut);padding:4px 0">⌨️ Pistola lectora / código manual</summary>
-      <textarea id="scanIn" rows="2" placeholder="Escanee aquí, o escriba el código y presione Enter"></textarea></details>
-  </section>
-  <section class="card"><h2>Surtido actual</h2>
-    <label for="orden">Orden de producción *</label><input type="text" id="orden" placeholder="Ej. OT-1234" style="margin-bottom:12px">
-    <div class="grid" style="margin-bottom:12px">
+    <div class="grid sur-fields">
       <div><label for="entrega">Entrega (Almacén)</label><input type="text" id="entrega"></div>
       <div><label for="recibe">Recibe (Producción)</label><input type="text" id="recibe"></div>
       <div><label for="maquina">Máquina / línea</label><input type="text" id="maquina"></div>
       <div><label for="motivo">Motivo / uso</label><input type="text" id="motivo"></div>
-      <div class="full"><label for="observaciones">Observaciones</label><textarea id="observaciones" rows="2"></textarea></div>
+      <details class="full"><summary>Observaciones</summary><label for="observaciones" hidden>Observaciones</label><textarea id="observaciones" rows="2"></textarea></details>
     </div>
-    <div id="sPanel"></div></section>
+    <div id="sPanel"></div>
+  </section>
 </div>
 <section class="card section-content" id="surHistorial" data-module-screen="historial" hidden><h2>Movimientos de surtido</h2>
   <div class="tw"><div id="hBody" class="sur-groups"></div><div class="empty" id="hVacio">Sin surtidos</div></div>
@@ -14330,20 +14355,19 @@ function bucle(){
 function renderSur(){
   const P=$("sPanel");
   if(!surItems.length){P.innerHTML='<div class="empty">Escanee los QR de los materiales para agregarlos a la salida</div>';return}
-  let h=`<div class="res">Renglones en esta salida: <b>${surItems.length}</b>. Cada escaneo agrega una línea nueva, aunque el código se repita.</div>`;
+  let h="";
   h+=surItems.map((item,n)=>{
     const m=mats.find(x=>x.codigo.toLowerCase()===item.codigo.toLowerCase());if(!m)return"";
     const e=existencia(m),lote=m.numeroLoteMP||m.lote||"";
-    return`<section class="mp" style="margin-top:10px"><div class="acts" style="margin:0 0 8px;justify-content:space-between"><b>${n+1}. ${esc(m.codigo)} · ${esc(nombreTipoRegistro(m.tipoRegistro))}</b><button type="button" class="bd" data-quitar="${item.id}">Quitar</button></div>
-      <div class="d"><b>Descripción</b><span>${esc(m.descripcion)}</span></div>
-      ${lote?`<div class="d"><b>Lote / Heat</b><span>${esc([lote,m.numeroHeat].filter(Boolean).join(" / "))}</span></div>`:""}
-      <div class="d"><b>Existencia actual</b><span>${esc(existTxt(m))}</span></div>
-      ${e.modo==="long"?`<label for="sLen-${item.id}">Longitud a surtir (pieza de ${esc(fmt(e.L))} ${esc(e.u)})</label><div class="row"><input type="number" id="sLen-${item.id}" min="0" step="any" inputmode="decimal" placeholder="Longitud" value="${esc(item.longitud)}"><select id="sU-${item.id}">${["mm","cm","m","in"].map(u=>`<option value="${u}"${(item.unidad||e.u)===u?" selected":""}>${u}</option>`).join("")}</select></div>`:
-      `<label for="sCnt-${item.id}">Cantidad a surtir (${esc(m.um)})</label><input type="number" id="sCnt-${item.id}" min="0" step="any" value="${esc(item.cantidad)}">`}
-      ${item.piezas?.length?`<small>Pieza QR: ${item.piezas.join(", ")}</small>`:""}
+    return`<section class="mp"><div class="sur-item-head"><b>${n+1}. ${esc(m.codigo)} · ${esc(m.descripcion)}</b><button type="button" class="bd" data-quitar="${item.id}">Quitar</button></div>
+      ${lote||m.numeroHeat?`<small class="sur-item-meta">Lote / Heat: ${esc([lote,m.numeroHeat].filter(Boolean).join(" / "))}</small>`:""}
+      <div class="sur-item-qty"><span><b>Existencia actual:</b> ${esc(existTxt(m))}</span>
+      ${e.modo==="long"?`<div class="sur-entry"><label for="sLen-${item.id}">Longitud (pieza de ${esc(fmt(e.L))} ${esc(e.u)})</label><input type="number" id="sLen-${item.id}" min="0" step="any" inputmode="decimal" placeholder="Longitud" value="${esc(item.longitud)}"><select id="sU-${item.id}">${["mm","cm","m","in"].map(u=>`<option value="${u}"${(item.unidad||e.u)===u?" selected":""}>${u}</option>`).join("")}</select></div>`:
+      `<label class="sur-entry"><span>Cantidad (${esc(m.um)})</span><input type="number" id="sCnt-${item.id}" min="0" step="any" value="${esc(item.cantidad)}"></label>`}</div>
+      ${item.piezas?.length?`<small class="sur-item-meta">Pieza QR: ${item.piezas.join(", ")}</small>`:""}
       <div class="res" id="sItemRes-${item.id}"></div></section>`;
   }).join("");
-  h+=`<div class="res" id="sRes"></div><div class="acts"><button type="button" class="bp" id="sOk">✅ Confirmar salida múltiple</button><button type="button" class="bd" id="sNo">Vaciar salida</button></div>`;
+  h+=`<div class="res" id="sRes"></div><div class="acts sur-actions"><button type="button" class="bp" id="sOk">✅ Confirmar salida múltiple</button><button type="button" class="bd" id="sNo">Vaciar salida</button></div>`;
   P.innerHTML=h;
   surItems.forEach(item=>{
     const len=$(`sLen-${item.id}`),unit=$(`sU-${item.id}`),cnt=$(`sCnt-${item.id}`);
