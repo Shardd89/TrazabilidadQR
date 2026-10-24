@@ -13349,7 +13349,7 @@ function actualizarEstadoConteoCiclico(){
   estado.textContent=ajustesInventarioError;
 }
 $("invBuscar").oninput=$("invTipo").onchange=$("invAlmacen").onchange=renderInventario;
-let ubiConsultaCodigo=null;
+let ubiConsultaCodigo=null,conteoTrasladadoPendiente=false;
 function limpiarConsultaUbicacion(){
   ubiConsultaCodigo=null;
   $("ubiConsultaBox").hidden=true;
@@ -13416,18 +13416,59 @@ function buscarMaterialesParaConteo(){
   const visibles=coincidencias.slice(0,20);
   resultados.innerHTML=visibles.map(material=>{
     const enUbicacion=listaMaterialesEnUbicacion(ubicacion).some(item=>item.codigo===material.codigo);
-    const ubicacionActual=ubicaciones.find(loc=>loc.codigo===material.ubicacionCodigo);
+    const ubicacionActual=ubicaciones.find(loc=>loc.codigo===material.ubicacionCodigo)
+      ||ubicaciones.find(loc=>!material.ubicacionCodigo&&String(material.ubicacion||"").trim().toLocaleLowerCase()===loc.nombre.toLocaleLowerCase()&&(!material.ubicacionAlmacenCodigo||material.ubicacionAlmacenCodigo===loc.almacen_codigo));
     const ubicacionTexto=ubicacionActual?ubicacionConCodigo(ubicacionActual):material.ubicacion||"Sin ubicación";
-    return`<div class="ubicacion-material"><span><b>${esc(material.codigo)}</b><span>${esc(material.descripcion||"Sin descripción")} · ${esc(existTxt(material))}<br><small>${enUbicacion?"Asignado a esta ubicación":`Ubicación actual: ${esc(ubicacionTexto)}`}</small></span></span>${enUbicacion?`<button type="button" class="bs" data-conteo-busqueda="${esc(material.codigo)}" ${ajustesInventarioError?"disabled title=\"No se pudo cargar el historial de conteos\"":""}>📋 Conteo cíclico</button>`:'<button type="button" class="bs" disabled>No está en esta ubicación</button>'}</div>`;
+    const accion=enUbicacion?"📋 Conteo cíclico":ubicacionActual||material.ubicacion?"Mover y contar":"Agregar y contar";
+    return`<div class="ubicacion-material"><span><b>${esc(material.codigo)}</b><span>${esc(material.descripcion||"Sin descripción")} · ${esc(existTxt(material))}<br><small>${enUbicacion?"Asignado a esta ubicación":`Ubicación actual: ${esc(ubicacionTexto)}`}</small></span></span><button type="button" class="bs" data-conteo-busqueda="${esc(material.codigo)}" ${ajustesInventarioError?"disabled title=\"No se pudo cargar el historial de conteos\"":""}>${accion}</button></div>`;
   }).join("")+(coincidencias.length>visibles.length?`<p class="ubicaciones-ayuda">Se muestran los primeros ${visibles.length} resultados de ${coincidencias.length}. Afina la búsqueda para encontrar el material.</p>`:"");
-  resultados.querySelectorAll("[data-conteo-busqueda]").forEach(btn=>btn.onclick=()=>abrirConteoCiclico(btn.dataset.conteoBusqueda,ubicacion));
+  resultados.querySelectorAll("[data-conteo-busqueda]").forEach(btn=>btn.onclick=()=>agregarMoverMaterialParaConteo(btn.dataset.conteoBusqueda,ubicacion,btn));
 }
 $("ubiConsultaBuscar").addEventListener("input",buscarMaterialesParaConteo);
-function abrirConteoCiclico(codigo,loc){
-  if(!esAdmin){toast("Solo el administrador puede ajustar existencias.",1);return}
+async function agregarMoverMaterialParaConteo(codigo,ubicacion,boton){
+  if(!esAdmin){toast("Solo el administrador puede agregar materiales o ajustar existencias.",1);return}
   if(ajustesInventarioError){toast(ajustesInventarioError,1);return}
+  const material=mats.find(item=>item.codigo===codigo);
+  if(!material){toast("No se encontró el material. Actualiza el inventario e inténtalo de nuevo.",1);return}
+  if(listaMaterialesEnUbicacion(ubicacion).some(item=>item.codigo===codigo)){
+    abrirConteoCiclico(codigo,ubicacion);
+    return;
+  }
+  const anterior=ubicaciones.find(loc=>loc.codigo===material.ubicacionCodigo)
+    ||ubicaciones.find(loc=>!material.ubicacionCodigo&&String(material.ubicacion||"").trim().toLocaleLowerCase()===loc.nombre.toLocaleLowerCase()&&(!material.ubicacionAlmacenCodigo||material.ubicacionAlmacenCodigo===loc.almacen_codigo));
+  const anteriorTexto=anterior?ubicacionConCodigo(anterior):material.ubicacion||"Sin ubicación";
+  const accion=anterior?"mover":"agregar";
+  if(!confirm(`¿${anterior?"Mover":"Agregar"} ${material.codigo} a ${ubicacionConCodigo(ubicacion)} y después hacer el conteo manual?\n\nUbicación actual: ${anteriorTexto}\nExistencia disponible actual: ${existTxt(material)}\n\n${anterior?"Se registrará el traspaso en el historial.":"El material quedará asignado a esta ubicación."}`))return;
+  const actual=existencia(material);
+  const folio=`CONTEO-${Date.now()}`;
+  const payload=[{codigo:material.codigo,existencia:{modo:actual.modo,cantidad:actual.modo==="pz"?actual.rest:actual.qty,longitud:actual.modo==="long"?actual.rest:null,unidad:actual.u,peso:actual.peso?.peso??null,pesoUnidad:actual.peso?.u??null}}];
+  boton.disabled=true;
+  try{
+    const{data,error}=await sb.rpc("asignar_inventario_ubicacion",{p_ubicacion_codigo:ubicacion.codigo,p_folio:folio,p_items:payload});
+    if(error)throw error;
+    if(Number(data)!==1)throw new Error(`Respuesta incompleta del servidor (${data??"sin cantidad"})`);
+  }catch(err){
+    errDB(err,`No se pudo ${accion} el material a la ubicación`);
+    boton.disabled=false;
+    return;
+  }
+  try{
+    await Promise.all([cargar(),cargarUbicaciones()]);
+  }catch(err){
+    errDB(err,`${material.codigo} ya se agregó a ${ubicacionConCodigo(ubicacion)}, pero no se pudo actualizar la vista`);
+    return;
+  }
+  const consulta=$("ubiConsultaBuscar").value;
+  mostrarMaterialesPorUbicacion(ubicacion.codigo);
+  $("ubiConsultaBuscar").value=consulta;
+  buscarMaterialesParaConteo();
+  if(abrirConteoCiclico(material.codigo,ubicacion))conteoTrasladadoPendiente=true;
+}
+function abrirConteoCiclico(codigo,loc){
+  if(!esAdmin){toast("Solo el administrador puede ajustar existencias.",1);return false}
+  if(ajustesInventarioError){toast(ajustesInventarioError,1);return false}
   const material=mats.find(m=>m.codigo===codigo);
-  if(!material||!listaMaterialesEnUbicacion(loc).some(m=>m.codigo===codigo)){toast("El material ya no está asignado a esta ubicación. Actualiza la consulta.",1);return}
+  if(!material||!listaMaterialesEnUbicacion(loc).some(m=>m.codigo===codigo)){toast("El material ya no está asignado a esta ubicación. Actualiza la consulta.",1);return false}
   const e=existencia(material);
   $("conteoCodigo").value=material.codigo;
   $("conteoUbicacion").value=loc.codigo;
@@ -13437,8 +13478,10 @@ function abrirConteoCiclico(codigo,loc){
   $("conteoUnidad").textContent=e.u;
   $("conteoCantidad").value=String(Math.max(0,e.rest));
   $("conteoMotivo").value="";
+  conteoTrasladadoPendiente=false;
   $("conteoDialog").showModal();
   $("conteoCantidad").focus();
+  return true;
 }
 $("conteoCancelar").onclick=()=>$("conteoDialog").close();
 $("conteoForm").addEventListener("submit",async event=>{
@@ -13455,11 +13498,12 @@ $("conteoForm").addEventListener("submit",async event=>{
     const{error}=await sb.rpc("registrar_conteo_ciclico",{p_codigo_material:codigo,p_ubicacion_codigo:ubicacionCodigo,p_existencia_anterior:anterior,p_existencia_contada:contada,p_unidad:actualCalculado.u,p_motivo:$("conteoMotivo").value.trim()});
     if(error)throw error;
     $("conteoDialog").close();
+    conteoTrasladadoPendiente=false;
     try{await cargar()}catch(err){errDB(err,"Conteo guardado, pero no se pudo actualizar el inventario");return}
     renderHistUbicaciones();
     if(ubiConsultaCodigo)mostrarMaterialesPorUbicacion(ubiConsultaCodigo);
     toast(`Conteo guardado para ${codigo}. Ajuste: ${fmt(contada-anterior)} ${actualCalculado.u}`);
-  }catch(err){errDB(err,"No se pudo guardar el conteo cíclico")}
+  }catch(err){errDB(err,conteoTrasladadoPendiente?"El material ya se agregó a la ubicación, pero no se pudo guardar el conteo cíclico":"No se pudo guardar el conteo cíclico")}
   finally{$("conteoGuardar").disabled=false}
 });
 function procesarEscaneoUbiConsulta(txt){
