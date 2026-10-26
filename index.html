@@ -13753,15 +13753,49 @@ function renderUbicaciones(){
   lista.querySelectorAll("[data-eliminar-ubicacion]").forEach(btn=>btn.onclick=()=>eliminarUbicacion(btn.dataset.eliminarUbicacion));
 }
 function codigoQrUbicacion(codigo){return`TRAZABILIDAD-UBICACION:${normalizarCodigoUbicacion(codigo)}`}
+function generarEtiquetaQrUbicacion(loc){
+  const qr=dibujarQR(codigoQrUbicacion(loc.codigo),600);
+  if(!qr)return null;
+  const almacen=almacenes.find(a=>a.codigo===loc.almacen_codigo),nombre=nombreUbicacion(loc);
+  const canvas=document.createElement("canvas"),ctx=canvas.getContext("2d");
+  if(!ctx)return null;
+  canvas.width=800;canvas.height=1080;ctx.fillStyle="#fff";ctx.fillRect(0,0,canvas.width,canvas.height);
+  ctx.imageSmoothingEnabled=false;ctx.drawImage(qr,100,35,600,600);
+  const texto=(valor,y,tamano,peso="600")=>{
+    const limite=720,lineas=[];let linea="";
+    ctx.font=`${peso} ${tamano}px Arial,sans-serif`;
+    String(valor||"").split(/\s+/).filter(Boolean).forEach(palabra=>{
+      const prueba=linea?`${linea} ${palabra}`:palabra;
+      if(ctx.measureText(prueba).width<=limite){linea=prueba;return}
+      if(linea)lineas.push(linea);
+      linea=palabra;
+      while(ctx.measureText(linea).width>limite&&linea.length>1){let corte=linea.length-1;while(corte>1&&ctx.measureText(linea.slice(0,corte)).width>limite)corte--;lineas.push(linea.slice(0,corte));linea=linea.slice(corte)}
+    });
+    if(linea)lineas.push(linea);
+    ctx.fillStyle="#111";ctx.textAlign="center";
+    lineas.forEach((renglon,i)=>ctx.fillText(renglon,400,y+i*tamano*1.2,limite));
+    return lineas.length*tamano*1.2;
+  };
+  texto(normalizarCodigoUbicacion(loc.codigo),690,48,"700");
+  texto("UBICACIÓN",760,38,"700");
+  let y=815;
+  if(almacen?.nombre)y+=texto(almacen.nombre,y,30);
+  if(nombre&&nombre!==normalizarCodigoUbicacion(loc.codigo))texto(nombre,y+8,32);
+  return canvas;
+}
 function mostrarQrUbicacion(loc,i){
   const box=$(`ubiQr-${i}`);if(!box)return;
   if(box.querySelector("canvas"))return;
   const qr=dibujarQR(codigoQrUbicacion(loc.codigo),240);
   if(!qr){toast("No se pudo generar el QR de la ubicación",1);return}
   const almacen=almacenes.find(a=>a.codigo===loc.almacen_codigo);
-  box.innerHTML=`<div class="acts"><button type="button" class="bs" data-ubi-descargar>⬇️ Descargar QR</button><button type="button" class="bs" data-ubi-imprimir>🖨️ Imprimir QR</button></div>`;
+  box.innerHTML=`<div class="acts"><button type="button" class="bs" data-ubi-descargar>⬇️ Descargar etiqueta QR</button><button type="button" class="bs" data-ubi-imprimir>🖨️ Imprimir QR</button></div>`;
   qr.className="ubicacion-qr";box.prepend(qr);
-  box.querySelector("[data-ubi-descargar]").onclick=()=>{const a=document.createElement("a");a.href=qr.toDataURL("image/png");a.download=`QR_${normalizarCodigoUbicacion(loc.codigo)}.png`;a.click()};
+  box.querySelector("[data-ubi-descargar]").onclick=async()=>{
+    const etiqueta=generarEtiquetaQrUbicacion(loc);
+    if(!etiqueta){toast(`No se pudo generar la etiqueta QR de ${normalizarCodigoUbicacion(loc.codigo)}.`,1);return}
+    await bajarBlob(`QR_${safeN(normalizarCodigoUbicacion(loc.codigo))}.png`,new Blob([durl(etiqueta.toDataURL("image/png"))],{type:"image/png"}));
+  };
   box.querySelector("[data-ubi-imprimir]").onclick=()=>imprimirEtiquetaUbicacion(loc,qr.toDataURL("image/png"),almacen);
 }
 $("bUbiExportar").onclick=()=>{
@@ -13769,12 +13803,12 @@ $("bUbiExportar").onclick=()=>{
   if(!ubicaciones.length){toast("No hay ubicaciones para exportar.",1);return}
   const archivos=[];
   for(const loc of ubicaciones){
-    const qr=dibujarQR(codigoQrUbicacion(loc.codigo),600);
-    if(!qr){toast(`No se pudo generar el QR de ${normalizarCodigoUbicacion(loc.codigo)}. No se exportó el archivo.`,1);return}
-    archivos.push({name:`QR_${safeN(normalizarCodigoUbicacion(loc.codigo))}.png`,data:durl(qr.toDataURL("image/png"))});
+    const etiqueta=generarEtiquetaQrUbicacion(loc);
+    if(!etiqueta){toast(`No se pudo generar la etiqueta QR de ${normalizarCodigoUbicacion(loc.codigo)}. No se exportó el archivo.`,1);return}
+    archivos.push({name:`QR_${safeN(normalizarCodigoUbicacion(loc.codigo))}.png`,data:durl(etiqueta.toDataURL("image/png"))});
   }
   bajarBlob("QR_ubicaciones.zip",zipBytes(archivos));
-  toast(`${archivos.length} QR de ubicaciones exportados ⬇️`);
+  toast(`${archivos.length} etiquetas QR de ubicaciones exportadas ⬇️`);
 };
 function imprimirEtiquetaUbicacion(loc,src,almacen){
   const codigoVisible=normalizarCodigoUbicacion(loc.codigo),nombreVisible=nombreUbicacion(loc);
