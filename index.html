@@ -12583,7 +12583,7 @@ body.ficha>#login{display:none!important}
 #fNota{font-size:.78rem;color:var(--mut);margin-top:14px;line-height:1.45}
 #fichaView .acts button{flex:1;min-width:150px}
 #salidaView{display:none}
-.salida{page:salida;max-width:260mm;margin:0 auto;color:#111;font-family:Arial,sans-serif;font-size:9pt}
+.salida{page:salida;max-width:190mm;margin:0 auto;color:#111;font-family:Arial,sans-serif;font-size:8pt}
 .salida h1{font-size:12pt;margin:0 0 1mm}
 .salida h2{font-size:9pt;color:#111;border-bottom:1px solid #777;margin:3mm 0 1.5mm;padding-bottom:1mm}
 .salida .salida-top{display:flex;justify-content:space-between;align-items:flex-end;gap:8mm;border-bottom:1.2mm solid #111;padding:0 0 2mm}
@@ -12594,9 +12594,18 @@ body.ficha>#login{display:none!important}
 .salida th,.salida td{border:1px solid #777;padding:1mm 1.2mm;text-align:left;vertical-align:top}
 .salida .datos th{width:23%;background:#fff}
 .salida .datos td{width:77%}
-.salida .renglones{font-size:7pt;table-layout:fixed;word-break:break-word}
-.salida .renglones th,.salida .renglones td{text-align:center;padding:.8mm .6mm}
+.salida .renglones{font-size:6.5pt;table-layout:fixed;word-break:break-word}
+.salida .renglones th,.salida .renglones td{text-align:center;padding:.8mm .5mm;line-height:1.2}
 .salida .renglones th{width:auto;background:#fff}
+.salida .renglones th:nth-child(1){width:11%}
+.salida .renglones th:nth-child(2){width:11%}
+.salida .renglones th:nth-child(3){width:22%}
+.salida .renglones th:nth-child(4){width:11%}
+.salida .renglones th:nth-child(5){width:12%}
+.salida .renglones th:nth-child(6){width:8%}
+.salida .renglones th:nth-child(7){width:9%}
+.salida .renglones th:nth-child(8){width:7%}
+.salida .renglones th:nth-child(9){width:9%}
 .salida .salida-nota{height:10mm;border-bottom:1px solid #888;white-space:pre-wrap}
 .salida .firmas{display:grid;grid-template-columns:1fr 1fr;gap:18mm;margin-top:12mm;text-align:center;font-size:8pt;font-weight:600}
 .salida .firma-linea{height:7mm}
@@ -12675,7 +12684,7 @@ body.ficha>#login{display:none!important}
 @media(max-width:1024px){.app-layout{padding:16px;grid-template-columns:minmax(0,1fr);gap:12px}.sidebar{position:static}.sidebar-note{display:none}.tabs{grid-template-columns:repeat(3,minmax(0,1fr))}.tab{padding:10px}#vInv{grid-template-columns:minmax(0,1fr)}#surPreparar>div{grid-template-columns:minmax(0,1fr)}}
 @media(max-width:700px){.app-layout{padding:12px 10px}.view-heading{align-items:flex-start;flex-direction:column;gap:6px}.view-heading p{font-size:.82rem}.section-nav{margin-bottom:2px}.section-tab{flex:1 0 126px;min-height:44px;padding:9px 12px}.section-title{flex-direction:column;gap:5px}.section-title .chip{white-space:normal}}
 body.ficha>.app-layout{display:none!important}
-@media print{@page{margin:12mm}@page salida{size:A4 landscape;margin:10mm}body>*:not(#etiqueta):not(#fichaView):not(#salidaView){display:none!important}
+@media print{@page{margin:10mm}@page salida{size:A4 portrait;margin:10mm}body>*:not(#etiqueta):not(#fichaView):not(#salidaView){display:none!important}
 #etiqueta{display:block;text-align:center;font-family:Arial,sans-serif;color:#000}
 #etiqueta.hoja{display:block}
 #etiqueta .pz{display:flex;box-sizing:border-box;overflow:hidden;break-after:page;page-break-after:always;font-family:Arial,sans-serif}
@@ -12693,7 +12702,7 @@ body.ficha>.app-layout{display:none!important}
 #fichaView .fbody{border:0;padding:8px 0}
 #fichaView .d{border-bottom:1px solid #999}
 #salidaView{display:block!important;position:static!important}
-#salidaView .salida{max-width:230mm;margin:0 auto}
+#salidaView .salida{max-width:190mm;margin:0 auto}
 #salidaView .salida,#salidaView .salida *{color:#111!important;box-shadow:none!important}
 #salidaView .salida th{background:#fff!important}
 #salidaView .renglones thead{display:table-header-group}
@@ -14606,7 +14615,7 @@ function imprimirSalidaGrupo(items,folio){
   </article>`;
   $("salidaView").hidden=false;
   const estiloImpresion=document.createElement("style");
-  estiloImpresion.textContent="@page{size:A4 landscape;margin:10mm}";
+  estiloImpresion.textContent="@page salida{size:A4 portrait;margin:10mm}";
   document.head.append(estiloImpresion);
   try{window.print()}
   finally{$("salidaView").hidden=true;estiloImpresion.remove()}
