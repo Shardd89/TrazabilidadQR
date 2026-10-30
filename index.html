@@ -13267,9 +13267,9 @@ td small{color:var(--mut)}
     </div>
     <div class="res bad" id="camAviso" hidden>⚠ La cámara en vivo requiere HTTPS (o localhost). Aloje este archivo en un sitio con HTTPS para usar el escáner.</div>
     <div class="grid sur-fields">
-      <div><label for="entrega">Entrega </label><input type="text" id="entrega"></div>
-      <div><label for="recibe">Recibe </label><input type="text" id="recibe"></div>
-      <div><label for="area">Area</label><input type="text" id="area"></div>
+      <div><label for="entrega">Entrega </label><input type="text" id="entrega" list="surEntregaList" autocomplete="off"><datalist id="surEntregaList"></datalist></div>
+      <div><label for="recibe">Recibe </label><input type="text" id="recibe" list="surRecibeList" autocomplete="off"><datalist id="surRecibeList"></datalist></div>
+      <div><label for="area">Area</label><input type="text" id="area" list="surMaquinaList" autocomplete="off"><datalist id="surMaquinaList"></datalist></div>
       <div><label for="motivo">Motivo / uso</label><input type="text" id="motivo"></div>
       <details class="full"><summary>Observaciones</summary><label for="observaciones" hidden>Observaciones</label><textarea id="observaciones" rows="2"></textarea></details>
     </div>
@@ -13532,7 +13532,9 @@ async function entrar(){
     $("rolUsuario").textContent=esAdmin?"Administrador":"Personal";$("rolUsuario").hidden=false;
     $("bDelSel").hidden=$("bDelAll").hidden=$("selectAll").hidden=!esAdmin;
     actualizarVisibilidadAdmin();
-    try{await cargar()}catch(e){errDB(e,"No se pudo cargar los datos")}
+    let datosCargados=false;
+    try{await cargar();datosCargados=true}catch(e){errDB(e,"No se pudo cargar los datos")}
+    if(datosCargados)restaurarBorradorSur();
     await cargarUbicaciones();
     suscribir();await migrarLocal();return true;
   }finally{entrando=false}
@@ -14725,6 +14727,46 @@ function existencia(m){
 }
 function existTxt(m){const e=existencia(m);return e.modo==="long"?`${fmt(e.rest)} ${e.u} (≈${fmt(e.qty)} pz)${e.peso?` · ${fmt(e.peso.peso)} ${e.peso.u}`:""}`:`${fmt(e.rest)} ${e.u}`}
 let surItems=[],nextSurItem=1,stream=null,scanning=false,modoEscaneo="surtido";
+// Borrador de surtido (sessionStorage) y últimos datos capturados (localStorage)
+const K_SUR_BORRADOR="trazabilidad_sur_borrador_v1",K_SUR_DATOS="trazabilidad_sur_datos_v1";
+const CAMPOS_SUR=["orden","entrega","recibe","maquina","motivo","observaciones"];
+const LISTAS_SUR={entrega:"surEntregaList",recibe:"surRecibeList",maquina:"surMaquinaList"};
+let surBorradorT=null,surDatosT=null;
+// El campo de máquina/línea del surtido es #area; se acepta #maquina si existe.
+function campoSur(id){const el=$(id);if(el)return el;return id==="maquina"?$("area"):null}
+function leerGuardado(clave,esSesion){
+  try{const v=JSON.parse((esSesion?sessionStorage:localStorage).getItem(clave)||"null");return v&&typeof v==="object"?v:null}catch{return null}
+}
+function valoresSur(){const o={};CAMPOS_SUR.forEach(id=>{const el=campoSur(id);o[id]=el?el.value:""});return o}
+function guardarBorradorSur(){try{sessionStorage.setItem(K_SUR_BORRADOR,JSON.stringify({items:surItems,next:nextSurItem,campos:valoresSur()}))}catch{}}
+function programarGuardarSur(){clearTimeout(surBorradorT);surBorradorT=setTimeout(guardarBorradorSur,300)}
+function limpiarBorradorSur(){clearTimeout(surBorradorT);try{sessionStorage.removeItem(K_SUR_BORRADOR)}catch{}}
+function restaurarBorradorSur(){
+  const b=leerGuardado(K_SUR_BORRADOR,true);if(!b)return;
+  const campos=b.campos&&typeof b.campos==="object"?b.campos:{};
+  CAMPOS_SUR.forEach(id=>{const el=campoSur(id);if(el&&typeof campos[id]==="string")el.value=campos[id]});
+  const items=(Array.isArray(b.items)?b.items:[]).filter(it=>it&&it.codigo&&mats.some(m=>m.codigo.toLowerCase()===String(it.codigo).toLowerCase()));
+  surItems=items;
+  nextSurItem=Math.max(Number(b.next)||1,items.reduce((s,it)=>Math.max(s,Number(it.id)||0),0)+1);
+  if(!items.length&&!CAMPOS_SUR.some(id=>campos[id]))limpiarBorradorSur();
+  renderSur();
+}
+function datosSur(){const d=leerGuardado(K_SUR_DATOS,false)||{},o={};Object.keys(LISTAS_SUR).forEach(id=>{o[id]=Array.isArray(d[id])?d[id].filter(x=>typeof x==="string"&&x.trim()):[]});return o}
+function guardarDatosSur(){
+  try{
+    const d=datosSur();
+    Object.keys(LISTAS_SUR).forEach(id=>{
+      const el=campoSur(id),v=el?el.value.trim():"";
+      const vals=[...new Set([...(v?[v]:[]),...d[id]])].slice(0,8);
+      d[id]=vals;
+      const dl=$(LISTAS_SUR[id]);if(dl)dl.innerHTML=vals.map(x=>`<option value="${esc(x)}"></option>`).join("");
+    });
+    localStorage.setItem(K_SUR_DATOS,JSON.stringify(d));
+  }catch{}
+}
+function programarGuardarDatosSur(){clearTimeout(surDatosT);surDatosT=setTimeout(guardarDatosSur,300)}
+CAMPOS_SUR.forEach(id=>{const el=campoSur(id);if(el)el.addEventListener("input",()=>{programarGuardarSur();if(LISTAS_SUR[id])programarGuardarDatosSur()})});
+guardarDatosSur();
 
 document.querySelectorAll(".tab").forEach(b=>b.onclick=()=>{
   document.querySelectorAll(".tab").forEach(x=>{x.classList.toggle("on",x===b);if(x===b)x.setAttribute("aria-current","page");else x.removeAttribute("aria-current")});
@@ -14778,6 +14820,7 @@ function escanearPieza(i,n){
 function agregarSurItem(i,pieza=null){
   const m=mats[i],e=existencia(m),longitud=pieza&&e.modo==="long"?String(e.L):"";
   surItems.push({id:nextSurItem++,codigo:m.codigo,cantidad:1,longitud,unidad:e.modo==="long"?e.u:"",piezas:pieza?[pieza]:[]});
+  programarGuardarSur();
 }
 const sc=$("scanIn");let sT,ubiScanT;
 sc.addEventListener("input",()=>{clearTimeout(sT);if(/Código:/.test(sc.value)||/#[dc]=/.test(sc.value)||(modoEscaneo==="ubiConsulta"&&/^TRAZABILIDAD/i.test(sc.value)))sT=setTimeout(()=>{if(sc.value){escanear(sc.value);sc.value=""}},250)});
@@ -14852,12 +14895,12 @@ function renderSur(){
   P.innerHTML=h;
   surItems.forEach(item=>{
     const len=$(`sLen-${item.id}`),unit=$(`sU-${item.id}`),cnt=$(`sCnt-${item.id}`);
-    if(len)len.oninput=()=>{item.longitud=len.value;calcSur()};
-    if(unit)unit.onchange=()=>{item.unidad=unit.value;calcSur()};
-    if(cnt)cnt.oninput=()=>{item.cantidad=Number(cnt.value);calcSur()};
+    if(len)len.oninput=()=>{item.longitud=len.value;programarGuardarSur();calcSur()};
+    if(unit)unit.onchange=()=>{item.unidad=unit.value;programarGuardarSur();calcSur()};
+    if(cnt)cnt.oninput=()=>{item.cantidad=Number(cnt.value);programarGuardarSur();calcSur()};
   });
-  P.querySelectorAll("[data-quitar]").forEach(b=>b.onclick=()=>{surItems=surItems.filter(x=>x.id!==Number(b.dataset.quitar));renderSur()});
-  $("sNo").onclick=()=>{surItems=[];renderSur();enfocar()};$("sOk").onclick=confirmarSur;calcSur();
+  P.querySelectorAll("[data-quitar]").forEach(b=>b.onclick=()=>{surItems=surItems.filter(x=>x.id!==Number(b.dataset.quitar));programarGuardarSur();renderSur()});
+  $("sNo").onclick=()=>{surItems=[];limpiarBorradorSur();renderSur();enfocar()};$("sOk").onclick=confirmarSur;calcSur();
 }
 function calcSur(){
   const totalPorCodigo=new Map(),salidas=[],errores=[];
@@ -14901,12 +14944,13 @@ function calcSur(){
 async function confirmarSur(){
   const lineas=calcSur.items;if(!lineas?.length)return;const orden=$("orden").value.trim();
   if(!orden){toast("Capture la orden de producción para generar el comprobante de salida.",1);$("orden").focus();return}
+  guardarDatosSur();
   const t=Date.now(),folio=folioSalida(t),fecha=new Date(t).toLocaleString("es-MX"),porCodigo=new Map(),registros=[];
   lineas.forEach(({m,d},i)=>{
     const anteriores=porCodigo.get(m.codigo.toLowerCase())||[];
     const temporal={...m,despachos:[...(m.despachos||[]),...anteriores]};
     const reg={...d,t:t+i,folio,fecha,orden,
-      entrega:$("entrega").value.trim(),recibe:$("recibe").value.trim(),maquina:$("maquina").value.trim(),
+      entrega:$("entrega").value.trim(),recibe:$("recibe").value.trim(),maquina:(campoSur("maquina")?.value||"").trim(),
       motivo:$("motivo").value.trim(),observaciones:$("observaciones").value.trim(),
       material:{codigo:m.codigo,descripcion:m.descripcion,tipoRegistro:m.tipoRegistro,lote:m.numeroLoteMP||m.lote,numeroHeat:m.numeroHeat,ubicacion:m.ubicacion,seccionMaterial:m.seccionMaterial,especificacionMedida:m.especificacionMedida}};
     const exPost=existencia({...temporal,despachos:[...temporal.despachos,reg]});
@@ -14923,7 +14967,7 @@ async function confirmarSur(){
   const confirmados=registros.map(({m,d})=>({m:mats.find(x=>x.codigo.toLowerCase()===m.codigo.toLowerCase())||m,d}));
   imprimirSalidaGrupo(confirmados,folio);
   toast(`Salida registrada ✔ · ${registros.length} renglón(es) · Folio ${folio}`);
-  surItems=[];renderSur();renderHist();enfocar();
+  surItems=[];limpiarBorradorSur();renderSur();renderHist();enfocar();
 }
 function folioSalida(t){
   const fecha=new Date(t),dia=`${fecha.getFullYear()}${String(fecha.getMonth()+1).padStart(2,"0")}${String(fecha.getDate()).padStart(2,"0")}`;
