@@ -12481,6 +12481,10 @@ input:focus,select:focus{outline:none;border-color:var(--pri);box-shadow:0 0 0 3
 .sur-item-head b{min-width:0;overflow-wrap:anywhere}
 .sur-item-head button{flex:0 0 auto;padding:5px 9px}
 .sur-item-meta{display:block;color:var(--mut);margin:2px 0 5px}
+.sur-chips{display:flex;flex-wrap:wrap;gap:6px;margin:2px 0 7px}
+.sur-chip{display:inline-flex;align-items:center;gap:4px;background:var(--soft);color:var(--pri);border-radius:999px;padding:2px 4px 2px 9px;font-size:.72rem;font-weight:600;font-variant-numeric:tabular-nums}
+.sur-chip button{background:transparent;color:inherit;padding:0;width:18px;height:18px;border-radius:50%;font-size:.82rem;line-height:1;display:inline-flex;align-items:center;justify-content:center}
+.sur-chip button:hover{background:var(--badbg);color:var(--bad)}
 .sur-item-qty{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
 .sur-item-qty>span{font-size:.82rem}
 .sur-entry{display:flex;align-items:center;gap:6px;flex:1 1 270px;min-width:0}
@@ -14809,7 +14813,7 @@ function escanear(txt){
   const pz=pzDe(txt);if(pz){escanearPieza(i,pz.n);return}
   agregarSurItem(i);renderSur();
 }
-// Los QR de pieza se agregan como renglones individuales y no permiten duplicados.
+// Los QR de pieza se acumulan en un solo renglón por material y no permiten duplicados.
 function escanearPieza(i,n){
   const m=mats[i];
   if(!esIndividual(m)||n<1||n>m.cantidad){toast(`Pieza ${n} no válida para ${m.codigo}`,1);return}
@@ -14817,9 +14821,30 @@ function escanearPieza(i,n){
   if(surItems.some(x=>x.codigo.toLowerCase()===m.codigo.toLowerCase()&&x.piezas?.includes(n))){toast(`La pieza ${n} ya está en el surtido actual`,1);return}
   agregarSurItem(i,n);renderSur();
 }
+// Ajusta cantidad/longitud del renglón según las piezas escaneadas.
+function recalcularPiezasSur(item,m){
+  const e=existencia(m),n=item.piezas?.length||0;
+  if(e.modo==="long"){item.longitud=String(r4(n*e.L));item.unidad=e.u}
+  else item.longitud="";
+  item.cantidad=n;
+}
 function agregarSurItem(i,pieza=null){
-  const m=mats[i],e=existencia(m),longitud=pieza&&e.modo==="long"?String(e.L):"";
-  surItems.push({id:nextSurItem++,codigo:m.codigo,cantidad:1,longitud,unidad:e.modo==="long"?e.u:"",piezas:pieza?[pieza]:[]});
+  const m=mats[i],e=existencia(m);
+  if(pieza!=null){
+    const clave=m.codigo.toLowerCase();
+    let item=surItems.find(x=>x.codigo.toLowerCase()===clave&&x.piezas?.length);
+    if(!item){
+      item={id:nextSurItem++,codigo:m.codigo,cantidad:1,longitud:e.modo==="long"?String(e.L):"",unidad:e.modo==="long"?e.u:"",piezas:[]};
+      surItems.push(item);
+    }
+    if(!item.piezas.includes(pieza)){
+      item.piezas.push(pieza);
+      item.piezas.sort((a,b)=>a-b);
+    }
+    recalcularPiezasSur(item,m);
+  }else{
+    surItems.push({id:nextSurItem++,codigo:m.codigo,cantidad:1,longitud:"",unidad:e.modo==="long"?e.u:"",piezas:[]});
+  }
   programarGuardarSur();
 }
 const sc=$("scanIn");let sT,ubiScanT;
@@ -14886,9 +14911,9 @@ function renderSur(){
     return`<section class="mp"><div class="sur-item-head"><b>${n+1}. ${esc(m.codigo)} · ${esc(m.descripcion)}</b><button type="button" class="bd" data-quitar="${item.id}">Quitar</button></div>
       ${lote||m.numeroHeat?`<small class="sur-item-meta">Lote / Heat: ${esc([lote,m.numeroHeat].filter(Boolean).join(" / "))}</small>`:""}
       <div class="sur-item-qty"><span><b>Existencia actual:</b> ${esc(existTxt(m))}</span>
-      ${e.modo==="long"?`<div class="sur-entry"><label for="sLen-${item.id}">Longitud (pieza de ${esc(fmt(e.L))} ${esc(e.u)})</label><input type="number" id="sLen-${item.id}" min="0" step="any" inputmode="decimal" placeholder="Longitud" value="${esc(item.longitud)}"><select id="sU-${item.id}">${["mm","cm","m","in"].map(u=>`<option value="${u}"${(item.unidad||e.u)===u?" selected":""}>${u}</option>`).join("")}</select></div>`:
-      `<label class="sur-entry"><span>Cantidad (${esc(m.um)})</span><input type="number" id="sCnt-${item.id}" min="0" step="any" value="${esc(item.cantidad)}"></label>`}</div>
-      ${item.piezas?.length?`<small class="sur-item-meta">Pieza QR: ${item.piezas.join(", ")}</small>`:""}
+      ${e.modo==="long"?`<div class="sur-entry"><label for="sLen-${item.id}">Longitud (pieza de ${esc(fmt(e.L))} ${esc(e.u)})</label><input type="number" id="sLen-${item.id}" min="0" step="any" inputmode="decimal" placeholder="Longitud" value="${esc(item.longitud)}"${item.piezas?.length?' readonly title="Se calcula con las piezas escaneadas"':""}><select id="sU-${item.id}">${["mm","cm","m","in"].map(u=>`<option value="${u}"${(item.unidad||e.u)===u?" selected":""}>${u}</option>`).join("")}</select></div>`:
+      `<label class="sur-entry"><span>Cantidad (${esc(m.um)})</span><input type="number" id="sCnt-${item.id}" min="0" step="any" value="${esc(item.cantidad)}"${item.piezas?.length?' readonly title="Se calcula con las piezas escaneadas"':""}></label>`}</div>
+      ${item.piezas?.length?`<div class="sur-chips" aria-label="Piezas escaneadas">${item.piezas.map(n=>`<span class="sur-chip">Pieza ${esc(n)}<button type="button" data-quitar-pieza="${esc(n)}" data-item="${item.id}" aria-label="Quitar pieza ${esc(n)}" title="Quitar pieza ${esc(n)}">✕</button></span>`).join("")}</div>`:""}
       <div class="res" id="sItemRes-${item.id}"></div></section>`;
   }).join("");
   h+=`<div class="res" id="sRes"></div><div class="acts sur-actions"><button type="button" class="bp" id="sOk">✅ Confirmar salida múltiple</button><button type="button" class="bd" id="sNo">Vaciar salida</button></div>`;
@@ -14900,6 +14925,13 @@ function renderSur(){
     if(cnt)cnt.oninput=()=>{item.cantidad=Number(cnt.value);programarGuardarSur();calcSur()};
   });
   P.querySelectorAll("[data-quitar]").forEach(b=>b.onclick=()=>{surItems=surItems.filter(x=>x.id!==Number(b.dataset.quitar));programarGuardarSur();renderSur()});
+  P.querySelectorAll("[data-quitar-pieza]").forEach(b=>b.onclick=()=>{
+    const item=surItems.find(x=>x.id===Number(b.dataset.item));if(!item)return;
+    item.piezas=(item.piezas||[]).filter(x=>x!==Number(b.dataset.quitarPieza));
+    if(!item.piezas.length)surItems=surItems.filter(x=>x!==item);
+    else{const m=mats.find(x=>x.codigo.toLowerCase()===item.codigo.toLowerCase());if(m)recalcularPiezasSur(item,m)}
+    programarGuardarSur();renderSur();
+  });
   $("sNo").onclick=()=>{surItems=[];limpiarBorradorSur();renderSur();enfocar()};$("sOk").onclick=confirmarSur;calcSur();
 }
 function calcSur(){
