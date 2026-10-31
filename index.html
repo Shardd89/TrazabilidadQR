@@ -14911,7 +14911,7 @@ function renderSur(){
     return`<section class="mp"><div class="sur-item-head"><b>${n+1}. ${esc(m.codigo)} · ${esc(m.descripcion)}</b><button type="button" class="bd" data-quitar="${item.id}">Quitar</button></div>
       ${lote||m.numeroHeat?`<small class="sur-item-meta">Lote / Heat: ${esc([lote,m.numeroHeat].filter(Boolean).join(" / "))}</small>`:""}
       <div class="sur-item-qty"><span><b>Existencia actual:</b> ${esc(existTxt(m))}</span>
-      ${e.modo==="long"?`<div class="sur-entry"><label for="sLen-${item.id}">Longitud (pieza de ${esc(fmt(e.L))} ${esc(e.u)})</label><input type="number" id="sLen-${item.id}" min="0" step="any" inputmode="decimal" placeholder="Longitud" value="${esc(item.longitud)}"${item.piezas?.length?' readonly title="Se calcula con las piezas escaneadas"':""}><select id="sU-${item.id}">${["mm","cm","m","in"].map(u=>`<option value="${u}"${(item.unidad||e.u)===u?" selected":""}>${u}</option>`).join("")}</select></div>`:
+      ${e.modo==="long"?`<div class="sur-entry"><label for="sLen-${item.id}">Longitud (pieza de ${esc(fmt(e.L))} ${esc(e.u)})</label><input type="number" id="sLen-${item.id}" min="0" step="any" inputmode="decimal" placeholder="Longitud" value="${esc(item.longitud)}"><select id="sU-${item.id}">${["mm","cm","m","in"].map(u=>`<option value="${u}"${(item.unidad||e.u)===u?" selected":""}>${u}</option>`).join("")}</select></div>`:
       `<label class="sur-entry"><span>Cantidad (${esc(m.um)})</span><input type="number" id="sCnt-${item.id}" min="0" step="any" value="${esc(item.cantidad)}"${item.piezas?.length?' readonly title="Se calcula con las piezas escaneadas"':""}></label>`}</div>
       ${item.piezas?.length?`<div class="sur-chips" aria-label="Piezas escaneadas">${item.piezas.map(n=>`<span class="sur-chip">Pieza ${esc(n)}<button type="button" data-quitar-pieza="${esc(n)}" data-item="${item.id}" aria-label="Quitar pieza ${esc(n)}" title="Quitar pieza ${esc(n)}">✕</button></span>`).join("")}</div>`:""}
       <div class="res" id="sItemRes-${item.id}"></div></section>`;
@@ -14952,6 +14952,7 @@ function calcSur(){
         const piezas=item.piezas?.length===r4(lr/e.L)?item.piezas.slice():undefined;
         d={modo:"longitud",longitud:lr,unidad:e.u,cantidad:r4(lr/e.L),piezasEq:r4(lr/e.L),...(piezas?{piezas}:{}),...(peso?{pesoSurtido:peso.peso,pesoU:peso.u}:{})};
         html=`Surtir: <b>${fmt(lr)} ${esc(e.u)}</b>${peso?` · ≈ ${fmt(peso.peso)} ${peso.u}`:""}<br>Restante después de este renglón: ${fmt(quedan)} ${esc(e.u)}${pesoRest?` · ≈ ${fmt(pesoRest.peso)} ${pesoRest.u}`:""}`;
+        if(!piezas&&item.piezas?.length)html+=`<br><small class="sur-item-meta">⚠ La longitud no coincide con ${item.piezas.length} pieza(s) de ${fmt(e.L)} ${esc(e.u)}; las piezas escaneadas no se marcarán como surtidas.</small>`;
         totalPorCodigo.set(m.codigo.toLowerCase(),anterior+lr);
       }
     }else{
