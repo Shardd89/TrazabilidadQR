@@ -12512,6 +12512,21 @@ td.l{text-align:left}
 .ic{background:none;padding:3px 6px;font-size:1rem}
 input.row-select{width:18px;height:18px;padding:0;vertical-align:middle;accent-color:var(--pri);cursor:pointer}
 .empty{padding:22px;text-align:center;color:var(--mut);font-size:.85rem}
+.skeleton{display:block;height:10px;width:100%;margin:0 auto;border-radius:6px;background:linear-gradient(90deg,var(--line2) 25%,var(--line) 50%,var(--line2) 75%);background-size:200% 100%;animation:skel 1.2s ease-in-out infinite}
+.skeleton-row td{padding:10px 8px}
+#tbody .skeleton-row td:first-child .skeleton{width:16px;height:16px;border-radius:4px}
+.skeleton-row td:nth-child(2) .skeleton{width:82%}
+.skeleton-row td:nth-child(3) .skeleton{width:68%}
+.skeleton-row td:nth-child(4) .skeleton{width:55%}
+.skeleton-row td:nth-child(5) .skeleton{width:45%}
+.skeleton-row td:nth-child(6) .skeleton{width:60%}
+.skeleton-row td:nth-child(7) .skeleton{width:50%}
+.skeleton-row td:nth-child(8) .skeleton{width:40%}
+.cargando{display:flex;align-items:center;justify-content:center;gap:8px}
+.cargando::before{content:"";width:13px;height:13px;border:2px solid var(--line);border-top-color:var(--pri);border-radius:50%;animation:giro .8s linear infinite}
+@keyframes skel{0%{background-position:200% 0}100%{background-position:-200% 0}}
+@keyframes giro{to{transform:rotate(360deg)}}
+@media(prefers-reduced-motion:reduce){.skeleton,.cargando::before{animation:none}}
 #qrBox{display:flex;justify-content:center;align-items:center;min-height:240px;padding:14px;background:#fff;border:1px dashed var(--line);border-radius:10px;color:#8a94a6;font-size:.85rem;text-align:center}
 .d{display:flex;gap:8px;padding:5px 0;font-size:.86rem;border-bottom:1px solid var(--line)}
 .d b{min-width:118px;color:var(--mut);font-weight:600}
@@ -13429,6 +13444,7 @@ td small{color:var(--mut)}
 const $=id=>document.getElementById(id);
 const K="trazabilidad_materiales_v2";
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+function debounce(fn,ms){let t;return(...args)=>{clearTimeout(t);t=setTimeout(()=>fn(...args),ms)}}
 const hoy=()=>new Date(Date.now()-new Date().getTimezoneOffset()*6e4).toISOString().slice(0,10);
 const fmt=n=>Number(n).toLocaleString("es-MX",{maximumFractionDigits:3});
 function totalTxt(m){return m.esMP&&m.um==="PZ"&&m.cantidad>0&&m.longitud>0?`${fmt(m.cantidad*m.longitud)} ${m.longU||m.longitudUnidad||"mm"}`:""}
@@ -13455,7 +13471,31 @@ async function leerTodo(tabla,cols,ord){const out=[];
   for(let i=0;;i+=1000){let q=sb.from(tabla).select(cols);ord.forEach(o=>{q=q.order(o)});const{data,error}=await q.range(i,i+999);if(error)throw error;out.push(...data);if(data.length<1000)break}
   return out}
 // Recarga los datos y conserva la edición, el QR y los renglones pendientes.
+let cargasActivas=0;
+function filasSkeleton(columnas,filas=4){
+  return Array.from({length:filas},()=>`<tr class="skeleton-row" aria-hidden="true">${"<td><span class=\"skeleton\"></span></td>".repeat(columnas)}</tr>`).join("");
+}
+function mostrarCarga(){
+  cargasActivas++;
+  if(cargasActivas>1)return;
+  const t=$("tbody"),iv=$("invBody"),al=$("almacenLista"),ul=$("ubiLista");
+  if(t){t.setAttribute("aria-busy","true");t.innerHTML=filasSkeleton(8)}
+  if(iv){iv.setAttribute("aria-busy","true");iv.innerHTML=filasSkeleton(4)}
+  if(al){al.setAttribute("aria-busy","true");al.innerHTML='<div class="empty cargando">Cargando…</div>'}
+  if(ul){ul.setAttribute("aria-busy","true");ul.innerHTML='<div class="empty cargando">Cargando…</div>'}
+}
+function ocultarCarga(){
+  cargasActivas=Math.max(0,cargasActivas-1);
+  if(cargasActivas)return;
+  ["tbody","invBody","almacenLista","ubiLista"].forEach(id=>{
+    const el=$(id);if(!el)return;
+    el.removeAttribute("aria-busy");
+    if(el.querySelector(".skeleton-row,.cargando"))el.innerHTML="";
+  });
+}
 async function cargar(){
+  mostrarCarga();
+  try{
   const[materialesResultado,despachosResultado,ajustesResultado]=await Promise.allSettled([
     leerTodo("materiales","codigo,data",["codigo"]),
     leerTodo("despachos","codigo,t,data,piezas",["t","id"]),
@@ -13481,8 +13521,11 @@ async function cargar(){
   if(!$("vInv").hidden)renderInventario();
   if(!$("vSur").hidden){renderHist();renderSur()}
   if(act){const a=mats.find(x=>x.codigo===act.codigo);if(a){if(JSON.stringify(a)!==actAntes)mostrar(a);else actual=a}}
+  }finally{ocultarCarga()}
 }
 async function cargarUbicaciones(){
+  mostrarCarga();
+  try{
   const resultados=await Promise.allSettled([
     leerTodo("almacenes","codigo,nombre,clasificacion,created_at",["nombre"]),
     leerTodo("ubicaciones","codigo,nombre,almacen_codigo,created_at",["nombre"]),
@@ -13507,6 +13550,7 @@ async function cargarUbicaciones(){
   if(!$("ubiCodigo").value)siguienteCodigoUbicacion();
   if(!$("almacenCodigo").value)siguienteCodigoAlmacen();
   renderAlmacenes();renderUbicaciones();renderHistUbicaciones();renderInventario();actualizarDatalistUbicaciones();
+  }finally{ocultarCarga()}
 }
 async function subirLista(ms,ds){
   if(!esAdmin)throw new Error("Solo el administrador puede restaurar información.");
@@ -13865,7 +13909,7 @@ function actualizarEstadoConteoCiclico(){
   estado.hidden=!ajustesInventarioError;
   estado.textContent=ajustesInventarioError;
 }
-$("invBuscar").oninput=$("invTipo").onchange=$("invAlmacen").onchange=renderInventario;
+$("invBuscar").oninput=debounce(renderInventario,250);$("invTipo").onchange=$("invAlmacen").onchange=renderInventario;
 let ubiConsultaCodigo=null,ubiFiltroCodigo=null,conteoTrasladadoPendiente=false;
 function limpiarConsultaUbicacion(){
   ubiConsultaCodigo=null;
@@ -13945,7 +13989,7 @@ function buscarMaterialesParaConteo(){
   }).join("")+(coincidencias.length>visibles.length?`<p class="ubicaciones-ayuda">Se muestran los primeros ${visibles.length} resultados de ${coincidencias.length}. Afina la búsqueda para encontrar el material.</p>`:"");
   resultados.querySelectorAll("[data-conteo-busqueda]").forEach(btn=>btn.onclick=()=>agregarMoverMaterialParaConteo(btn.dataset.conteoBusqueda,ubicacion,btn));
 }
-$("ubiConsultaBuscar").addEventListener("input",buscarMaterialesParaConteo);
+$("ubiConsultaBuscar").addEventListener("input",debounce(buscarMaterialesParaConteo,250));
 async function agregarMoverMaterialParaConteo(codigo,ubicacion,boton){
   if(!esAdmin){toast("Solo el administrador puede agregar materiales o ajustar existencias.",1);return}
   if(ajustesInventarioError){toast(ajustesInventarioError,1);return}
@@ -14376,7 +14420,7 @@ $("almacenForm").addEventListener("submit",async e=>{
 });
 $("ubiAuto").onclick=siguienteCodigoUbicacion;
 $("ubiAlmacen").onchange=()=>{$("ubiBuscar").value="";renderUbicaciones()};
-$("ubiBuscar").oninput=renderUbicaciones;
+$("ubiBuscar").oninput=debounce(renderUbicaciones,250);
 function leerTextoArchivo(f){return new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(String(r.result||""));r.onerror=rej;r.readAsText(f,"utf-8")})}
 function normalizarClave(c){return String(c||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]/g,"")}
 function buscarValorFila(obj,claves){if(!obj)return"";const mapa=new Map(Object.entries(obj).map(([k,v])=>[normalizarClave(k),v]));for(const c of claves){const k=normalizarClave(c),v=mapa.get(k);if(v!==undefined&&v!==null&&String(v).trim()!=="")return v}return""}
@@ -14468,7 +14512,7 @@ function syncBulkActions(){
   $("bDelSel").disabled=seleccionados.size===0;$("bDelAll").disabled=mats.length===0;
   $("bPrintSel").disabled=seleccionados.size===0;
 }
-$("buscar").oninput=$("ftipo").onchange=render;
+$("buscar").oninput=debounce(render,250);$("ftipo").onchange=render;
 document.querySelectorAll("th[data-k]").forEach(th=>th.onclick=()=>{orden={k:th.dataset.k,asc:orden.k===th.dataset.k?!orden.asc:true};render()});
 $("selectAll").addEventListener("change",e=>{
   $("tbody").querySelectorAll("[data-select]").forEach(c=>{c.checked=e.target.checked;if(c.checked)seleccionados.add(c.dataset.select);else seleccionados.delete(c.dataset.select)});
