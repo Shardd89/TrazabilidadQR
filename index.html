@@ -12722,32 +12722,498 @@ main > .card {
     position: static;
   }
 }
-h2{font-size:1rem;margin-bottom:12px;color:var(--pri);border-bottom:2px solid var(--pri);padding-bottom:6px}
-.form-toggle{display:flex;align-items:center;justify-content:space-between;gap:10px;cursor:pointer}
-.form-toggle::after{content:"＋";font-size:1.15rem}
-.form-toggle[aria-expanded="true"]::after{content:"−"}
-.form-toggle:focus-visible{outline:2px solid var(--pri);outline-offset:3px}
-.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-@media(max-width:520px){.grid{grid-template-columns:1fr}}
-.full{grid-column:1/-1}
-.na-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:4px}
-.na-head>label:first-child{margin:0}
-.na-check{display:flex;align-items:center;gap:4px;margin:0;color:var(--mut);font-size:.72rem;font-weight:500;white-space:nowrap}
-.na-check input{width:auto;margin:0}
-.na-field .na-value[hidden]{display:none}
-label{font-size:.78rem;font-weight:600;color:var(--mut);display:block;margin-bottom:4px}
-input,select,textarea{width:100%;padding:9px 10px;border:1px solid var(--line);border-radius:8px;font-size:.92rem;background:var(--field);color:var(--tx)}
-input:focus,select:focus{outline:none;border-color:var(--pri);box-shadow:0 0 0 3px rgba(91,134,255,.2)}
-.row{display:flex;gap:6px}.row select{max-width:84px}
-.radios{display:flex;gap:16px;flex-wrap:wrap;padding:6px 0}
-.radios label{display:flex;align-items:center;gap:6px;font-weight:500;color:var(--tx);cursor:pointer;margin:0}
-.radios input{width:auto}
-.mp{background:var(--soft);border:1px solid var(--line);border-radius:10px;padding:14px}
-.sur-controls{display:flex;align-items:end;gap:10px;flex-wrap:wrap;margin-bottom:12px}
-.sur-controls>.acts{margin:0}
-.sur-controls>.acts .bp{flex:0 0 auto}
-.sur-order{flex:1 1 220px;min-width:180px}
-.sur-order label,.sur-entry label{margin-bottom:3px}
+
+/* =====================================================================
+   NAVEGACIÓN: SIDEBAR Y TABS
+   ===================================================================== */
+.sidebar {
+  position: sticky;
+  top: 12px;
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+}
+
+.sidebar-group {
+  background: transparent;
+  border: 0;
+  padding: 0;
+  border-bottom: 1px solid var(--line);
+  border-radius: 0;
+}
+
+.sidebar-label,
+.sidebar-note,
+.tab-copy small {
+  display: none;
+}
+
+.tabs {
+  display: grid;
+  gap: 2px;
+}
+
+.tab {
+  position: relative;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  text-align: left;
+  background: transparent;
+  color: var(--mut);
+  padding: 9px 16px;
+  border-radius: 8px 8px 0 0;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  transition: color .12s, background .12s;
+}
+
+.tab-icon {
+  width: 22px;
+  height: 22px;
+  flex: 0 0 22px;
+  display: grid;
+  place-items: center;
+  border-radius: 0;
+  background: transparent;
+  color: inherit;
+  font-size: .95rem;
+}
+
+.tab-icon svg {
+  width: 20px;
+  height: 20px;
+}
+
+.tab-copy {
+  display: grid;
+  gap: 1px;
+  min-width: 0;
+}
+
+.tab-copy strong {
+  font-size: .88rem;
+  font-weight: 600;
+}
+
+.tab:hover {
+  background: var(--soft);
+  color: var(--tx);
+}
+
+.tab.on {
+  background: transparent;
+  color: var(--pri);
+  border: 0;
+}
+
+.tab.on::after {
+  content: "";
+  position: absolute;
+  left: 10px;
+  right: 10px;
+  bottom: -1px;
+  height: 3px;
+  border-radius: 3px 3px 0 0;
+  background: var(--pri);
+}
+
+.tab.on .tab-icon {
+  background: transparent;
+  color: var(--pri);
+}
+
+.section-nav {
+  grid-column: 1 / -1;
+  display: inline-flex;
+  width: max-content;
+  max-width: 100%;
+  justify-self: start;
+  gap: 2px;
+  padding: 3px;
+  background: var(--soft);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  scrollbar-width: thin;
+}
+
+.section-tab {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  flex: 0 0 auto;
+  min-height: 34px;
+  padding: 6px 16px;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--mut);
+  white-space: nowrap;
+  font-size: .86rem;
+  font-weight: 600;
+  transition: background .15s, color .15s;
+}
+
+.section-tab strong {
+  font-weight: 600;
+}
+
+.section-tab:hover {
+  background: rgba(127, 140, 165, .14);
+  color: var(--tx);
+}
+
+.section-tab[aria-current="page"] {
+  background: var(--card);
+  color: var(--pri);
+  box-shadow: 0 1px 2px rgba(16, 30, 60, .12), 0 0 0 1px var(--line);
+}
+
+.section-tab[aria-current="page"] strong {
+  font-weight: 750;
+}
+
+/* =====================================================================
+   TARJETAS Y TÍTULOS
+   ===================================================================== */
+.card {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--r-card);
+  padding: 18px;
+  box-shadow: none;
+  margin-bottom: 20px;
+}
+
+h2 {
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: -.005em;
+  color: var(--tx);
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 10px;
+  margin-bottom: 14px;
+}
+
+.lgbox h2 {
+  border: 0;
+  padding: 0;
+}
+
+.form-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  cursor: pointer;
+  border-radius: 6px;
+}
+
+.form-toggle::after {
+  content: "＋";
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--soft);
+  color: var(--pri);
+  font-size: 1.1rem;
+  line-height: 1;
+  transition: background .15s;
+}
+
+.form-toggle[aria-expanded="true"]::after {
+  content: "−";
+}
+
+.form-toggle:hover::after {
+  background: var(--line);
+}
+
+.form-toggle:focus-visible {
+  outline: 2px solid var(--pri);
+  outline-offset: 3px;
+}
+
+.view-heading {
+  grid-column: 1 / -1;
+  display: none;
+}
+
+.section-title {
+  display: none;
+}
+
+.section-content {
+  grid-column: 1 / -1;
+  min-width: 0;
+}
+
+.section-content > h2:first-child:not(#tituloForm) {
+  display: none;
+}
+
+.section-content > p[style*="color:var(--mut)"] {
+  display: none;
+}
+
+#vInv .section-content > h2:first-child,
+#vReg [data-module-screen="qr"] > h2:first-child {
+  display: block;
+  font-size: .92rem;
+  margin-bottom: 8px;
+  padding-bottom: 4px;
+}
+
+#vInv [data-module-screen="asignar"] > p {
+  display: block;
+  font-size: .8rem;
+  margin-bottom: 8px;
+}
+
+#vInv [data-module-screen="historial"] h2[style] {
+  margin-top: 12px !important;
+}
+
+#vReg > div.section-title {
+  display: none;
+}
+
+.empty {
+  padding: 28px 16px;
+  text-align: center;
+  color: var(--mut);
+  font-size: .85rem;
+}
+
+/* =====================================================================
+   FORMULARIOS
+   ===================================================================== */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 8px 10px;
+}
+
+@media (max-width: 520px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.full {
+  grid-column: 1 / -1;
+}
+
+.na-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.na-head > label:first-child {
+  margin: 0;
+}
+
+.na-check {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin: 0;
+  color: var(--mut);
+  font-size: .72rem;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.na-check input {
+  width: auto;
+  margin: 0;
+}
+
+.na-field .na-value[hidden] {
+  display: none;
+}
+
+label {
+  font-size: .78rem;
+  font-weight: 600;
+  color: var(--mut);
+  letter-spacing: .005em;
+  display: block;
+  margin-bottom: 4px;
+}
+
+input,
+select,
+textarea {
+  width: 100%;
+  padding: 6px 8px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-ctl);
+  font-size: .92rem;
+  background: var(--field);
+  color: var(--tx);
+  transition: border-color .15s, box-shadow .15s;
+}
+
+input:hover,
+select:hover,
+textarea:hover {
+  border-color: var(--line-hover);
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  outline: none;
+  border-color: var(--pri);
+  box-shadow: 0 0 0 3px var(--ring);
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: #8a93a3;
+}
+
+input[readonly] {
+  background: var(--soft);
+  color: var(--mut);
+}
+
+input[type="checkbox"],
+input[type="radio"] {
+  accent-color: var(--pri);
+}
+
+select {
+  cursor: pointer;
+}
+
+.row {
+  display: flex;
+  gap: 6px;
+}
+
+.row select {
+  max-width: 84px;
+}
+
+.radios {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding: 6px 0;
+}
+
+.radios label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 500;
+  color: var(--tx);
+  cursor: pointer;
+  margin: 0;
+}
+
+.radios input {
+  width: auto;
+}
+
+details > summary {
+  cursor: pointer;
+  color: var(--pri);
+  font-weight: 600;
+  font-size: .86rem;
+  padding: 6px 0;
+  border-radius: 6px;
+}
+
+details > summary:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+#detTraza {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 2px 12px 12px;
+  background: var(--soft);
+}
+
+#detTraza > summary {
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--pri);
+  padding: 6px 0;
+}
+
+#detTraza[open] > summary {
+  margin-bottom: 6px;
+}
+
+.mp {
+  background: var(--soft);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 14px;
+}
+
+.res {
+  margin: 10px 0;
+  padding: 10px;
+  border-radius: var(--r-ctl);
+  border: 1px solid var(--line2);
+  background: var(--soft);
+  font-size: .86rem;
+  line-height: 1.5;
+}
+
+.res.bad {
+  background: var(--badbg);
+  color: var(--bad);
+  border-color: rgba(180, 35, 24, .25);
+}
+/* =====================================================================
+   MÓDULO: SURTIDO
+   ===================================================================== */
+#sMp,
+#sConsumibles,
+#sGen {
+  display: none;
+}
+
+.sur-controls {
+  display: flex;
+  align-items: end;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+
+.sur-controls > .acts {
+  margin: 0;
+}
+
+.sur-controls > .acts .bp {
+  flex: 0 0 auto;
+}
+
+.sur-order {
+  flex: 1 1 220px;
+  min-width: 180px;
+}
+
+.sur-order label,
+.sur-entry label {
+  margin-bottom: 3px;
+}
 .sur-order input{margin:0!important}
 .sur-controls>#manual{flex:1 1 220px;min-width:180px}
 .sur-controls>#manual textarea{display:block;margin-top:4px}
