@@ -15792,10 +15792,94 @@ async function subirLista(ms,ds){
 }
 let rtT=null,canalRT=null;
 function dejarCanal(){const c=canalRT;canalRT=null;if(!sb||!c)return;try{sb.removeChannel(c).catch(()=>{})}catch{}}
+// --- Realtime incremental: actualiza solo lo que llegó de Supabase ---
+const TABLAS_INCR=new Set(["materiales","despachos","ajustes_inventario_ciclico"]);
+function renderVisible(){
+  if(!$("vInicio").hidden)renderInicio();
+  if(!$("vReg").hidden)render();
+  if(!$("vSur").hidden){renderHist();renderSur()}
+  if(!$("vInv").hidden)renderInventario()
+}
+function syncSurItems(){
+  surItems=surItems.filter(item=>mats.some(m=>String(m.codigo).toLowerCase()===String(item.codigo).toLowerCase()));
+  surItems.forEach(item=>{const m=mats.find(x=>String(x.codigo).toLowerCase()===String(item.codigo).toLowerCase());if(m&&item.piezas?.some(n=>piezasSurt(m).has(n)))item.errorPieza=true})
+}
+const edCodActual=()=>{const i=+$("editIndex").value;return i>=0&&mats[i]?mats[i].codigo:null};
+const edSet=cod=>{if(!cod)return;const i=mats.findIndex(m=>String(m.codigo).toLowerCase()===String(cod).toLowerCase());if(i<0){resetForm()}else $("editIndex").value=i};
+const keyMin=s=>String(s??"").toLowerCase();
+function upsyncMat(type,p){
+  if(type==="DELETE"){
+    const codigo=p.old?.codigo;if(!codigo)return false;
+    const i=mats.findIndex(m=>keyMin(m.codigo)===keyMin(codigo));
+    if(i>=0)mats.splice(i,1);
+    const st=edCodActual();if(st&&keyMin(st)===keyMin(codigo))resetForm();
+    if(actual&&keyMin(actual.codigo)===keyMin(codigo)){actual=null;resetForm()}
+    syncSurItems();return true;
+  }
+  const cod=p.new?.codigo;if(!cod)return false;
+  const st=edCodActual();
+  const i=mats.findIndex(m=>keyMin(m.codigo)===keyMin(cod));
+  const prev=i>=0?mats[i]:null;
+  const nuevo={...normalizarMaterial(p.new.data||{}),codigo:cod,despachos:prev?prev.despachos:[],ajustesInventario:prev?prev.ajustesInventario:[]};
+  if(i>=0)mats.splice(i,1,nuevo);else mats.push(nuevo);
+  if(st)edSet(st);
+  if(actual&&prev&&keyMin(actual.codigo)===keyMin(cod))actual=nuevo;
+  syncSurItems();return true;
+}
+function upsyncDesp(type,p){
+  const cod=p.new?.codigo||p.old?.codigo;if(!cod)return false;
+  const i=mats.findIndex(m=>keyMin(m.codigo)===keyMin(cod));if(i<0)return false;
+  const m=mats[i];
+  if(type==="DELETE"){
+    const t=p.old?.t;if(t==null)return false;
+    m.despachos=(m.despachos||[]).filter(d=>Number(d.t)!==Number(t));
+    return true;
+  }
+  if(type==="INSERT"||type==="UPDATE"){
+    const row=desDeFila(p.new);
+    const j=(m.despachos||[]).findIndex(d=>Number(d.t)===Number(row.t));
+    if(j>=0)m.despachos[j]=row;else m.despachos=[...(m.despachos||[]),row].sort((a,b)=>Number(a.t)-Number(b.t));
+    return true;
+  }
+  return false;
+}
+function upsyncAjuste(type,p){
+  const cod=p.new?.codigo_material||p.old?.codigo_material;if(!cod)return false;
+  const i=mats.findIndex(m=>keyMin(m.codigo)===keyMin(cod));if(i<0)return false;
+  const m=mats[i];
+  if(type==="DELETE"){
+    const id=p.old?.id;if(id==null)return false;
+    m.ajustesInventario=(m.ajustesInventario||[]).filter(a=>a.id!==id);
+    return true;
+  }
+  const a={...p.new};
+  const j=(m.ajustesInventario||[]).findIndex(x=>x.id===a.id);
+  if(j>=0)m.ajustesInventario[j]=a;else m.ajustesInventario=[...(m.ajustesInventario||[]),a];
+  return true;
+}
+function aplicarCambio(payload){
+  try{
+    const tabla=payload?.table,type=payload?.eventType;
+    if(!tabla||!type)return false;
+    if(tabla==="materiales")return upsyncMat(type,payload);
+    if(tabla==="despachos")return upsyncDesp(type,payload);
+    if(tabla==="ajustes_inventario_ciclico")return upsyncAjuste(type,payload);
+    return false;
+  }catch(e){console.error("realtime incremental:",e);return false}
+}
 function suscribir(){
   if(!sb||canalRT)return;
-  const rt=()=>{clearTimeout(rtT);rtT=setTimeout(()=>{cargar().catch(()=>{});cargarUbicaciones()},400)};
-  canalRT=sb.channel("cambios").on("postgres_changes",{event:"*",schema:"public",table:"materiales"},rt).on("postgres_changes",{event:"*",schema:"public",table:"despachos"},rt).on("postgres_changes",{event:"*",schema:"public",table:"almacenes"},rt).on("postgres_changes",{event:"*",schema:"public",table:"ubicaciones"},rt).on("postgres_changes",{event:"*",schema:"public",table:"ubicaciones_codigos_alias"},rt).on("postgres_changes",{event:"*",schema:"public",table:"movimientos_ubicacion"},rt).on("postgres_changes",{event:"*",schema:"public",table:"ajustes_inventario_ciclico"},rt).subscribe(estado=>{if((estado==="CHANNEL_ERROR"||estado==="TIMED_OUT")&&canalRT){const c=canalRT;canalRT=null;try{sb.removeChannel(c).catch(()=>{})}catch{}}});
+  const fallback=()=>{clearTimeout(rtT);rtT=setTimeout(()=>{cargar().catch(()=>{});cargarUbicaciones()},400)};
+  const handler=payload=>{
+    const tabla=payload?.table;
+    if(tabla&&TABLAS_INCR.has(tabla)){
+      if(aplicarCambio(payload)){renderVisible();return}
+      fallback();
+      return;
+    }
+    fallback();
+  };
+  canalRT=sb.channel("cambios").on("postgres_changes",{event:"*",schema:"public",table:"materiales"},handler).on("postgres_changes",{event:"*",schema:"public",table:"despachos"},handler).on("postgres_changes",{event:"*",schema:"public",table:"almacenes"},handler).on("postgres_changes",{event:"*",schema:"public",table:"ubicaciones"},handler).on("postgres_changes",{event:"*",schema:"public",table:"ubicaciones_codigos_alias"},handler).on("postgres_changes",{event:"*",schema:"public",table:"movimientos_ubicacion"},handler).on("postgres_changes",{event:"*",schema:"public",table:"ajustes_inventario_ciclico"},handler).subscribe(estado=>{if((estado==="CHANNEL_ERROR"||estado==="TIMED_OUT")&&canalRT){const c=canalRT;canalRT=null;try{sb.removeChannel(c).catch(()=>{})}catch{}}});
 }
 // --- Sesión ---
 function lgMostrar(msg){$("lgCarga").hidden=true;$("lgF").hidden=false;$("lgMsg").hidden=!msg;$("lgMsg").textContent=msg||""}
