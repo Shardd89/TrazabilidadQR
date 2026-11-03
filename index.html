@@ -14152,7 +14152,7 @@ body.ficha>#login{display:none!important}
 
 .sidebar-note{display:none}
 
-.tabs{grid-template-columns:repeat(3,minmax(0,1fr))}
+.tabs{grid-template-columns:repeat(4,minmax(0,1fr))}
 
 .tab{padding:10px}
 
@@ -14555,7 +14555,7 @@ button:focus-visible,summary:focus-visible,[role="button"]:focus-visible,.tab:fo
   .sidebar-group{position:fixed;left:0;right:0;bottom:0;z-index:50;background:var(--card);border:0;border-top:1px solid var(--line);padding:6px 8px calc(6px + env(safe-area-inset-bottom,0px));box-shadow:0 -4px 16px rgba(16,30,70,.08)}
 
 
-  .tabs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px;overflow:visible}
+  .tabs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px;overflow:visible}
 
 
   .tab{flex-direction:column;justify-content:center;gap:2px;padding:6px 4px;min-height:0;border:0;border-radius:10px;margin:0;text-align:center}
@@ -15100,7 +15100,7 @@ td small{color:var(--mut)}
   .sidebar-group{padding:0 4px env(safe-area-inset-bottom,0px);background:var(--card);border:0;border-top:1px solid var(--line);border-radius:0;overflow:visible;box-shadow:0 -4px 16px rgba(10,20,50,.06);transition:transform .2s}
 
 
-  .tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:0;overflow:visible;width:100%}
+  .tabs{display:grid;grid-template-columns:repeat(4,1fr);gap:0;overflow:visible;width:100%}
 
 
   .tab{flex:none;flex-direction:column;justify-content:center;gap:3px;min-height:var(--nav-h);padding:8px 4px;border-radius:0;text-align:center}
@@ -15176,6 +15176,32 @@ td small{color:var(--mut)}
 
 
 .lgbox .brand-mark{background:var(--scan)}
+/* ---------- Inicio: tarjetas de alertas ---------- */
+.home-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:12px;margin-top:4px}
+.home-card{display:flex;align-items:center;gap:14px;text-align:left;padding:14px 16px;border-radius:14px;background:var(--card);border:1px solid var(--line);box-shadow:var(--shadow);cursor:pointer;color:var(--tx);font:inherit;transition:border-color .12s,transform .06s;min-height:92px}
+.home-card:hover{border-color:var(--line-strong)}
+.home-card:active{transform:translateY(1px)}
+.home-card-icon{flex:none;width:52px;height:52px;border-radius:12px;display:grid;place-items:center}
+.home-card-icon svg{width:24px;height:24px}
+.home-card-body{flex:1;min-width:0}
+.home-card-body strong{display:block;font-size:.9rem;font-weight:650;color:var(--tx)}
+.home-card-list{margin:6px 0 0;padding:0;list-style:none;font-size:.75rem;color:var(--mut);display:grid;gap:3px}
+.home-card-list li{display:flex;align-items:center;gap:6px;min-width:0;overflow-wrap:anywhere}
+.home-card-list li b{flex:none}
+.home-card-num{flex:none;font-size:1.6rem;font-weight:800;font-variant-numeric:tabular-nums;color:var(--tx)}
+.home-card-warn .home-card-icon{background:var(--wnbg);color:var(--wn)}
+.home-card-bad .home-card-icon{background:var(--badbg);color:var(--bad)}
+.home-card-info .home-card-icon{background:var(--soft);color:var(--pri)}
+.home-card-ok .home-card-icon{background:var(--okbg);color:var(--ok)}
+.home-mov-tag{flex:none;font-size:.68rem;font-weight:700;padding:2px 7px;border-radius:6px;background:var(--soft);color:var(--pri)}
+.home-mov-tag.tr{background:var(--wnbg);color:var(--wn)}
+.home-mov-desc{min-width:0;overflow-wrap:anywhere}
+.home-more{color:var(--mut);font-style:italic}
+.filtro-tag{display:inline-flex;align-items:center;gap:8px;margin-top:8px;background:var(--soft);color:var(--pri)}
+.filtro-tag button{all:unset;cursor:pointer;padding:2px 7px;border-radius:6px;font-weight:700}
+.filtro-tag button:hover{background:var(--soft2)}
+@media(max-width:560px){.home-grid{grid-template-columns:1fr}}
+
 </style>
 </head>
 <body>
@@ -15197,7 +15223,8 @@ td small{color:var(--mut)}
   <div class="sidebar-group">
     <div class="sidebar-label">OPERACIÓN</div>
     <nav class="tabs" aria-label="Módulos">
-      <button type="button" class="tab on" data-v="vReg" aria-current="page"><span class="tab-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 4h6a1 1 0 0 1 1 1v1H8V5a1 1 0 0 1 1-1z"/><path d="M8 6H6.5A1.5 1.5 0 0 0 5 7.5v11A1.5 1.5 0 0 0 6.5 20h11a1.5 1.5 0 0 0 1.5-1.5v-11A1.5 1.5 0 0 0 17.5 6H16"/><path d="M9 12h6M9 16h4"/></svg></span><span class="tab-copy"><strong>Registro</strong><small>Alta y consulta</small></span></button>
+      <button type="button" class="tab on" data-v="vInicio" aria-current="page"><span class="tab-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11.5 12 4l9 7.5"/><path d="M5 10v9a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-9"/><path d="M9.5 20v-5h5v5"/></svg></span><span class="tab-copy"><strong>Inicio</strong><small>Alertas y resumen</small></span></button>
+      <button type="button" class="tab" data-v="vReg"><span class="tab-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 4h6a1 1 0 0 1 1 1v1H8V5a1 1 0 0 1 1-1z"/><path d="M8 6H6.5A1.5 1.5 0 0 0 5 7.5v11A1.5 1.5 0 0 0 6.5 20h11a1.5 1.5 0 0 0 1.5-1.5v-11A1.5 1.5 0 0 0 17.5 6H16"/><path d="M9 12h6M9 16h4"/></svg></span><span class="tab-copy"><strong>Registro</strong><small>Alta y consulta</small></span></button>
       <button type="button" class="tab" data-v="vSur"><span class="tab-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 14v4a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-4"/><path d="M12 15V4M8 8l4-4 4 4"/></svg></span><span class="tab-copy"><strong>Surtido</strong><small>Salida a producción</small></span></button>
       <button type="button" class="tab" data-v="vInv"><span class="tab-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l8 4.5v9L12 21l-8-4.5v-9z"/><path d="M4 7.5l8 4.5 8-4.5M12 12v9"/></svg></span><span class="tab-copy"><strong>Inventario</strong><small>Existencias y ubicaciones</small></span></button>
     </nav>
@@ -15205,7 +15232,15 @@ td small{color:var(--mut)}
   <div class="sidebar-note"><strong>Flujo de trabajo</strong>Registra materiales, prepara surtidos para producción y consulta o asigna existencias por ubicación.</div>
 </aside>
 <div class="app-content">
-<main id="vReg" aria-label="Registro">
+<main id="vInicio" aria-label="Inicio">
+<div class="home-grid">
+  <button type="button" class="card home-card home-card-warn" data-home="sinUbicacion"><span class="home-card-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10.3 3.4 2.4 17.3a2 2 0 0 0 1.7 3h15.8a2 2 0 0 0 1.7-3L13.7 3.4a2 2 0 0 0-3.4 0z"/><path d="M12 9.5v4M12 16.5h.01"/></svg></span><span class="home-card-body"><strong>Materiales sin ubicación</strong><ul class="home-card-list" id="homeSinUbiLista"></ul></span><span class="home-card-num" id="homeSinUbiNum">0</span></button>
+  <button type="button" class="card home-card home-card-bad" data-home="cero"><span class="home-card-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 17 9 11 13 15 21 7"/><path d="M21 3v6h-6"/></svg></span><span class="home-card-body"><strong>Existencia ≤ 0</strong><ul class="home-card-list" id="homeCeroLista"></ul></span><span class="home-card-num" id="homeCeroNum">0</span></button>
+  <button type="button" class="card home-card home-card-info" data-home="movimientos"><span class="home-card-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8"/><path d="M12 8v4.5l3 1.8"/></svg></span><span class="home-card-body"><strong>Últimos movimientos</strong><ul class="home-card-list" id="homeMovimientosLista"></ul></span><span class="home-card-num" id="homeMovimientosNum">0</span></button>
+  <button type="button" class="card home-card home-card-ok" data-home="surtidosHoy"><span class="home-card-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14v4a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-4"/><path d="M12 4v10M8 9l4-5 4 5"/></svg></span><span class="home-card-body"><strong>Surtidos de hoy</strong><ul class="home-card-list" id="homeHoyLista"></ul></span><span class="home-card-num" id="homeHoyNum">0</span></button>
+</div>
+</main>
+<main id="vReg" aria-label="Registro" hidden>
 <div class="view-heading"><div><span class="view-kicker">Módulo 01 · Catálogo</span><h2>Registro de materiales</h2><p>Da de alta materiales y consulta su historial, ficha y código QR.</p></div><span class="chip">Catálogo y etiquetas</span></div>
 <nav class="section-nav" aria-label="Pantallas de Registro">
   <button type="button" class="section-tab" data-module="vReg" data-page="captura" aria-current="page"><strong>Capturar material</strong></button>
@@ -15262,6 +15297,8 @@ td small{color:var(--mut)}
       <input type="search" id="buscar" placeholder="🔍 Buscar código, descripción, lote, ubicación…">
       <select id="ftipo"><option value="">Todos</option><option value="mp">Materia prima</option><option value="consumibles">Consumibles</option><option value="gen">General</option></select>
     </div>
+    <div class="chip filtro-tag" id="filtroChip" hidden>Filtro: <b id="filtroNombre"></b><button type="button" id="filtroQuitar" aria-label="Quitar filtro" title="Quitar filtro">✕</button></div>
+
     <div class="tw"><table>
       <thead><tr><th><input type="checkbox" class="row-select" id="selectAll" aria-label="Seleccionar todos los resultados visibles" title="Seleccionar todos los resultados visibles"></th><th data-k="codigo">Código ⇅</th><th data-k="descripcion">Descripción ⇅</th><th data-k="cantidad">Ctd. / Existencia</th><th>Tipo</th><th data-k="ubicacion">Ubicación ⇅</th><th data-k="fechaRecibo">Recibo ⇅</th><th>Acciones</th></tr></thead>
       <tbody id="tbody"></tbody></table>
@@ -15329,6 +15366,7 @@ td small{color:var(--mut)}
   </section>
 </div>
 <section class="card section-content" id="surHistorial" data-module-screen="historial" hidden><h2>Movimientos de surtido</h2>
+<div class="chip filtro-tag" id="histHoyChip" hidden>Hoy · filtro activo<button type="button" id="histHoyQuitar" aria-label="Quitar filtro" title="Quitar filtro">✕</button></div>
   <div class="tw"><div id="hBody" class="sur-groups"></div><div class="empty" id="hVacio">Sin surtidos</div></div>
   <div class="acts"><button type="button" class="bs" id="bCsvS" hidden>⬇️ CSV de surtidos</button></div>
 </section>
@@ -15572,6 +15610,7 @@ async function cargar(){
   render();
   if(!$("vInv").hidden)renderInventario();
   if(!$("vSur").hidden){renderHist();renderSur()}
+  renderInicio();
   if(act){const a=mats.find(x=>x.codigo===act.codigo);if(a){if(JSON.stringify(a)!==actAntes)mostrar(a);else actual=a}}
   }finally{ocultarCarga()}
 }
@@ -15624,7 +15663,7 @@ function limpiarSesionLocal(){try{Object.keys(localStorage).filter(k=>k.indexOf(
 function errorSesion(e){const c=Number(e?.status||e?.code||0);return c===401||c===403||/jwt|token|session|sesi[oó]n/i.test(String(e?.message||""))}
 async function cerrarSesion(){try{const{error}=await sb.auth.signOut();if(error)throw error}catch(e){console.warn("No se pudo revocar la sesión en el servidor; se cierra localmente.",e)}limpiarSesionLocal();salirUI()}
 function actualizarVisibilidadAdmin(){["bJson","bCsv","bImp","bExcel","bCsvS","bUbiExportar","ubicacionesImportar","btnGuardar"].forEach(id=>$(id).hidden=!esAdmin);$("registroAdminAviso").hidden=esAdmin}
-function salirUI(){esStaff=false;esAdmin=false;actualizarVisibilidadAdmin();seleccionados.clear();$("rolUsuario").hidden=true;$("conteoEstado").hidden=true;document.body.classList.remove("auth");dejarCanal();camOff();if($("conteoDialog").open)$("conteoDialog").close();mats=[];surItems=[];almacenes=[];ubicaciones=[];ubicacionesAlias=[];movimientosUbicacion=[];reconstruirIndices();ajustesInventarioError="";almacenesError="";ubicacionesError="";ubicacionesAliasError="";movimientosError="";ubicacionDestino=null;asignacionItems=[];actual=null;render();lgMostrar()}
+function salirUI(){esStaff=false;esAdmin=false;actualizarVisibilidadAdmin();seleccionados.clear();$("rolUsuario").hidden=true;$("conteoEstado").hidden=true;document.body.classList.remove("auth");dejarCanal();camOff();if($("conteoDialog").open)$("conteoDialog").close();mats=[];surItems=[];almacenes=[];ubicaciones=[];ubicacionesAlias=[];movimientosUbicacion=[];reconstruirIndices();ajustesInventarioError="";almacenesError="";ubicacionesError="";ubicacionesAliasError="";movimientosError="";ubicacionDestino=null;asignacionItems=[];actual=null;render();renderInicio();lgMostrar()}
 let entrando=false;
 async function entrar(){
   if(!sb||entrando)return false;
@@ -15932,7 +15971,7 @@ $("bPrintSel").onclick=imprimirSeleccionados;
 function render(){
   const codigos=new Set(mats.map(m=>m.codigo));seleccionados.forEach(c=>{if(!codigos.has(c))seleccionados.delete(c)});
   const q=$("buscar").value.toLowerCase().trim(),t=$("ftipo").value;
-  let lista=mats.map((m,i)=>({m,i})).filter(({m})=>(!t||(t==="mp"?m.esMP:t==="consumibles"?m.tipoRegistro==="CONSUMIBLES":m.tipoRegistro==="GENERAL"))&&(!q||[m.codigo,m.descripcion,m.lote,m.proveedor,m.ubicacion,m.tipoMaterial,m.especificacionMedida,m.longitudIndividual,m.manufactura,m.numeroHeat,m.numeroLoteMP,m.numeroCertificado,m.totalMM,m.tipoMoneda,m.ordenMaterial,m.poNumber].join(" ").toLowerCase().includes(q)));
+  let lista=mats.map((m,i)=>({m,i})).filter(({m})=>(!t||(t==="mp"?m.esMP:t==="consumibles"?m.tipoRegistro==="CONSUMIBLES":m.tipoRegistro==="GENERAL"))&&(!q||[m.codigo,m.descripcion,m.lote,m.proveedor,m.ubicacion,m.tipoMaterial,m.especificacionMedida,m.longitudIndividual,m.manufactura,m.numeroHeat,m.numeroLoteMP,m.numeroCertificado,m.totalMM,m.tipoMoneda,m.ordenMaterial,m.poNumber].join(" ").toLowerCase().includes(q))&&(!filtroEspecial||FILTROS[filtroEspecial].test(m)));
   if(orden.k)lista.sort((a,b)=>{const x=a.m[orden.k],y=b.m[orden.k];const r=typeof x==="number"?x-y:String(x??"").localeCompare(String(y??""),"es",{numeric:true});return orden.asc?r:-r});
   $("tbody").innerHTML=lista.map(({m,i})=>`<tr>
     <td><input type="checkbox" class="row-select" data-select="${esc(m.codigo)}" aria-label="Seleccionar ${esc(m.codigo)}" ${seleccionados.has(m.codigo)?"checked":""}></td>
@@ -16936,7 +16975,7 @@ let surItems=[],nextSurItem=1,stream=null,scanning=false,modoEscaneo="surtido",s
 const K_SUR_BORRADOR="trazabilidad_sur_borrador_v1",K_SUR_DATOS="trazabilidad_sur_datos_v1";
 const CAMPOS_SUR=["orden","entrega","recibe","maquina","motivo","observaciones"];
 const LISTAS_SUR={entrega:"surEntregaList",recibe:"surRecibeList",maquina:"surMaquinaList"};
-let surBorradorT=null,surDatosT=null;
+let surBorradorT=null,surDatosT=null,filtroHoy=false;
 // El campo de máquina/línea del surtido es #area; se acepta #maquina si existe.
 function campoSur(id){const el=$(id);if(el)return el;return id==="maquina"?$("area"):null}
 function leerGuardado(clave,esSesion){
@@ -16973,14 +17012,32 @@ function programarGuardarDatosSur(){clearTimeout(surDatosT);surDatosT=setTimeout
 CAMPOS_SUR.forEach(id=>{const el=campoSur(id);if(el)el.addEventListener("input",()=>{programarGuardarSur();if(LISTAS_SUR[id])programarGuardarDatosSur()})});
 guardarDatosSur();
 
+document.querySelectorAll("#vInicio .home-card").forEach(b=>b.onclick=()=>{
+  const ir=v=>document.querySelector(`.tab[data-v="${v}"]`).click();
+  const a=b.dataset.home;
+  if(a==="sinUbicacion"){ir("vReg");aplicarFiltroEspecial("sinUbicacion")}
+  else if(a==="cero"){ir("vReg");aplicarFiltroEspecial("cero")}
+  else if(a==="movimientos"){ir("vInv");activarSubpantalla("vInv","asignar")}
+  else if(a==="surtidosHoy"){ir("vSur");activarSubpantalla("vSur","historial");aplicarFiltroHoy(true)}
+});
+const buscarEl=$("buscar");
+if(buscarEl)buscarEl.addEventListener("input",()=>{if(filtroEspecial)aplicarFiltroEspecial(null)});
+if($("filtroQuitar"))$("filtroQuitar").onclick=()=>aplicarFiltroEspecial(null);
+if($("histHoyQuitar"))$("histHoyQuitar").onclick=()=>aplicarFiltroHoy(false);
 document.querySelectorAll(".tab").forEach(b=>b.onclick=()=>{
   document.querySelectorAll(".tab").forEach(x=>{x.classList.toggle("on",x===b);if(x===b)x.setAttribute("aria-current","page");else x.removeAttribute("aria-current")});
   const vista=b.dataset.v;
+  $("vInicio").hidden=vista!=="vInicio";
   $("vReg").hidden=vista!=="vReg";$("vSur").hidden=vista!=="vSur";$("vInv").hidden=vista!=="vInv";
   if(vista!=="vInv")limpiarConsultaUbicacion();
-  if(vista==="vSur"){activarSubpantalla("vSur","preparar");modoEscaneo="surtido";renderSur();renderHist();enfocar()}else{camOff();if(vista==="vInv"){activarSubpantalla("vInv","existencias");modoEscaneo="inventario";renderInventario();renderUbicaciones();renderHistUbicaciones();renderAsignacion()}else{activarSubpantalla("vReg","captura");modoEscaneo="surtido";render()}}
+  if(vista==="vInicio"){camOff();renderInicio()}else if(vista==="vSur"){activarSubpantalla("vSur","preparar");modoEscaneo="surtido";renderSur();renderHist();enfocar()}else{camOff();if(vista==="vInv"){activarSubpantalla("vInv","existencias");modoEscaneo="inventario";renderInventario();renderUbicaciones();renderHistUbicaciones();renderAsignacion()}else{activarSubpantalla("vReg","captura");modoEscaneo="surtido";render()}}
 });
 const MAPA_SUBPANTALLAS={vInv:{existencias:["existencias"],almacenes:["almacenes","ubicaciones"],asignar:["asignar","historial"]}};
+function aplicarFiltroHoy(encender){
+  filtroHoy=!!encender;
+  const chip=$("histHoyChip");if(chip)chip.hidden=!filtroHoy;
+  renderHist();
+}
 function activarSubpantalla(modulo,pagina){
   const vista=$(modulo);if(!vista)return;
   const visibles=MAPA_SUBPANTALLAS[modulo]?.[pagina]||[pagina];
@@ -17238,6 +17295,35 @@ function folioSalida(t){
   return`SAL-${dia}-${t}`;
 }
 function movs(){const L=[];mats.forEach((m,i)=>(m.despachos||[]).forEach((d,j)=>L.push({m,i,j,d})));return L.sort((a,b)=>b.d.t-a.d.t)}
+// --- Inicio: tarjetas de alertas (cliente, sobre datos cargados) ---
+let filtroEspecial=null;
+const FILTROS={sinUbicacion:{nombre:"Sin ubicación",test:m=>!m.ubicacion&&!m.ubicacionCodigo},cero:{nombre:"Existencia ≤ 0",test:m=>existencia(m).rest<=0}};
+function aplicarFiltroEspecial(clave){
+  filtroEspecial=clave&&FILTROS[clave]?clave:null;
+  const chip=$("filtroChip");
+  if(chip){chip.hidden=!filtroEspecial;if(filtroEspecial)$("filtroNombre").textContent=FILTROS[filtroEspecial].nombre}
+  render();
+}
+function renderInicio(){
+  const sinUbi=mats.filter(m=>!m.ubicacion&&!m.ubicacionCodigo);
+  $("homeSinUbiNum").textContent=sinUbi.length;
+  $("homeSinUbiLista").innerHTML=sinUbi.slice(0,4).map(m=>`<li><b>${esc(m.codigo)}</b> ${esc(m.descripcion||"")}</li>`).join("")+(sinUbi.length>4?`<li class="home-more">+${sinUbi.length-4} más</li>`:(sinUbi.length?"":`<li class="home-more">Todo asignado</li>`));
+  const cero=mats.filter(m=>existencia(m).rest<=0);
+  $("homeCeroNum").textContent=cero.length;
+  $("homeCeroLista").innerHTML=cero.slice(0,4).map(m=>`<li><b>${esc(m.codigo)}</b> ${esc(existTxt(m))}</li>`).join("")+(cero.length>4?`<li class="home-more">+${cero.length-4} más</li>`:(cero.length?"":`<li class="home-more">Todo en existencia</li>`));
+  const movsAll=movs();
+  const tras=(movimientosUbicacion||[]).slice().sort((a,b)=>new Date(b.created_at)-new Date(a.created_at));
+  const merged=[];
+  movsAll.forEach(({m,d})=>merged.push({t:d.t,tipo:"Surtido",desc:`${m.codigo} · ${fmt(d.cantidad||0)} ${m.um}`,fecha:d.fecha,clase:"sur"}));
+  tras.forEach(x=>merged.push({t:new Date(x.created_at).getTime(),tipo:"Traspaso",desc:`${x.codigo_material} → ${x.ubicacion_nueva||""}`,fecha:new Date(x.created_at).toLocaleString("es-MX"),clase:"tr"}));
+  merged.sort((a,b)=>b.t-a.t);
+  $("homeMovimientosNum").textContent=merged.length;
+  $("homeMovimientosLista").innerHTML=merged.slice(0,5).map(x=>`<li><span class="home-mov-tag ${x.clase}">${x.tipo}</span><span class="home-mov-desc">${esc(x.desc)}</span></li>`).join("")||`<li class="home-more">Sin movimientos aún</li>`;
+  const tHoy=new Date().setHours(0,0,0,0);
+  const hoyMovs=movsAll.filter(({d})=>d.t>=tHoy);
+  $("homeHoyNum").textContent=hoyMovs.length;
+  $("homeHoyLista").innerHTML=hoyMovs.slice(0,4).map(({m,d})=>`<li><b>${esc(m.codigo)}</b> · ${esc(d.folio||folioSalida(d.t))}</li>`).join("")+(hoyMovs.length>4?`<li class="home-more">+${hoyMovs.length-4} más</li>`:(hoyMovs.length?"":`<li class="home-more">Sin surtidos hoy</li>`));
+}
 function pesoSurtido(m,d){
   const u=d.pesoU||pesoUnidad(m);
   if(d.pesoSurtido!=null&&["LB","KG"].includes(u))return{peso:Number(d.pesoSurtido),u};
@@ -17300,7 +17386,9 @@ function imprimirFolio(folio){
   if(items.length)imprimirSalidaGrupo(items,folio);
 }
 function renderHist(){
-  const L=movs().slice(0,100),groups=new Map();
+  let L=movs().slice(0,100);
+  if(filtroHoy){const hoy=new Date().setHours(0,0,0,0);L=L.filter(({d})=>d.t>=hoy)}
+  const groups=new Map();
   L.forEach(row=>{
     const order=String(row.d.orden||"").trim(),key=order?`orden:${order.toLocaleLowerCase()}`:`sin-orden:${row.m.codigo}:${row.d.t}`;
     if(!groups.has(key))groups.set(key,{orden:order,items:[]});
