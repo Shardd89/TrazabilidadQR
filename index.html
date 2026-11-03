@@ -14961,6 +14961,19 @@ td small{color:var(--mut)}
 
 #bTorch{border-radius:999px;min-height:0;padding:7px 12px}
 
+/* ---------- Escáner Surtido: marcador y aviso dentro del visor ---------- */
+.cam-foot{position:absolute;left:10px;right:10px;bottom:10px;display:flex;align-items:center;gap:12px;padding:9px 12px;border-radius:14px;background:rgba(10,14,24,.86);border:1px solid rgba(255,255,255,.14);backdrop-filter:blur(6px);z-index:6;color:#eef2f7}
+.cam-foot-counters{display:flex;gap:10px;font-size:.78rem;font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap}
+.cam-foot>.bp{flex:none;font-size:.82rem;padding:9px 18px}
+.cam-foot-last{flex:1;min-width:0;overflow-wrap:anywhere;font-size:.78rem;color:#cbd5e1}
+.cam-msg{position:absolute;left:10px;right:10px;bottom:72px;z-index:7;padding:9px 14px;border-radius:12px;background:rgba(179,38,30,.94);color:#fff;font-size:.86rem;font-weight:600;box-shadow:0 6px 18px rgba(0,0,0,.35)}
+.cam-msg.ok{background:rgba(23,112,58,.94)}
+@media (max-width:560px){
+  .cam-foot{flex-wrap:wrap;gap:8px}
+  .cam-foot>.bp{flex:1 1 100%;order:4}
+  .cam-foot-last{order:3;flex-basis:100%}
+}
+
 
 
 /* ---------- Inicio de sesión ---------- */
@@ -15425,7 +15438,7 @@ td small{color:var(--mut)}
   </div>
 </div>
 <div id="salidaView" hidden></div>
-<div id="camWrap" hidden><div id="camPanel"><video id="video" playsinline muted></video><div class="vf"></div><button type="button" class="bs" id="bTorch" hidden>🔦</button><button type="button" class="bd" id="bCamClose">✕ Cerrar</button><canvas id="camCv" hidden></canvas></div></div>
+<div id="camWrap" hidden><div id="camPanel"><video id="video" playsinline muted></video><div class="vf"></div><div class="cam-msg" id="camMsg" role="alert" hidden></div><div class="cam-foot" id="camFoot" hidden><div class="cam-foot-counters"><span id="camContMat">0 materiales</span><span id="camContPz">0 piezas escaneadas</span></div><div class="cam-foot-last" id="camUltimo">Último: —</div><button type="button" class="bp" id="bCamListo">Listo</button></div><button type="button" class="bs" id="bTorch" hidden>🔦</button><button type="button" class="bd" id="bCamClose">✕ Cerrar</button><canvas id="camCv" hidden></canvas></div></div>
 <div id="etiqueta"></div>
 <div class="toast" id="toast"></div>
 <dialog id="conteoDialog" class="conteo-dialog" aria-labelledby="conteoTitulo">
@@ -15979,6 +15992,7 @@ function mostrarMaterialesPorUbicacion(codigo){
   renderInventario();
 }
 $("bCamUbiConsulta").onclick=()=>{modoEscaneo="ubiConsulta";camOn()};
+$("bCamListo").onclick=()=>{camOff();const tab=document.querySelector('.section-tab[data-module="vSur"][data-page="preparar"]');if(tab)tab.click();const list=$("sPanel");if(list)list.scrollIntoView({behavior:"smooth",block:"start"})};
 $("bUbiConsultaLimpiar").onclick=()=>{limpiarConsultaUbicacion()};
 function buscarMaterialesParaConteo(){
   const resultados=$("ubiConsultaResultados"),consulta=$("ubiConsultaBuscar").value.trim().toLocaleLowerCase();
@@ -16808,7 +16822,7 @@ function existencia(m){
   return{modo:"pz",u:m.um,rest:r4(m.cantidad-ds.reduce((s,d)=>s+(d.cantidad||0),0)+ajustes)}
 }
 function existTxt(m){const e=existencia(m);return e.modo==="long"?`${fmt(e.rest)} ${e.u} (≈${fmt(e.qty)} pz)${e.peso?` · ${fmt(e.peso.peso)} ${e.peso.u}`:""}`:`${fmt(e.rest)} ${e.u}`}
-let surItems=[],nextSurItem=1,stream=null,scanning=false,modoEscaneo="surtido";
+let surItems=[],nextSurItem=1,stream=null,scanning=false,modoEscaneo="surtido",scanCooldown=new Map(),camMsgT=null;
 // Borrador de surtido (sessionStorage) y últimos datos capturados (localStorage)
 const K_SUR_BORRADOR="trazabilidad_sur_borrador_v1",K_SUR_DATOS="trazabilidad_sur_datos_v1";
 const CAMPOS_SUR=["orden","entrega","recibe","maquina","motivo","observaciones"];
@@ -16874,6 +16888,29 @@ function activarSubpantalla(modulo,pagina){
 document.querySelectorAll(".section-tab").forEach(b=>b.onclick=()=>activarSubpantalla(b.dataset.module,b.dataset.page));
 function enfocar(){if(matchMedia("(pointer:fine)").matches)$("scanIn").focus()}
 
+function conteosSurtido(){
+  const matsUnicos=new Set(surItems.map(x=>String(x.codigo||"").toLowerCase())).size;
+  const piezas=surItems.reduce((n,x)=>n+((x.piezas||[]).length),0);
+  return{materiales:matsUnicos,piezas};
+}
+function camPanelUpdate(){
+  const foot=$("camFoot");
+  if(modoEscaneo!=="surtido"){foot.hidden=true;return}
+  const{materiales,piezas}=conteosSurtido();
+  $("camContMat").textContent=`${materiales} ${materiales===1?"material":"materiales"}`;
+  $("camContPz").textContent=`${piezas} ${piezas===1?"pieza escaneada":"piezas escaneadas"}`;
+  foot.hidden=false;
+}
+function camUltimo(txt){
+  const box=$("camUltimo");if(!box)return;
+  const t=String(txt||"");box.textContent=`Último: ${t.length>70?t.slice(0,70)+"…":t}`;box.title=t;
+}
+function camAvisoSc(txt,tipo){
+  const box=$("camMsg");if(!box)return;
+  clearTimeout(camMsgT);box.classList.toggle("ok",tipo==="ok");box.textContent=txt;box.hidden=false;
+  navigator.vibrate&&navigator.vibrate(tipo==="ok"?[60]:[70,50,70]);
+  camMsgT=setTimeout(()=>{box.hidden=true;box.classList.remove("ok")},4000);
+}
 function escanear(txt){
   if(modoEscaneo==="ubiConsulta"){procesarEscaneoUbiConsulta(txt);return}
   if(modoEscaneo==="inventario"){procesarEscaneoInventario(txt);return}
@@ -16887,16 +16924,18 @@ function escanear(txt){
     toast(`Material encontrado: ${material.codigo}`);return
   }
   const i=mats.findIndex(m=>m.codigo.toLowerCase()===cod);
-  if(i<0){toast(`Código no registrado: ${cod}`,1);return}
-  const pz=pzDe(txt);if(pz){escanearPieza(i,pz.n);return}
+  if(i<0){camUltimo(txt);camAvisoSc(cod?`Código no registrado: ${cod}`:"El QR no contiene un código de material válido.");return}
+  const pz=pzDe(txt);if(pz){escanearPieza(i,pz.n,txt);return}
+  camUltimo(txt);
   agregarSurItem(i);renderSur();
 }
 // Los QR de pieza se acumulan en un solo renglón por material y no permiten duplicados.
-function escanearPieza(i,n){
+function escanearPieza(i,n,txt){
   const m=mats[i];
-  if(!esIndividual(m)||n<1||n>m.cantidad){toast(`Pieza ${n} no válida para ${m.codigo}`,1);return}
-  if(piezasSurt(m).has(n)){toast(`⚠ La pieza ${n}/${m.cantidad} de ${m.codigo} ya fue surtida`,1);return}
-  if(surItems.some(x=>x.codigo.toLowerCase()===m.codigo.toLowerCase()&&x.piezas?.includes(n))){toast(`La pieza ${n} ya está en el surtido actual`,1);return}
+  camUltimo(txt||String(n));
+  if(!esIndividual(m)||n<1||n>m.cantidad){camAvisoSc(`Pieza ${n} no válida para ${m.codigo}`);return}
+  if(piezasSurt(m).has(n)){camAvisoSc(`⚠ La pieza ${n}/${m.cantidad} de ${m.codigo} ya fue surtida`);return}
+  if(surItems.some(x=>x.codigo.toLowerCase()===m.codigo.toLowerCase()&&x.piezas?.includes(n))){camAvisoSc(`La pieza ${n} ya está en el surtido actual`);return}
   agregarSurItem(i,n);renderSur();
 }
 // Ajusta cantidad/longitud del renglón según las piezas escaneadas.
@@ -16956,11 +16995,13 @@ async function camOn(){
     if(cap.focusMode&&cap.focusMode.includes("continuous"))tr.applyConstraints({advanced:[{focusMode:"continuous"}]}).catch(()=>{});
     torchOn=false;$("bTorch").hidden=!cap.torch;
     $("video").srcObject=stream;await $("video").play();$("camWrap").hidden=false;scanning=true;$("bCam").textContent="⏹ Detener cámara";$("bCamInv").textContent="⏹ Detener cámara";$("bCamReg").textContent="⏹ Detener cámara";
+    const msgBox=$("camMsg");msgBox.hidden=true;msgBox.classList.remove("ok");
+    camPanelUpdate();
     try{wake=await navigator.wakeLock.request("screen")}catch{}
     bucle();
   }catch(e){toast(e.name==="NotAllowedError"?"Permiso de cámara denegado. Actívelo en los ajustes del navegador.":"No se pudo abrir la cámara.",1)}
 }
-function camOff(){scanning=false;if(stream)stream.getTracks().forEach(t=>t.stop());stream=null;if(wake){wake.release().catch(()=>{});wake=null}$("camWrap").hidden=true;$("bCam").textContent="📷 Escanear con cámara";$("bCamInv").textContent="📷 Escanear ubicación y materiales";$("bCamReg").textContent="📷 Escanear código y ver información"}
+function camOff(){scanning=false;if(stream)stream.getTracks().forEach(t=>t.stop());stream=null;if(wake){wake.release().catch(()=>{});wake=null}clearTimeout(camMsgT);const msgBox=$("camMsg");if(msgBox){msgBox.hidden=true;msgBox.classList.remove("ok")}const foot=$("camFoot");if(foot)foot.hidden=true;$("camWrap").hidden=true;$("bCam").textContent="📷 Escanear con cámara";$("bCamInv").textContent="📷 Escanear ubicación y materiales";$("bCamReg").textContent="📷 Escanear código y ver información"}
 $("bCam").onclick=()=>{if(scanning){camOff();return}modoEscaneo="surtido";camOn()};
 $("bCamInv").onclick=()=>{if(scanning){camOff();return}modoEscaneo="inventario";camOn()};
 $("bCamReg").onclick=()=>{if(scanning){camOff();return}modoEscaneo="registro";camOn()};
@@ -16975,7 +17016,10 @@ async function leer(v){
 function bucle(){
   if(!scanning)return;const v=$("video"),now=Date.now();
   if(!busy&&v.readyState===4&&now-tUlt>120){busy=true;tUlt=now;
-    leer(v).then(t=>{const n=Date.now();if(t){vistoUlt=n;if(t!==txtUlt){txtUlt=t;feedback();escanear(t)}}else if(n-vistoUlt>700)txtUlt=""}).catch(()=>{}).finally(()=>{busy=false})}
+    leer(v).then(t=>{
+      const n=Date.now();
+      if(t){vistoUlt=n;if(t!==txtUlt&&n-(scanCooldown.get(t)||0)>=1500){scanCooldown.set(t,n);txtUlt=t;feedback();escanear(t)}}
+      else if(n-vistoUlt>700)txtUlt=""}).catch(()=>{}).finally(()=>{busy=false})}
   requestAnimationFrame(bucle);
 }
 // Panel de surtido
@@ -17010,7 +17054,7 @@ function renderSur(){
     else{const m=mats.find(x=>x.codigo.toLowerCase()===item.codigo.toLowerCase());if(m)recalcularPiezasSur(item,m)}
     programarGuardarSur();renderSur();
   });
-  $("sNo").onclick=()=>{surItems=[];limpiarBorradorSur();renderSur();enfocar()};$("sOk").onclick=confirmarSur;calcSur();
+  $("sNo").onclick=()=>{surItems=[];limpiarBorradorSur();renderSur();enfocar()};$("sOk").onclick=confirmarSur;calcSur();camPanelUpdate();
 }
 function calcSur(){
   const totalPorCodigo=new Map(),salidas=[],errores=[];
