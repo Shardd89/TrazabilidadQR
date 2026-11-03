@@ -15177,24 +15177,164 @@ td small{color:var(--mut)}
 
 .lgbox .brand-mark{background:var(--scan)}
 /* ---------- Inicio: tarjetas de alertas ---------- */
-.home-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:12px;margin-top:4px}
-.home-card{display:flex;align-items:center;gap:14px;text-align:left;padding:14px 16px;border-radius:14px;background:var(--card);border:1px solid var(--line);box-shadow:var(--shadow);cursor:pointer;color:var(--tx);font:inherit;transition:border-color .12s,transform .06s;min-height:92px}
-.home-card:hover{border-color:var(--line-strong)}
-.home-card:active{transform:translateY(1px)}
-.home-card-icon{flex:none;width:52px;height:52px;border-radius:12px;display:grid;place-items:center}
-.home-card-icon svg{width:24px;height:24px}
-.home-card-body{flex:1;min-width:0}
-.home-card-body strong{display:block;font-size:.9rem;font-weight:650;color:var(--tx)}
-.home-card-list{margin:6px 0 0;padding:0;list-style:none;font-size:.75rem;color:var(--mut);display:grid;gap:3px}
-.home-card-list li{display:flex;align-items:center;gap:6px;min-width:0;overflow-wrap:anywhere}
-.home-card-list li b{flex:none}
-.home-card-num{flex:none;font-size:1.6rem;font-weight:800;font-variant-numeric:tabular-nums;color:var(--tx)}
-.home-card-warn .home-card-icon{background:var(--wnbg);color:var(--wn)}
-.home-card-bad .home-card-icon{background:var(--badbg);color:var(--bad)}
-.home-card-info .home-card-icon{background:var(--soft);color:var(--pri)}
-.home-card-ok .home-card-icon{background:var(--okbg);color:var(--ok)}
-.home-mov-tag{flex:none;font-size:.68rem;font-weight:700;padding:2px 7px;border-radius:6px;background:var(--soft);color:var(--pri)}
-.home-mov-tag.tr{background:var(--wnbg);color:var(--wn)}
+#vInicio {
+  display: grid;
+  place-items: center;
+  min-height: calc(100vh - 200px);
+}
+
+.home-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(270px, 1fr));
+  gap: 16px;
+  margin-top: 4px;
+  width: 100%;
+  max-width: 1200px;
+}
+
+@media (min-width: 1024px) {
+  .home-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
+  }
+}
+
+@media (min-width: 700px) and (max-width: 1023px) {
+  .home-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+  }
+}
+
+@media (max-width: 699px) {
+  #vInicio {
+    display: block;
+    min-height: auto;
+  }
+  
+  .home-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+}
+
+.home-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  text-align: left;
+  padding: 16px 18px;
+  border-radius: 14px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow);
+  cursor: pointer;
+  color: var(--tx);
+  font: inherit;
+  transition: border-color .12s, transform .06s, box-shadow .15s;
+  min-height: 110px;
+}
+
+.home-card:hover {
+  border-color: var(--line-strong);
+  box-shadow: 0 4px 12px rgba(16, 30, 70, .08);
+}
+
+.home-card:active {
+  transform: translateY(1px);
+}
+
+.home-card-icon {
+  flex: none;
+  width: 56px;
+  height: 56px;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+}
+
+.home-card-icon svg {
+  width: 26px;
+  height: 26px;
+}
+
+.home-card-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.home-card-body strong {
+  display: block;
+  font-size: .95rem;
+  font-weight: 650;
+  color: var(--tx);
+  margin-bottom: 2px;
+}
+
+.home-card-list {
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: .76rem;
+  color: var(--mut);
+  display: grid;
+  gap: 4px;
+}
+
+.home-card-list li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.home-card-list li b {
+  flex: none;
+}
+
+.home-card-num {
+  flex: none;
+  font-size: 1.75rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  color: var(--tx);
+}
+
+.home-card-warn .home-card-icon {
+  background: var(--wnbg);
+  color: var(--wn);
+}
+
+.home-card-bad .home-card-icon {
+  background: var(--badbg);
+  color: var(--bad);
+}
+
+.home-card-info .home-card-icon {
+  background: var(--soft);
+  color: var(--pri);
+}
+
+.home-card-ok .home-card-icon {
+  background: var(--okbg);
+  color: var(--ok);
+}
+
+.home-mov-tag {
+  flex: none;
+  font-size: .68rem;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 6px;
+  background: var(--soft);
+  color: var(--pri);
+}
+
+.home-mov-tag.tr {
+  background: var(--wnbg);
+  color: var(--wn);
+}
 .home-mov-desc{min-width:0;overflow-wrap:anywhere}
 .home-more{color:var(--mut);font-style:italic}
 .filtro-tag{display:inline-flex;align-items:center;gap:8px;margin-top:8px;background:var(--soft);color:var(--pri)}
