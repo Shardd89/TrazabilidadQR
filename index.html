@@ -17491,25 +17491,51 @@ async function confirmarSur(){
   const lineas=calcSur.items;if(!lineas?.length)return;const orden=$("orden").value.trim();
   if(!orden){toast("Capture la orden de producción para generar el comprobante de salida.",1);$("orden").focus();return}
   guardarDatosSur();
-  const t=Date.now(),folio=folioSalida(t),fecha=new Date(t).toLocaleString("es-MX"),porCodigo=new Map(),registros=[];
+  const t=Date.now(),folio=folioSalida(t),fecha=new Date(t).toLocaleString("es-MX"),registros=[];
   lineas.forEach(({m,d},i)=>{
-    const anteriores=porCodigo.get(m.codigo.toLowerCase())||[];
-    const temporal={...m,despachos:[...(m.despachos||[]),...anteriores]};
     const reg={...d,t:t+i,folio,fecha,orden,
       entrega:$("entrega").value.trim(),recibe:$("recibe").value.trim(),maquina:(campoSur("maquina")?.value||"").trim(),
       motivo:$("motivo").value.trim(),observaciones:$("observaciones").value.trim(),
       material:{codigo:m.codigo,descripcion:m.descripcion,tipoRegistro:m.tipoRegistro,lote:m.numeroLoteMP||m.lote,numeroHeat:m.numeroHeat,ubicacion:m.ubicacion,seccionMaterial:m.seccionMaterial,especificacionMedida:m.especificacionMedida}};
-    const exPost=existencia({...temporal,despachos:[...temporal.despachos,reg]});
-    reg.existenciaRestante=exPost.rest;reg.existenciaUnidad=exPost.u;
-    if(exPost.peso){reg.pesoRestante=exPost.peso.peso;reg.pesoRestanteU=exPost.peso.u}
-    porCodigo.set(m.codigo.toLowerCase(),[...anteriores,reg]);registros.push({m,d:reg});
+    registros.push({m,d:reg});
   });
   $("sOk").disabled=true;
   try{
-    const filas=registros.map(({m,d})=>desFila(m.codigo,d)),{error}=await sb.from("despachos").insert(filas);
+    const items=registros.map(({m,d})=>({codigo:m.codigo,t:d.t,data:desData(d),piezas:d.piezas||[]}));
+    const{data,error}=await sb.rpc("registrar_salida",{p_folio:folio,p_items:items});
     if(error)throw error;
-  }catch(err){errDB(err,"No se pudo registrar la salida múltiple");await cargar().catch(()=>{});renderSur();return}
+    if(!data||Number(data.registrados)!==registros.length)throw new Error(`Se esperaban ${registros.length} renglones, pero el servidor confirmó ${data?.registrados??0}`);
+  }catch(err){
+    let msg="No se pudo registrar la salida";
+    const errTxt=String(err?.message||err||"");
+    if(/EXISTENCIA_INSUFICIENTE/i.test(errTxt)){
+      const match=/EXISTENCIA_INSUFICIENTE:\s*([^\s·]+)\s*·\s*Disponible:\s*([^\s]+)\s*([^\s·]+)\s*·\s*Solicitado:\s*([^\s]+)/.exec(errTxt);
+      if(match)msg=`Existencia insuficiente de ${match[1]} · Disponible: ${match[2]} ${match[3]} · Solicitado: ${match[4]}`;
+      else msg="Existencia insuficiente. Otro usuario pudo haber surtido este material mientras preparabas la salida.";
+    }else if(/PIEZA_YA_SURTIDA/i.test(errTxt)){
+      const match=/PIEZA_YA_SURTIDA:\s*([^\s·]+)/.exec(errTxt);
+      msg=match?`Una o más piezas de ${match[1]} ya fueron surtidas`:"Una o más piezas ya fueron surtidas. Otro usuario pudo haberlas escaneado mientras preparabas la salida.";
+    }else if(/NO_AUTORIZADO/i.test(errTxt)){
+      msg="No tienes autorización para registrar salidas";
+    }else if(/MATERIAL_NO_ENCONTRADO/i.test(errTxt)){
+      const match=/MATERIAL_NO_ENCONTRADO:\s*(.+)/.exec(errTxt);
+      msg=match?`Material no encontrado: ${match[1]}`:"Uno o más materiales ya no existen en el sistema";
+    }
+    errDB(err,msg);
+    await cargar().catch(()=>{});
+    renderSur();
+    return;
+  }
   await cargar().catch(()=>{});
+  const porCodigo=new Map();
+  registros.forEach(({m,d})=>{
+    const anteriores=porCodigo.get(m.codigo.toLowerCase())||[];
+    const temporal={...m,despachos:[...(m.despachos||[]),...anteriores]};
+    const exPost=existencia({...temporal,despachos:[...temporal.despachos,d]});
+    d.existenciaRestante=exPost.rest;d.existenciaUnidad=exPost.u;
+    if(exPost.peso){d.pesoRestante=exPost.peso.peso;d.pesoRestanteU=exPost.peso.u}
+    porCodigo.set(m.codigo.toLowerCase(),[...anteriores,d]);
+  });
   const confirmados=registros.map(({m,d})=>({m:mats.find(x=>x.codigo.toLowerCase()===m.codigo.toLowerCase())||m,d}));
   imprimirSalidaGrupo(confirmados,folio);
   toast(`Salida registrada ✔ · ${registros.length} renglón(es) · Folio ${folio}`);
