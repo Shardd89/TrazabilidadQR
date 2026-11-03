@@ -13572,6 +13572,18 @@ input.row-select{width:18px;height:18px;padding:0;vertical-align:middle;accent-c
 
 .conteo-dialog .acts{justify-content:flex-end}
 
+#conteoLoteDialog{width:min(760px,calc(100% - 24px))}
+.conteo-lote-resumen{margin:4px 0 8px}
+.conteo-lote-tw{max-height:52vh;overflow:auto;margin:10px 0}
+.conteo-lote-tabla{width:100%;border-collapse:collapse;font-size:.85rem}
+.conteo-lote-tabla thead th{position:sticky;top:0;background:var(--card);z-index:1}
+.conteo-lote-tabla th,.conteo-lote-tabla td{padding:6px 10px;border-bottom:1px solid var(--line);text-align:left}
+.conteo-lote-tabla .num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.conteo-lote-tabla input{width:110px;padding:6px 8px;border:1px solid var(--line);border-radius:var(--r-ctl);background:var(--field);color:var(--tx);text-align:right}
+.conteo-lote-diff{font-variant-numeric:tabular-nums}
+.conteo-lote-diff.diferente{color:var(--bad);font-weight:700}
+.conteo-lote-diff.ok{color:var(--ok);font-weight:600}
+
 
 #video{width:100%;max-height:260px;object-fit:cover;border-radius:10px;background:#000;margin-bottom:12px}
 
@@ -15341,6 +15353,7 @@ td small{color:var(--mut)}
         <div><b>Ubicación consultada:</b> <span id="ubiConsultaInfo">-</span></div>
         <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
           <span style="color:var(--mut)" id="ubiConsultaCnt">0 materiales</span>
+          <button type="button" class="bp" id="bConteoLote" hidden>📋 Conteo de toda la ubicación</button>
           <button type="button" class="bs" id="bUbiConsultaLimpiar" hidden title="Limpiar consulta" aria-label="Limpiar consulta">✕</button>
         </div>
       </div>
@@ -15455,6 +15468,18 @@ td small{color:var(--mut)}
     <textarea id="conteoMotivo" rows="2" maxlength="300" placeholder="Opcional"></textarea>
     <div class="acts"><button type="button" class="bs" id="conteoCancelar">Cancelar</button><button type="submit" class="bp" id="conteoGuardar">Guardar conteo</button></div>
   </form>
+</dialog>
+<dialog id="conteoLoteDialog" class="conteo-dialog" aria-labelledby="conteoLoteTitulo">
+  <h2 id="conteoLoteTitulo">Conteo cíclico — <span id="conteoLoteUbi"></span></h2>
+  <p class="conteo-lote-resumen" id="conteoLoteDesc"></p>
+  <div class="tw conteo-lote-tw"><table class="conteo-lote-tabla">
+    <thead><tr><th>Código</th><th>Descripción</th><th class="num">Existencia actual</th><th class="num">Contado</th><th class="num">Diferencia</th></tr></thead>
+    <tbody id="conteoLoteBody"></tbody>
+  </table></div>
+  <div class="res" id="conteoLoteAviso" hidden></div>
+  <label for="conteoLoteMotivo" style="margin-top:12px">Observaciones <small style="color:var(--mut);font-weight:400">(aplica a todos los materiales)</small></label>
+  <textarea id="conteoLoteMotivo" rows="2" maxlength="300" placeholder="Opcional"></textarea>
+  <div class="acts"><button type="button" class="bs" id="conteoLoteCancelar">Cancelar</button><button type="button" class="bp" id="conteoLoteGuardar">Guardar conteo</button></div>
 </dialog>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.4/dist/umd/supabase.js"></script>
@@ -15944,6 +15969,7 @@ function limpiarConsultaUbicacion(){
   ubiFiltroCodigo=null;
   $("ubiConsultaBox").hidden=true;
   $("bUbiConsultaLimpiar").hidden=true;
+  $("bConteoLote").hidden=true;
   $("ubiConsultaInfo").textContent="-";
   $("ubiConsultaCnt").textContent="0 materiales";
   $("ubiConsultaBody").innerHTML="";
@@ -15979,6 +16005,7 @@ function mostrarMaterialesPorUbicacion(codigo){
   $("ubiConsultaCnt").textContent=`${lista.length} material${lista.length===1?"":"es"}`;
   actualizarEstadoConteoCiclico();
   $("ubiConsultaBusqueda").hidden=!esAdmin;
+  $("bConteoLote").hidden=!esAdmin||!lista.length;
   $("ubiConsultaBuscar").value="";
   $("ubiConsultaResultados").innerHTML='<p class="ubicaciones-ayuda">Busca en el catálogo del módulo Registro. Para ajustar existencias, el material debe estar asignado a esta ubicación.</p>';
   $("ubiConsultaBody").innerHTML=lista.map(m=>{const almM=almacenesPorCodigo.get(ubicacionDe(m)?.almacen_codigo||m.ubicacionAlmacenCodigo);return`<tr><td><b>${esc(m.codigo)}</b></td><td class="l">${esc(m.descripcion||"")}</td><td>${tagTipo(m)}</td><td>${esc(existTxt(m))}</td><td>${esc(almM?.nombre||m.ubicacionAlmacenNombre||almacen?.nombre||"Sin almacén")}</td><td>${esAdmin?`<button type="button" class="bs" data-conteo="${esc(m.codigo)}" ${ajustesInventarioError?"disabled title=\"No se pudo cargar el historial de conteos\"":""}>📋 Conteo cíclico</button>`:"—"}</td></tr>`}).join("");
@@ -16100,6 +16127,88 @@ $("conteoForm").addEventListener("submit",async event=>{
   }catch(err){errDB(err,conteoTrasladadoPendiente?"El material ya se agregó a la ubicación, pero no se pudo guardar el conteo cíclico":"No se pudo guardar el conteo cíclico")}
   finally{$("conteoGuardar").disabled=false}
 });
+let conteoLoteItems=[];
+function abrirConteoLote(){
+  if(!esAdmin){toast("Solo el administrador puede ajustar existencias.",1);return}
+  if(ajustesInventarioError){toast(ajustesInventarioError,1);return}
+  const loc=ubicacionesPorCodigo.get(ubiConsultaCodigo);
+  if(!loc){toast("Escanea una ubicación para consultar sus materiales.",1);return}
+  const lista=listaMaterialesEnUbicacion(loc);
+  conteoLoteItems=[];
+  const tbody=$("conteoLoteBody");tbody.innerHTML="";
+  for(const material of lista){
+    const e=existencia(material);
+    const tr=document.createElement("tr");
+    tr.innerHTML=`<td><b>${esc(material.codigo)}</b></td><td class="l">${esc(material.descripcion||"")}</td><td class="num">${esc(fmt(e.rest))} ${esc(e.u)}</td><td class="num"><input type="number" class="conteo-lote-input" min="0" step="any" inputmode="decimal" aria-label="Contado de ${esc(material.codigo)}"></td><td class="num conteo-lote-diff">—</td>`;
+    tbody.appendChild(tr);
+    conteoLoteItems.push({material,snapshot:r4(e.rest),unidad:e.u,input:tr.querySelector("input"),diff:tr.querySelector(".conteo-lote-diff")});
+    tr.querySelector("input").addEventListener("input",function(){actualizarDifLote(this)});
+  }
+  $("conteoLoteUbi").textContent=ubicacionConCodigo(loc);
+  $("conteoLoteDesc").textContent=`${lista.length} material${lista.length===1?"":"es"} en la ubicación · los campos vacíos no se guardan`;
+  $("conteoLoteAviso").hidden=true;
+  $("conteoLoteMotivo").value="";
+  $("conteoLoteGuardar").disabled=!lista.length;
+  $("conteoLoteDialog").dataset.ubicacion=loc.codigo;
+  $("conteoLoteDialog").showModal();
+}
+function actualizarDifLote(input){
+  const item=conteoLoteItems.find(x=>x.input===input);if(!item)return;
+  const v=String(input.value).trim();
+  if(v===""){item.diff.textContent="—";item.diff.classList.remove("diferente","ok");item.diff.title="";return}
+  const contado=Number(v);
+  if(!Number.isFinite(contado)||contado<0){item.diff.textContent="?";item.diff.title="Ingresa un número válido (≥ 0)";item.diff.classList.remove("diferente","ok");return}
+  const diff=r4(contado-item.snapshot);
+  item.diff.textContent=`${diff>0?"+":""}${fmt(diff)} ${item.unidad}`;
+  item.diff.title=Math.abs(diff)<=0.0001?"Sin cambio":diff>0?"Hay más piezas que la existencia actual":"Hay menos piezas que la existencia actual";
+  const cambio=Math.abs(diff)>0.0001;
+  item.diff.classList.toggle("diferente",cambio);
+  item.diff.classList.toggle("ok",!cambio);
+}
+async function guardarConteoLote(){
+  const dlg=$("conteoLoteDialog");
+  if(!esAdmin){dlg.close();toast("Solo el administrador puede ajustar existencias.",1);return}
+  const locCodigo=dlg.dataset.ubicacion,motivo=$("conteoLoteMotivo").value.trim();
+  const loc=ubicacionesPorCodigo.get(locCodigo);
+  if(!loc){toast("Ubicación no encontrada. Escanea de nuevo.",1);return}
+  const filas=conteoLoteItems.filter(x=>String(x.input.value).trim()!=="");
+  if(!filas.length){toast("Escribe al menos un conteo.",1);return}
+  const errores=[],aGuardar=[];
+  for(const item of filas){
+    const contado=Number(item.input.value);
+    if(!Number.isFinite(contado)||contado<0){errores.push(`${item.material.codigo}: valor inválido`);continue}
+    const fresh=mats.find(m=>m.codigo===item.material.codigo);
+    if(!fresh||!listaMaterialesEnUbicacion(loc).some(m=>m.codigo===item.material.codigo)){errores.push(`${item.material.codigo}: ya no está en esta ubicación`);continue}
+    const actual=existencia(fresh);
+    if(Math.abs(actual.rest-item.snapshot)>0.0001){errores.push(`${item.material.codigo}: la existencia cambió mientras contabas`);continue}
+    aGuardar.push({item,contado,unidad:actual.u});
+  }
+  $("conteoLoteGuardar").disabled=true;
+  let guardados=0;
+  for(const{item,contado,unidad}of aGuardar){
+    try{
+      const{error}=await sb.rpc("registrar_conteo_ciclico",{p_codigo_material:item.material.codigo,p_ubicacion_codigo:locCodigo,p_existencia_anterior:item.snapshot,p_existencia_contada:r4(contado),p_unidad:unidad,p_motivo:motivo});
+      if(error)throw error;
+      guardados++;
+    }catch(err){const msg=String(err?.message||err||"Error").replace(/\s+/g," ").slice(0,140);errores.push(`${item.material.codigo}: ${msg}`)}
+  }
+  $("conteoLoteGuardar").disabled=false;
+  try{await cargar()}catch(err){errDB(err,"Conteo guardado, pero no se pudo actualizar el inventario")}
+  renderHistUbicaciones();
+  if(ubiConsultaCodigo)mostrarMaterialesPorUbicacion(ubiConsultaCodigo);
+  if(errores.length){
+    const aviso=$("conteoLoteAviso");
+    aviso.textContent=`Guardados: ${guardados} · Errores: ${errores.length} — ${errores.slice(0,4).join(" · ")}${errores.length>4?`… y ${errores.length-4} más`:""}`;
+    aviso.className="res bad";aviso.hidden=false;
+    toast(`Conteo parcial: ${guardados} guardado(s) y ${errores.length} con error.`,1);
+    return;
+  }
+  dlg.close();
+  toast(`Conteo guardado (${guardados} ${guardados===1?"material":"materiales"}).`);
+}
+$("bConteoLote").onclick=()=>abrirConteoLote();
+$("conteoLoteCancelar").onclick=()=>$("conteoLoteDialog").close();
+$("conteoLoteGuardar").onclick=guardarConteoLote;
 function procesarEscaneoUbiConsulta(txt){
   const raw=String(txt||"").replace(/^\uFEFF/,"").trim(),prefijo="TRAZABILIDAD-UBICACION:";
   if(raw.toUpperCase().startsWith(prefijo)){modoEscaneo="inventario";mostrarMaterialesPorUbicacion(raw.slice(prefijo.length).trim());camOff();return true}
