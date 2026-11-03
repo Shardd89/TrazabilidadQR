@@ -15934,7 +15934,7 @@ async function arrancar(){
   if(!sb){lgMostrar("No se pudo cargar Supabase. Revise su conexión a internet y recargue la página.");if(ficha)iniciarFicha();return}
   sb.auth.onAuthStateChange(ev=>{if(ev==="SIGNED_OUT")salirUI()});
   let ses=null;try{ses=(await sb.auth.getSession()).data.session}catch{}
-  if(ses)await entrar();else lgMostrar();
+  if(ses){await entrar();if(!ficha)navegarDesdeHash()}else lgMostrar();
   if(ficha)iniciarFicha();
 }
 
@@ -17254,7 +17254,7 @@ document.querySelectorAll(".tab").forEach(b=>b.onclick=()=>{
   $("vInicio").hidden=vista!=="vInicio";
   $("vReg").hidden=vista!=="vReg";$("vSur").hidden=vista!=="vSur";$("vInv").hidden=vista!=="vInv";
   if(vista!=="vInv")limpiarConsultaUbicacion();
-  if(vista==="vInicio"){camOff();renderInicio()}else if(vista==="vSur"){activarSubpantalla("vSur","preparar");modoEscaneo="surtido";renderSur();renderHist();enfocar()}else{camOff();if(vista==="vInv"){activarSubpantalla("vInv","existencias");modoEscaneo="inventario";renderInventario();renderUbicaciones();renderHistUbicaciones();renderAsignacion()}else{activarSubpantalla("vReg","captura");modoEscaneo="surtido";render()}}
+  if(vista==="vInicio"){camOff();renderInicio();actualizarHashNavegacion("vInicio")}else if(vista==="vSur"){activarSubpantalla("vSur","preparar");modoEscaneo="surtido";renderSur();renderHist();enfocar()}else{camOff();if(vista==="vInv"){activarSubpantalla("vInv","existencias");modoEscaneo="inventario";renderInventario();renderUbicaciones();renderHistUbicaciones();renderAsignacion()}else{activarSubpantalla("vReg","captura");modoEscaneo="surtido";render()}}
 });
 const MAPA_SUBPANTALLAS={vInv:{existencias:["existencias"],almacenes:["almacenes","ubicaciones"],asignar:["asignar","historial"]}};
 function aplicarFiltroHoy(encender){
@@ -17274,6 +17274,7 @@ function activarSubpantalla(modulo,pagina){
     if(pagina!=="asignar"&&modoEscaneo==="inventario")camOff();
   }
   if(modulo==="vSur"&&pagina!=="preparar")camOff();
+  actualizarHashNavegacion(modulo,pagina);
 }
 document.querySelectorAll(".section-tab").forEach(b=>b.onclick=()=>activarSubpantalla(b.dataset.module,b.dataset.page));
 function enfocar(){if(matchMedia("(pointer:fine)").matches)$("scanIn").focus()}
@@ -17684,7 +17685,31 @@ async function iniciarFicha(){
   $("fSur").hidden=!(esStaff&&live);
   $("fSur").onclick=()=>{const c=pz?location.hash:m.codigo;salirFicha();document.querySelector('.tab[data-v="vSur"]').click();escanear(c)};
 }
-window.addEventListener("hashchange",()=>{if(/#(?:[^#]*&)?[dc]=/.test(location.hash))location.reload()});
+// Navegación con hash
+const HASH_MODULOS={inicio:"vInicio",registro:"vReg",surtido:"vSur",inventario:"vInv"};
+const HASH_PAGINAS={registro:{captura:"captura",historial:"historial"},surtido:{preparar:"preparar",historial:"historial"},inventario:{existencias:"existencias",almacenes:"almacenes",asignar:"asignar"}};
+function actualizarHashNavegacion(modulo,pagina){
+  const nombre={vInicio:"inicio",vReg:"registro",vSur:"surtido",vInv:"inventario"}[modulo];
+  if(!nombre)return;
+  const ruta=nombre==="inicio"?"/inicio":pagina?`/${nombre}/${pagina}`:`/${nombre}`;
+  if(location.hash===`#${ruta}`)return;
+  history.replaceState(null,"",`#${ruta}`);
+}
+function navegarDesdeHash(){
+  const h=location.hash;
+  if(!h||h==="#"||/#(?:[^#]*&)?[dc]=/.test(h))return;
+  const m=/^#\/([^\/]+)(?:\/([^\/]+))?/.exec(h);
+  if(!m)return;
+  const modulo=HASH_MODULOS[m[1]],pagina=m[2];
+  if(!modulo)return;
+  const tab=document.querySelector(`.tab[data-v="${modulo}"]`);
+  if(tab)tab.click();
+  if(pagina&&modulo!=="vInicio"){
+    const paginaNormalizada=HASH_PAGINAS[m[1]]?.[pagina];
+    if(paginaNormalizada)activarSubpantalla(modulo,paginaNormalizada);
+  }
+}
+window.addEventListener("hashchange",()=>{if(/#(?:[^#]*&)?[dc]=/.test(location.hash))location.reload();else navegarDesdeHash()});
 
 resetForm();render();arrancar();
 </script>
