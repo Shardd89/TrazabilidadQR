@@ -15455,6 +15455,14 @@ const hoy=()=>new Date(Date.now()-new Date().getTimezoneOffset()*6e4).toISOStrin
 const fmt=n=>Number(n).toLocaleString("es-MX",{maximumFractionDigits:3});
 function totalTxt(m){return m.esMP&&m.um==="PZ"&&m.cantidad>0&&m.longitud>0?`${fmt(m.cantidad*m.longitud)} ${m.longU||m.longitudUnidad||"mm"}`:""}
 let mats=[],actual=null,orden={k:null,asc:true},esStaff=false,esAdmin=false,almacenes=[],ubicaciones=[],ubicacionesAlias=[],movimientosUbicacion=[],ajustesInventarioError="",almacenesError="",ubicacionesError="",ubicacionesAliasError="",movimientosError="",ubicacionDestino=null,asignacionItems=[];
+let ubicacionesPorCodigo=new Map(),almacenesPorCodigo=new Map();
+function reconstruirIndices(){
+  ubicacionesPorCodigo=new Map(ubicaciones.map(u=>[String(u.codigo),u]));
+  almacenesPorCodigo=new Map(almacenes.map(a=>[String(a.codigo),a]));
+}
+function ubicacionDe(m){return m?ubicacionesPorCodigo.get(m.ubicacionCodigo):undefined}
+function almacenDe(m){const loc=ubicacionDe(m);const almCodigo=loc?.almacen_codigo||m?.ubicacionAlmacenCodigo;return almCodigo?almacenesPorCodigo.get(almCodigo):undefined}
+function tagTipo(m){return m.esMP?'<span class="tag t1">M. PRIMA</span>':m.tipoRegistro==="CONSUMIBLES"?'<span class="tag t2">CONSUMIBLES</span>':'<span class="tag t2">GENERAL</span>'}
 const seleccionados=new Set();
 
 // --- Supabase ---
@@ -15555,6 +15563,7 @@ async function cargarUbicaciones(){
   resultados.forEach(resultado=>{if(resultado.status==="rejected")console.error(resultado.reason)});
   if(!$("ubiCodigo").value)siguienteCodigoUbicacion();
   if(!$("almacenCodigo").value)siguienteCodigoAlmacen();
+  reconstruirIndices();
   renderAlmacenes();renderUbicaciones();renderHistUbicaciones();renderInventario();actualizarDatalistUbicaciones();
   }finally{ocultarCarga()}
 }
@@ -15577,7 +15586,7 @@ function limpiarSesionLocal(){try{Object.keys(localStorage).filter(k=>k.indexOf(
 function errorSesion(e){const c=Number(e?.status||e?.code||0);return c===401||c===403||/jwt|token|session|sesi[oó]n/i.test(String(e?.message||""))}
 async function cerrarSesion(){try{const{error}=await sb.auth.signOut();if(error)throw error}catch(e){console.warn("No se pudo revocar la sesión en el servidor; se cierra localmente.",e)}limpiarSesionLocal();salirUI()}
 function actualizarVisibilidadAdmin(){["bJson","bCsv","bImp","bExcel","bCsvS","bUbiExportar","ubicacionesImportar","btnGuardar"].forEach(id=>$(id).hidden=!esAdmin);$("registroAdminAviso").hidden=esAdmin}
-function salirUI(){esStaff=false;esAdmin=false;actualizarVisibilidadAdmin();seleccionados.clear();$("rolUsuario").hidden=true;$("conteoEstado").hidden=true;document.body.classList.remove("auth");dejarCanal();camOff();if($("conteoDialog").open)$("conteoDialog").close();mats=[];surItems=[];almacenes=[];ubicaciones=[];ubicacionesAlias=[];movimientosUbicacion=[];ajustesInventarioError="";almacenesError="";ubicacionesError="";ubicacionesAliasError="";movimientosError="";ubicacionDestino=null;asignacionItems=[];actual=null;render();lgMostrar()}
+function salirUI(){esStaff=false;esAdmin=false;actualizarVisibilidadAdmin();seleccionados.clear();$("rolUsuario").hidden=true;$("conteoEstado").hidden=true;document.body.classList.remove("auth");dejarCanal();camOff();if($("conteoDialog").open)$("conteoDialog").close();mats=[];surItems=[];almacenes=[];ubicaciones=[];ubicacionesAlias=[];movimientosUbicacion=[];reconstruirIndices();ajustesInventarioError="";almacenesError="";ubicacionesError="";ubicacionesAliasError="";movimientosError="";ubicacionDestino=null;asignacionItems=[];actual=null;render();lgMostrar()}
 let entrando=false;
 async function entrar(){
   if(!sb||entrando)return false;
@@ -15781,7 +15790,7 @@ function mostrar(m){
   const txt=qrTexto(m);
   const c=dibujarQR(txt);
   if(c)box.appendChild(c);else{box.textContent="No se pudo generar el QR: los datos son demasiado largos. Acorte descripción o ubicación.";actual=null}
-  const rows=[["Código",m.codigo],["Almacén",m.ubicacionAlmacenNombre||almacenes.find(a=>a.codigo===m.ubicacionAlmacenCodigo)?.nombre],["Ubicación",m.ubicacion],["Clasificación",nombreTipoRegistro(m.tipoRegistro)],["Tipo material",m.tipoMaterial],["Descripción",m.descripcion],
+  const rows=[["Código",m.codigo],["Almacén",m.ubicacionAlmacenNombre||almacenesPorCodigo.get(m.ubicacionAlmacenCodigo)?.nombre],["Ubicación",m.ubicacion],["Clasificación",nombreTipoRegistro(m.tipoRegistro)],["Tipo material",m.tipoMaterial],["Descripción",m.descripcion],
     ["Sección / especificación",seccionEspecificacion(m)],["Longitud IND",m.longitudIndividual!=null?`${m.longitudIndividual} mm`:""],["Manufactura",m.manufactura],["N.º Heat",m.numeroHeat],["N.º lote MP",m.numeroLoteMP||m.lote],["N.º cert.",m.numeroCertificado],["Total mm",m.totalMM],["Fecha de recibo",m.fechaRecibo],["Cantidad",`${m.cantidad} ${m.um}`],
     ["Etiqueta",`MASTER · ${m.cantidad} ${m.um}`+(esIndividual(m)?` (+ ${m.cantidad} QR individuales)`:` (sin QR individuales: la cantidad debe ser entera y de 1 a ${MAX_IND})`)],
     ["Peso",m.peso!=null?`${m.peso}${m.pesoU||m.pesoUnidad?" "+(m.pesoU||m.pesoUnidad):m.pesoUnidadPendiente?" (unidad sin definir)":""}`:""],["Orden",m.ordenMaterial],["PO number",m.poNumber],
@@ -15890,7 +15899,7 @@ function render(){
   $("tbody").innerHTML=lista.map(({m,i})=>`<tr>
     <td><input type="checkbox" class="row-select" data-select="${esc(m.codigo)}" aria-label="Seleccionar ${esc(m.codigo)}" ${seleccionados.has(m.codigo)?"checked":""}></td>
     <td><b>${esc(m.codigo)}</b></td><td class="l">${esc(m.descripcion)}</td><td>${esc(m.cantidad)} PZ · ${esc(existTxt(m))}</td>
-    <td>${m.esMP?'<span class="tag t1">M. PRIMA</span>':m.tipoRegistro==="CONSUMIBLES"?'<span class="tag t2">CONSUMIBLES</span>':'<span class="tag t2">GENERAL</span>'}</td>
+    <td>${tagTipo(m)}</td>
     <td>${esc(m.ubicacion||"Sin ubicación")}</td><td>${esc(m.fechaRecibo)}</td>
     <td style="white-space:nowrap"><button type="button" class="ic" data-a="qr" data-i="${i}" title="Ver QR">🔳</button>${esAdmin?`<button type="button" class="ic" data-a="ed" data-i="${i}" title="Editar">✏️</button><button type="button" class="ic" data-a="del" data-i="${i}" title="Eliminar">🗑️</button>`:""}</td></tr>`).join("");
   $("vacio").hidden=lista.length>0;
@@ -15903,10 +15912,10 @@ function renderInventario(){
   selector.innerHTML='<option value="">Todos los almacenes</option>'+almacenes.map(a=>`<option value="${esc(a.codigo)}">${esc(a.nombre)}</option>`).join("");
   selector.value=almacenes.some(a=>a.codigo===almacenActual)?almacenActual:"";
   const q=$("invBuscar").value.trim().toLocaleLowerCase(),tipo=$("invTipo").value,almacenFiltro=selector.value;
-  const ubiLoc=ubiFiltroCodigo?ubicaciones.find(loc=>loc.codigo===ubiFiltroCodigo):null;
+  const ubiLoc=ubiFiltroCodigo?ubicacionesPorCodigo.get(ubiFiltroCodigo):null;
   const permitidos=ubiLoc?new Set(listaMaterialesEnUbicacion(ubiLoc).map(m=>m.codigo)):null;
-  const lista=mats.filter(m=>{const loc=ubicaciones.find(x=>x.codigo===m.ubicacionCodigo),almacenCodigo=loc?.almacen_codigo||m.ubicacionAlmacenCodigo,alm=almacenes.find(x=>x.codigo===almacenCodigo);return(!permitidos||permitidos.has(m.codigo))&&(!tipo||(tipo==="mp"?m.esMP:tipo==="consumibles"?m.tipoRegistro==="CONSUMIBLES":m.tipoRegistro==="GENERAL"))&&(!almacenFiltro||almacenCodigo===almacenFiltro)&&(!q||[m.codigo,m.descripcion,m.ubicacion,m.ubicacionCodigo,loc?.nombre,alm?.nombre,m.lote,m.numeroHeat,m.numeroLoteMP].join(" ").toLocaleLowerCase().includes(q))});
-  $("invBody").innerHTML=lista.map(m=>{const loc=ubicaciones.find(x=>x.codigo===m.ubicacionCodigo),alm=almacenes.find(x=>x.codigo===(loc?.almacen_codigo||m.ubicacionAlmacenCodigo)),tag=m.esMP?'<span class="tag t1">M. PRIMA</span>':m.tipoRegistro==="CONSUMIBLES"?'<span class="tag t2">CONSUMIBLES</span>':'<span class="tag t2">GENERAL</span>';return`<tr><td><b>${esc(m.codigo)}</b><br><small>${tag}</small></td><td class="l">${esc(m.descripcion)}</td><td>${esc(existTxt(m))}</td><td class="l">${esc(alm?.nombre||m.ubicacionAlmacenNombre||"Sin almacén")} › ${esc(loc?ubicacionConCodigo(loc):m.ubicacion||"Sin ubicación")}</td></tr>`}).join("");
+  const lista=mats.filter(m=>{const loc=ubicacionDe(m),almacenCodigo=loc?.almacen_codigo||m.ubicacionAlmacenCodigo,alm=almacenDe(m);return(!permitidos||permitidos.has(m.codigo))&&(!tipo||(tipo==="mp"?m.esMP:tipo==="consumibles"?m.tipoRegistro==="CONSUMIBLES":m.tipoRegistro==="GENERAL"))&&(!almacenFiltro||almacenCodigo===almacenFiltro)&&(!q||[m.codigo,m.descripcion,m.ubicacion,m.ubicacionCodigo,loc?.nombre,alm?.nombre,m.lote,m.numeroHeat,m.numeroLoteMP].join(" ").toLocaleLowerCase().includes(q))});
+  $("invBody").innerHTML=lista.map(m=>{const loc=ubicacionDe(m),alm=almacenDe(m),tag=tagTipo(m);return`<tr><td><b>${esc(m.codigo)}</b><br><small>${tag}</small></td><td class="l">${esc(m.descripcion)}</td><td>${esc(existTxt(m))}</td><td class="l">${esc(alm?.nombre||m.ubicacionAlmacenNombre||"Sin almacén")} › ${esc(loc?ubicacionConCodigo(loc):m.ubicacion||"Sin ubicación")}</td></tr>`}).join("");
   $("invVacio").hidden=lista.length>0;
   actualizarEstadoConteoCiclico();
 }
@@ -15937,19 +15946,19 @@ function ubicacionPorCodigo(codigo){
   const directa=ubicaciones.find(loc=>loc.codigo.toLocaleLowerCase()===clave);
   if(directa)return directa;
   const alias=ubicacionesAlias.find(item=>item.codigo_alias.toLocaleLowerCase()===clave);
-  const destinoAlias=alias&&ubicaciones.find(loc=>loc.codigo===alias.ubicacion_codigo);
+  const destinoAlias=alias&&ubicacionesPorCodigo.get(alias.ubicacion_codigo);
   if(destinoAlias)return destinoAlias;
   const directaCanonica=ubicaciones.find(loc=>normalizarCodigoUbicacion(loc.codigo).toLocaleLowerCase()===canonica);
   if(directaCanonica)return directaCanonica;
   const aliasCanonico=ubicacionesAlias.find(item=>normalizarCodigoUbicacion(item.codigo_alias).toLocaleLowerCase()===canonica);
-  const destinoCanonico=aliasCanonico&&ubicaciones.find(loc=>loc.codigo===aliasCanonico.ubicacion_codigo);
+  const destinoCanonico=aliasCanonico&&ubicacionesPorCodigo.get(aliasCanonico.ubicacion_codigo);
   if(destinoCanonico)return destinoCanonico;
   return ubicaciones.find(loc=>String(loc.nombre||"").trim().toLocaleLowerCase()===clave)||null;
 }
 function mostrarMaterialesPorUbicacion(codigo){
   const loc=ubicacionPorCodigo(codigo);
   if(!loc){toast(ubicacionesError||ubicacionesAliasError||`Ubicación no registrada: ${codigo}`,1);return}
-  const almacen=almacenes.find(a=>a.codigo===loc.almacen_codigo);
+  const almacen=almacenesPorCodigo.get(loc.almacen_codigo);
   const lista=listaMaterialesEnUbicacion(loc);
   ubiConsultaCodigo=loc.codigo;
   ubiFiltroCodigo=loc.codigo;
@@ -15959,7 +15968,7 @@ function mostrarMaterialesPorUbicacion(codigo){
   $("ubiConsultaBusqueda").hidden=!esAdmin;
   $("ubiConsultaBuscar").value="";
   $("ubiConsultaResultados").innerHTML='<p class="ubicaciones-ayuda">Busca en el catálogo del módulo Registro. Para ajustar existencias, el material debe estar asignado a esta ubicación.</p>';
-  $("ubiConsultaBody").innerHTML=lista.map(m=>{const almM=almacenes.find(a=>a.codigo===(ubicaciones.find(x=>x.codigo===m.ubicacionCodigo)?.almacen_codigo||m.ubicacionAlmacenCodigo));return`<tr><td><b>${esc(m.codigo)}</b></td><td class="l">${esc(m.descripcion||"")}</td><td>${m.esMP?'<span class="tag t1">M. PRIMA</span>':m.tipoRegistro==="CONSUMIBLES"?'<span class="tag t2">CONSUMIBLES</span>':'<span class="tag t2">GENERAL</span>'}</td><td>${esc(existTxt(m))}</td><td>${esc(almM?.nombre||m.ubicacionAlmacenNombre||almacen?.nombre||"Sin almacén")}</td><td>${esAdmin?`<button type="button" class="bs" data-conteo="${esc(m.codigo)}" ${ajustesInventarioError?"disabled title=\"No se pudo cargar el historial de conteos\"":""}>📋 Conteo cíclico</button>`:"—"}</td></tr>`}).join("");
+  $("ubiConsultaBody").innerHTML=lista.map(m=>{const almM=almacenesPorCodigo.get(ubicacionDe(m)?.almacen_codigo||m.ubicacionAlmacenCodigo);return`<tr><td><b>${esc(m.codigo)}</b></td><td class="l">${esc(m.descripcion||"")}</td><td>${tagTipo(m)}</td><td>${esc(existTxt(m))}</td><td>${esc(almM?.nombre||m.ubicacionAlmacenNombre||almacen?.nombre||"Sin almacén")}</td><td>${esAdmin?`<button type="button" class="bs" data-conteo="${esc(m.codigo)}" ${ajustesInventarioError?"disabled title=\"No se pudo cargar el historial de conteos\"":""}>📋 Conteo cíclico</button>`:"—"}</td></tr>`}).join("");
   $("ubiConsultaBody").querySelectorAll("[data-conteo]").forEach(btn=>btn.onclick=()=>abrirConteoCiclico(btn.dataset.conteo,loc));
   $("ubiConsultaVacio").hidden=lista.length>0;
   $("ubiConsultaBox").hidden=false;
@@ -15982,12 +15991,12 @@ function buscarMaterialesParaConteo(){
     resultados.innerHTML='<p class="ubicaciones-ayuda">No se encontró ningún material registrado con ese código o descripción.</p>';
     return;
   }
-  const ubicacion=ubicaciones.find(loc=>loc.codigo===ubiConsultaCodigo);
+  const ubicacion=ubicacionesPorCodigo.get(ubiConsultaCodigo);
   if(!ubicacion){resultados.innerHTML='<p class="ubicaciones-ayuda">Escanea de nuevo una ubicación para consultar los materiales.</p>';return}
   const visibles=coincidencias.slice(0,20);
   resultados.innerHTML=visibles.map(material=>{
     const enUbicacion=listaMaterialesEnUbicacion(ubicacion).some(item=>item.codigo===material.codigo);
-    const ubicacionActual=ubicaciones.find(loc=>loc.codigo===material.ubicacionCodigo)
+    const ubicacionActual=ubicacionDe(material)
       ||ubicaciones.find(loc=>!material.ubicacionCodigo&&String(material.ubicacion||"").trim().toLocaleLowerCase()===loc.nombre.toLocaleLowerCase()&&(!material.ubicacionAlmacenCodigo||material.ubicacionAlmacenCodigo===loc.almacen_codigo));
     const ubicacionTexto=ubicacionActual?ubicacionConCodigo(ubicacionActual):material.ubicacion||"Sin ubicación";
     const accion=enUbicacion?"📋 Conteo cíclico":ubicacionActual||material.ubicacion?"Mover y contar":"Agregar y contar";
@@ -16005,7 +16014,7 @@ async function agregarMoverMaterialParaConteo(codigo,ubicacion,boton){
     abrirConteoCiclico(codigo,ubicacion);
     return;
   }
-  const anterior=ubicaciones.find(loc=>loc.codigo===material.ubicacionCodigo)
+  const anterior=ubicacionDe(material)
     ||ubicaciones.find(loc=>!material.ubicacionCodigo&&String(material.ubicacion||"").trim().toLocaleLowerCase()===loc.nombre.toLocaleLowerCase()&&(!material.ubicacionAlmacenCodigo||material.ubicacionAlmacenCodigo===loc.almacen_codigo));
   const anteriorTexto=anterior?ubicacionConCodigo(anterior):material.ubicacion||"Sin ubicación";
   const accion=anterior?"mover":"agregar";
@@ -16059,7 +16068,7 @@ $("conteoForm").addEventListener("submit",async event=>{
   event.preventDefault();
   if(!esAdmin){toast("Solo el administrador puede ajustar existencias.",1);$("conteoDialog").close();return}
   const codigo=$("conteoCodigo").value,ubicacionCodigo=$("conteoUbicacion").value,anterior=Number($("conteoAnterior").value),contada=r4(Number($("conteoCantidad").value));
-  const material=mats.find(m=>m.codigo===codigo),ubicacion=ubicaciones.find(loc=>loc.codigo===ubicacionCodigo);
+  const material=mats.find(m=>m.codigo===codigo),ubicacion=ubicacionesPorCodigo.get(ubicacionCodigo);
   if(!material||!ubicacion||!listaMaterialesEnUbicacion(ubicacion).some(m=>m.codigo===codigo)){toast("El material cambió de ubicación. Escanea la ubicación de nuevo.",1);$("conteoDialog").close();return}
   if(!Number.isFinite(contada)||contada<0){toast("Ingresa una existencia contada válida.",1);return}
   const actualCalculado=existencia(material);
@@ -16127,10 +16136,10 @@ function movimientosEnAlmacenes(codigos,locs){
 async function eliminarUbicacion(codigo){
   if(!esAdmin){toast("Solo el administrador puede eliminar ubicaciones.",1);return}
   if(movimientosError){toast("No se pudo verificar el historial. Recarga antes de eliminar esta ubicación.",1);return}
-  const loc=ubicaciones.find(item=>item.codigo===codigo);if(!loc)return;
+  const loc=ubicacionesPorCodigo.get(codigo);if(!loc)return;
   const materiales=materialesEnUbicacion(loc),movimientos=movimientosDeUbicacion(loc);
   if(materiales){toast("Traspasa primero todo el inventario de esta ubicación.",1);return}
-  if(!confirm(`¿Eliminar la ubicación ${ubicacionConCodigo(loc)} del almacén ${almacenes.find(a=>a.codigo===loc.almacen_codigo)?.nombre||"Sin almacén"}?${movimientos?`\n\nSe conservarán ${movimientos} movimiento(s) en el historial con el nombre y código originales.`:""}`))return;
+  if(!confirm(`¿Eliminar la ubicación ${ubicacionConCodigo(loc)} del almacén ${almacenesPorCodigo.get(loc.almacen_codigo)?.nombre||"Sin almacén"}?${movimientos?`\n\nSe conservarán ${movimientos} movimiento(s) en el historial con el nombre y código originales.`:""}`))return;
   let movimientosConservados=movimientos;
   try{
     const{data,error}=await sb.rpc("eliminar_ubicacion_vacia",{p_ubicacion_codigo:codigo});if(error)throw error;
@@ -16144,7 +16153,7 @@ async function eliminarUbicacion(codigo){
 }
 async function eliminarAlmacen(codigo){
   if(!esAdmin){toast("Solo el administrador puede eliminar almacenes.",1);return}
-  const almacen=almacenes.find(item=>item.codigo===codigo);if(!almacen)return;
+  const almacen=almacenesPorCodigo.get(codigo);if(!almacen)return;
   const locs=ubicaciones.filter(loc=>loc.almacen_codigo===codigo),materiales=materialesEnAlmacenes([codigo]),movimientos=movimientosEnAlmacenes([codigo],locs);
   const detalle=`\n\nSe eliminarán ${locs.length} ubicación(es) y ${movimientos} movimientos del historial. Los ${materiales} materiales se conservarán, pero quedarán sin almacén ni ubicación. Esta acción no se puede deshacer.`;
   if(!confirm(`¿Eliminar el almacén ${almacen.nombre} (${almacen.codigo})?${detalle}`))return;
@@ -16185,7 +16194,7 @@ function renderUbicaciones(){
   let ubicacionesAlmacen;
   if(q){
     ubicacionesAlmacen=ubicaciones.filter(loc=>{
-      const alm=almacenes.find(a=>a.codigo===loc.almacen_codigo);
+      const alm=almacenesPorCodigo.get(loc.almacen_codigo);
       return [loc.codigo,loc.nombre,normalizarCodigoUbicacion(loc.codigo),nombreUbicacion(loc),ubicacionConCodigo(loc),alm?.nombre,alm?.codigo].filter(Boolean).join(" ").toLowerCase().includes(q);
     });
   }else{
@@ -16196,7 +16205,7 @@ function renderUbicaciones(){
   const abiertas=new Set([...lista.querySelectorAll(".ubicacion-card[open]")].map(item=>item.dataset.codigo));
   lista.className="ubicaciones-list";
   lista.innerHTML=ubicacionesAlmacen.map(loc=>{
-    const i=ubicaciones.indexOf(loc),alm=almacenes.find(a=>a.codigo===loc.almacen_codigo),materiales=listaMaterialesEnUbicacion(loc),existencias=materiales.length,movimientos=movimientosDeUbicacion(loc),ocupada=existencias>0||!!movimientosError;
+    const i=ubicaciones.indexOf(loc),alm=almacenesPorCodigo.get(loc.almacen_codigo),materiales=listaMaterialesEnUbicacion(loc),existencias=materiales.length,movimientos=movimientosDeUbicacion(loc),ocupada=existencias>0||!!movimientosError;
     const materialesHtml=materiales.length
       ?`<section class="ubicacion-materiales" aria-label="Materiales en esta ubicación"><h3>Materiales en esta ubicación</h3><div class="ubicacion-material-list">${materiales.map(m=>`<div class="ubicacion-material"><span><b>${esc(m.codigo)}</b><span>${esc(m.descripcion)}</span></span><strong>${esc(existTxt(m))}</strong></div>`).join("")}</div></section>`
       :'<p class="ubicaciones-ayuda">No hay materiales en esta ubicación.</p>';
@@ -16219,7 +16228,7 @@ function codigoQrUbicacion(codigo){return`TRAZABILIDAD-UBICACION:${normalizarCod
 function generarEtiquetaQrUbicacion(loc){
   const qr=dibujarQR(codigoQrUbicacion(loc.codigo),600);
   if(!qr)return null;
-  const almacen=almacenes.find(a=>a.codigo===loc.almacen_codigo),nombre=nombreUbicacion(loc);
+  const almacen=almacenesPorCodigo.get(loc.almacen_codigo),nombre=nombreUbicacion(loc);
   const canvas=document.createElement("canvas"),ctx=canvas.getContext("2d");
   if(!ctx)return null;
   canvas.width=800;canvas.height=1080;ctx.fillStyle="#fff";ctx.fillRect(0,0,canvas.width,canvas.height);
@@ -16251,7 +16260,7 @@ function mostrarQrUbicacion(loc,i){
   if(box.querySelector("canvas"))return;
   const qr=dibujarQR(codigoQrUbicacion(loc.codigo),240);
   if(!qr){toast("No se pudo generar el QR de la ubicación",1);return}
-  const almacen=almacenes.find(a=>a.codigo===loc.almacen_codigo);
+  const almacen=almacenesPorCodigo.get(loc.almacen_codigo);
   box.innerHTML=`<div class="acts"><button type="button" class="bs" data-ubi-descargar>⬇️ Descargar etiqueta QR</button><button type="button" class="bs" data-ubi-imprimir>🖨️ Imprimir QR</button></div>`;
   qr.className="ubicacion-qr";box.prepend(qr);
   box.querySelector("[data-ubi-descargar]").onclick=async()=>{
@@ -16284,7 +16293,7 @@ function procesarEscaneoInventario(txt){
   if(raw.toUpperCase().startsWith(prefijo)){
     const codigo=raw.slice(prefijo.length).trim(),loc=ubicacionPorCodigo(codigo);
     if(!loc){toast(ubicacionesAliasError||`Ubicación no registrada: ${codigo}`,1);return}
-    const almacen=almacenes.find(a=>a.codigo===loc.almacen_codigo);
+    const almacen=almacenesPorCodigo.get(loc.almacen_codigo);
     ubicacionDestino=loc;$("ubiDestino").textContent=`${almacen?.nombre||"Sin almacén"} → ${ubicacionConCodigo(loc)}`;renderAsignacion();toast(`Destino seleccionado: ${almacen?.nombre?almacen.nombre+" → ":""}${ubicacionConCodigo(loc)}`);$("ubiScan").focus();return
   }
   const cod=codDe(raw).toLowerCase(),m=mats.find(x=>x.codigo.toLowerCase()===cod);
@@ -16295,7 +16304,7 @@ function procesarEscaneoInventario(txt){
   asignacionItems.push({codigo:m.codigo});renderAsignacion();
 }
 function renderAsignacion(){
-  $("asigLista").innerHTML=asignacionItems.map((item,i)=>{const m=mats.find(x=>x.codigo===item.codigo);if(!m)return"";const origen=ubicaciones.find(loc=>loc.codigo===m.ubicacionCodigo),origenTxt=origen?ubicacionConCodigo(origen):m.ubicacion||"Sin ubicación";return`<div class="asig-item"><span><b>${esc(m.codigo)}</b> · ${esc(m.descripcion)} · ${esc(existTxt(m))}<br><small>Desde: ${esc(origenTxt)}</small></span><button type="button" class="bd" data-asig-quitar="${i}">Quitar</button></div>`}).join("");
+  $("asigLista").innerHTML=asignacionItems.map((item,i)=>{const m=mats.find(x=>x.codigo===item.codigo);if(!m)return"";const origen=ubicacionDe(m),origenTxt=origen?ubicacionConCodigo(origen):m.ubicacion||"Sin ubicación";return`<div class="asig-item"><span><b>${esc(m.codigo)}</b> · ${esc(m.descripcion)} · ${esc(existTxt(m))}<br><small>Desde: ${esc(origenTxt)}</small></span><button type="button" class="bd" data-asig-quitar="${i}">Quitar</button></div>`}).join("");
   $("asigLista").querySelectorAll("[data-asig-quitar]").forEach(b=>b.onclick=()=>{asignacionItems.splice(+b.dataset.asigQuitar,1);renderAsignacion()});
   $("ubiConfirmar").disabled=!ubicacionDestino||!asignacionItems.length||!!ubicacionesError;
 }
@@ -16321,7 +16330,7 @@ async function confirmarAsignacion(){
 function renderHistUbicaciones(){
   $("ubiHistEstado").innerHTML=[movimientosError,ajustesInventarioError].filter(Boolean).map(error=>`<div class="res bad">${esc(error)}</div>`).join("");
   const filas=movimientosUbicacion.slice().sort((a,b)=>new Date(b.created_at)-new Date(a.created_at));
-  $("ubiHistBody").innerHTML=filas.map(x=>{const anterior=almacenes.find(a=>a.codigo===x.ubicacion_anterior_almacen_codigo),nueva=almacenes.find(a=>a.codigo===x.ubicacion_nueva_almacen_codigo),desde=`${esc(x.ubicacion_anterior||"Sin ubicación")}${x.ubicacion_anterior_codigo?` <small>(${esc(x.ubicacion_anterior_codigo)})</small>`:""}`,hacia=`${esc(x.ubicacion_nueva)}${x.ubicacion_nueva_codigo?` <small>(${esc(x.ubicacion_nueva_codigo)})</small>`:""}`;return`<tr><td>${esc(new Date(x.created_at).toLocaleString("es-MX"))}</td><td>${esc(x.folio)}</td><td>${esc(x.codigo_material)}</td><td>${esc(anterior?.nombre||"Sin almacén")}</td><td>${desde}</td><td>${esc(nueva?.nombre||"Sin almacén")}</td><td>${hacia}</td><td>${esc(resumenExistencia(x.existencia))}</td></tr>`}).join("");
+  $("ubiHistBody").innerHTML=filas.map(x=>{const anterior=almacenesPorCodigo.get(x.ubicacion_anterior_almacen_codigo),nueva=almacenesPorCodigo.get(x.ubicacion_nueva_almacen_codigo),desde=`${esc(x.ubicacion_anterior||"Sin ubicación")}${x.ubicacion_anterior_codigo?` <small>(${esc(x.ubicacion_anterior_codigo)})</small>`:""}`,hacia=`${esc(x.ubicacion_nueva)}${x.ubicacion_nueva_codigo?` <small>(${esc(x.ubicacion_nueva_codigo)})</small>`:""}`;return`<tr><td>${esc(new Date(x.created_at).toLocaleString("es-MX"))}</td><td>${esc(x.folio)}</td><td>${esc(x.codigo_material)}</td><td>${esc(anterior?.nombre||"Sin almacén")}</td><td>${desde}</td><td>${esc(nueva?.nombre||"Sin almacén")}</td><td>${hacia}</td><td>${esc(resumenExistencia(x.existencia))}</td></tr>`}).join("");
   $("ubiHistVacio").hidden=filas.length>0;
   const conteos=mats.flatMap(m=>(m.ajustesInventario||[]).map(ajuste=>({...ajuste,codigo_material:m.codigo}))).sort((a,b)=>new Date(b.created_at)-new Date(a.created_at));
   $("conteoHistBody").innerHTML=conteos.map(x=>`<tr><td>${esc(new Date(x.created_at).toLocaleString("es-MX"))}</td><td><b>${esc(x.codigo_material)}</b></td><td>${esc(x.ubicacion_nombre||x.ubicacion_codigo||"")}</td><td>${esc(fmt(Number(x.existencia_anterior)))} ${esc(x.unidad)}</td><td>${esc(fmt(Number(x.existencia_contada)))} ${esc(x.unidad)}</td><td>${esc(fmt(Number(x.diferencia)))} ${esc(x.unidad)}</td><td class="l">${esc(x.motivo||"—")}</td><td>${esc(x.usuario||"—")}</td></tr>`).join("");
@@ -16342,13 +16351,13 @@ async function resolverUbicacionRegistro(nombre,tipoRegistro,ubicacionAnteriorCo
   if(almacenesError||ubicacionesError)throw new Error("No se pudieron consultar los almacenes y ubicaciones. Recarga antes de guardar.");
   const coincideNombre=loc=>[loc.nombre,loc.codigo].some(texto=>String(texto||"").trim().toLocaleLowerCase()===clave||normalizarCodigoUbicacion(texto).toLocaleLowerCase()===codigoIngresado);
   const anterior=ubicaciones.find(loc=>loc.codigo===ubicacionAnteriorCodigo&&coincideNombre(loc));
-  let almacen=almacenes.find(a=>a.codigo===almacenCodigo);
+  let almacen=almacenesPorCodigo.get(almacenCodigo);
   if(!almacenCodigo){
-    if(anterior)almacen=almacenes.find(a=>a.codigo===anterior.almacen_codigo);
+    if(anterior)almacen=almacenesPorCodigo.get(anterior.almacen_codigo);
     const coincidencias=ubicaciones.filter(coincideNombre);
     const existente=anterior|| (coincidencias.length===1?coincidencias[0]:null);
     if(!existente)throw new Error(coincidencias.length>1?"La ubicación existe en más de un almacén. Selecciona Materia prima o Consumibles para indicar el almacén correcto.":"Para crear una ubicación desde el registro, selecciona Materia prima (almacén 61) o Consumibles (almacén 62).");
-    almacen=almacenes.find(a=>a.codigo===existente.almacen_codigo);
+    almacen=almacenesPorCodigo.get(existente.almacen_codigo);
     if(!almacen)throw new Error("No se encontró el almacén de la ubicación seleccionada.");
     return{ubicacion:existente,almacen,creada:false};
   }
@@ -16431,51 +16440,16 @@ function leerTextoArchivo(f){return new Promise((res,rej)=>{const r=new FileRead
 function normalizarClave(c){return String(c||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]/g,"")}
 function buscarValorFila(obj,claves){if(!obj)return"";const mapa=new Map(Object.entries(obj).map(([k,v])=>[normalizarClave(k),v]));for(const c of claves){const k=normalizarClave(c),v=mapa.get(k);if(v!==undefined&&v!==null&&String(v).trim()!=="")return v}return""}
 function obtenerAlmacenCodigo(valor){if(!valor)return"";const v=String(valor).trim();if(!v)return"";const a=almacenes.find(x=>x.codigo.toLowerCase()===v.toLowerCase()||x.nombre.toLowerCase()===v.toLowerCase());return a?a.codigo:v}
-async function importarUbicacionesExcel(file){
-  if(!esAdmin)throw new Error("Solo el administrador puede importar ubicaciones.");
-  if(!window.XLSX)throw new Error("No se pudo cargar el lector de Excel. Revise la conexión y recargue la página.");
-  if(almacenesError||ubicacionesError)throw new Error("Corrija los errores de almacenes/ubicaciones antes de importar.");
-  const workbook=XLSX.read(await file.arrayBuffer(),{type:"array",cellDates:true}),nombreHoja=workbook.SheetNames[0],sheet=workbook.Sheets[nombreHoja];
-  if(!sheet)throw new Error("El archivo no contiene hojas para importar.");
-  const rows=XLSX.utils.sheet_to_json(sheet,{defval:"",raw:true});
-  if(!rows.length)throw new Error("No se encontraron filas para importar.");
-  const existentes=new Set(ubicaciones.map(u=>normalizarCodigoUbicacion(u.codigo).toLowerCase()));
-  const porAlmacen=new Map(almacenes.map(a=>[a.codigo.toLowerCase(),a.codigo]));
-  const aInsertar=[],omitidos=[],sinAlmacen=[],duplicados=[];
-  rows.forEach(row=>{
-    const valor=String(buscarValorFila(row,["codigo","ubicacion","codigo_ubicacion","codigoubicacion","ubi","clave"])).trim();
-    if(!valor)return;
-    const codigo=normalizarCodigoUbicacion(valor);
-    if(existentes.has(codigo.toLowerCase())){duplicados.push(codigo);return}
-    const almacenValor=buscarValorFila(row,["almacen_codigo","almacencodigo","almacen","clave_almacen","almacen_id"]);
-    const almacenCodigo=obtenerAlmacenCodigo(almacenValor);
-    if(!almacenCodigo){sinAlmacen.push(codigo);return}
-    if(!porAlmacen.has(almacenCodigo.toLowerCase())){sinAlmacen.push(codigo);return}
-    aInsertar.push({codigo,nombre:codigo,almacen_codigo:almacenCodigo});
-    existentes.add(codigo.toLowerCase());
-  });
-  if(!aInsertar.length){throw new Error(`No se importaron ubicaciones. Duplicados: ${duplicados.length} · Sin almacén válido: ${sinAlmacen.length}`)}
-  const{error}=await sb.from("ubicaciones").insert(aInsertar);
-  if(error)throw error;
-  await cargarUbicaciones();
-  toast(`Ubicaciones importadas: ${aInsertar.length} · Duplicados: ${duplicados.length} · Sin almacén válido: ${sinAlmacen.length}`);
-}
-async function importarUbicacionesJson(file){
-  if(!esAdmin)throw new Error("Solo el administrador puede importar ubicaciones.");
-  if(almacenesError||ubicacionesError)throw new Error("Corrija los errores de almacenes/ubicaciones antes de importar.");
-  const texto=await leerTextoArchivo(file);
-  let data;try{data=JSON.parse(texto)}catch{throw new Error("Archivo JSON no válido")}
-  const filas=Array.isArray(data)?data:Array.isArray(data?.ubicaciones)?data.ubicaciones:Array.isArray(data?.items)?data.items:[];
-  if(!filas.length)throw new Error("No se encontraron ubicaciones en el JSON.");
+async function procesarFilasUbicaciones(filas){
   const existentes=new Set(ubicaciones.map(u=>normalizarCodigoUbicacion(u.codigo).toLowerCase()));
   const porAlmacen=new Map(almacenes.map(a=>[a.codigo.toLowerCase(),a.codigo]));
   const aInsertar=[],duplicados=[],sinAlmacen=[];
   filas.forEach(row=>{
-    const valor=String(buscarValorFila(row,["codigo","ubicacion","codigo_ubicacion","ubi"])).trim();
+    const valor=String(buscarValorFila(row,["codigo","ubicacion","codigo_ubicacion","codigoubicacion","ubi","clave"])).trim();
     if(!valor)return;
     const codigo=normalizarCodigoUbicacion(valor);
     if(existentes.has(codigo.toLowerCase())){duplicados.push(codigo);return}
-    const almacenCodigo=obtenerAlmacenCodigo(buscarValorFila(row,["almacen_codigo","almacencodigo","almacen","almacen_id"]));
+    const almacenCodigo=obtenerAlmacenCodigo(buscarValorFila(row,["almacen_codigo","almacencodigo","almacen","clave_almacen","almacen_id"]));
     if(!almacenCodigo||!porAlmacen.has(almacenCodigo.toLowerCase())){sinAlmacen.push(codigo);return}
     aInsertar.push({codigo,nombre:codigo,almacen_codigo:almacenCodigo});
     existentes.add(codigo.toLowerCase());
@@ -16486,13 +16460,32 @@ async function importarUbicacionesJson(file){
   await cargarUbicaciones();
   toast(`Ubicaciones importadas: ${aInsertar.length} · Duplicados: ${duplicados.length} · Sin almacén válido: ${sinAlmacen.length}`);
 }
+async function importarUbicacionesExcel(file){
+  if(!esAdmin)throw new Error("Solo el administrador puede importar ubicaciones.");
+  if(!window.XLSX)throw new Error("No se pudo cargar el lector de Excel. Revise la conexión y recargue la página.");
+  if(almacenesError||ubicacionesError)throw new Error("Corrija los errores de almacenes/ubicaciones antes de importar.");
+  const workbook=XLSX.read(await file.arrayBuffer(),{type:"array",cellDates:true}),nombreHoja=workbook.SheetNames[0],sheet=workbook.Sheets[nombreHoja];
+  if(!sheet)throw new Error("El archivo no contiene hojas para importar.");
+  const rows=XLSX.utils.sheet_to_json(sheet,{defval:"",raw:true});
+  if(!rows.length)throw new Error("No se encontraron filas para importar.");
+  await procesarFilasUbicaciones(rows);
+}
+async function importarUbicacionesJson(file){
+  if(!esAdmin)throw new Error("Solo el administrador puede importar ubicaciones.");
+  if(almacenesError||ubicacionesError)throw new Error("Corrija los errores de almacenes/ubicaciones antes de importar.");
+  const texto=await leerTextoArchivo(file);
+  let data;try{data=JSON.parse(texto)}catch{throw new Error("Archivo JSON no válido")}
+  const filas=Array.isArray(data)?data:Array.isArray(data?.ubicaciones)?data.ubicaciones:Array.isArray(data?.items)?data.items:[];
+  if(!filas.length)throw new Error("No se encontraron ubicaciones en el JSON.");
+  await procesarFilasUbicaciones(filas);
+}
 $("bUbiExcel").onclick=()=>{if(!esAdmin){toast("Solo el administrador puede importar ubicaciones.",1);return}$("fileUbiExcel").click()};
 $("bUbiJson").onclick=()=>{if(!esAdmin){toast("Solo el administrador puede importar ubicaciones.",1);return}$("fileUbiJson").click()};
 $("fileUbiExcel").onchange=async e=>{const file=e.target.files[0];e.target.value="";if(!file)return;try{await importarUbicacionesExcel(file)}catch(err){toast(err.message||"No se pudo importar ubicaciones",1)}};
 $("fileUbiJson").onchange=async e=>{const file=e.target.files[0];e.target.value="";if(!file)return;try{await importarUbicacionesJson(file)}catch(err){toast(err.message||"No se pudo importar ubicaciones",1)}};
 $("ubiForm").addEventListener("submit",async e=>{
   e.preventDefault();const codigo=normalizarCodigoUbicacion($("ubiCodigo").value);
-  const almacenCodigo=$("ubiAlmacen").value,almacen=almacenes.find(a=>a.codigo===almacenCodigo);
+  const almacenCodigo=$("ubiAlmacen").value,almacen=almacenesPorCodigo.get(almacenCodigo);
   if(!codigo||!almacen)return;
   if(ubicaciones.some(loc=>loc.almacen_codigo===almacenCodigo&&normalizarCodigoUbicacion(loc.codigo).toLocaleLowerCase()===codigo.toLocaleLowerCase())){
     toast(`La ubicación ${codigo} ya está registrada en ${almacen.nombre}.`,1);return;
