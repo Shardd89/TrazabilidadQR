@@ -15,6 +15,8 @@
 > - `index.html` consume el RPC en `cargar()` y usa `existencia()` con fallback
 >   local si el RPC no está disponible.
 > - `registrar_salida()` alineado a la misma unidad base que el cliente.
+> - Conteo cíclico de MP con longitud: se captura en **piezas (PZ)** y el
+>   ajuste se guarda en la unidad base para no romper la vista ni el historial.
 > - Los `despachos` y `ajustes` **siguen descargándose** porque el cliente los
 >   necesita para historial, reimpresión y validación de piezas ya surtidas.
 >

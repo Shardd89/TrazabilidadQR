@@ -16382,19 +16382,31 @@ async function agregarMoverMaterialParaConteo(codigo,ubicacion,boton){
   buscarMaterialesParaConteo();
   if(abrirConteoCiclico(material.codigo,ubicacion))conteoTrasladadoPendiente=true;
 }
+async function rpcConteo(codigo,ubicacion,anterior,contada,unidad,motivo,base){
+  const args={p_codigo_material:codigo,p_ubicacion_codigo:ubicacion,p_existencia_anterior:anterior,p_existencia_contada:contada,p_unidad:unidad,p_motivo:motivo};
+  let resultado=await sb.rpc("registrar_conteo_ciclico",args);
+  if(resultado.error&&unidad==="PZ"&&base&&/UNIDAD_DE_CONTEO_INVALIDA/.test(String(resultado.error.message||""))){
+    // Servidor anterior al conteo en piezas: reintenta en la unidad base.
+    resultado=await sb.rpc("registrar_conteo_ciclico",{...args,p_existencia_anterior:base.rest,p_existencia_contada:r4(contada*base.L),p_unidad:base.u});
+  }
+  return resultado;
+}
 function abrirConteoCiclico(codigo,loc){
   if(!esAdmin){toast("Solo el administrador puede ajustar existencias.",1);return false}
   if(ajustesInventarioError){toast(ajustesInventarioError,1);return false}
   const material=mats.find(m=>m.codigo===codigo);
   if(!material||!listaMaterialesEnUbicacion(loc).some(m=>m.codigo===codigo)){toast("El material ya no está asignado a esta ubicación. Actualiza la consulta.",1);return false}
   const e=existencia(material);
+  const capturaPz=e.modo==="long";
+  const anterior=capturaPz?e.qty:e.rest;
+  const unidad=capturaPz?"PZ":e.u;
   $("conteoCodigo").value=material.codigo;
   $("conteoUbicacion").value=loc.codigo;
-  $("conteoAnterior").value=String(e.rest);
+  $("conteoAnterior").value=String(anterior);
   $("conteoMaterial").textContent=`${material.codigo} · ${material.descripcion||""} · ${ubicacionConCodigo(loc)}`;
   $("conteoActual").textContent=existTxt(material);
-  $("conteoUnidad").textContent=e.u;
-  $("conteoCantidad").value=String(Math.max(0,e.rest));
+  $("conteoUnidad").textContent=unidad;
+  $("conteoCantidad").value=String(Math.max(0,anterior));
   $("conteoMotivo").value="";
   conteoTrasladadoPendiente=false;
   $("conteoDialog").showModal();
@@ -16410,17 +16422,20 @@ $("conteoForm").addEventListener("submit",async event=>{
   if(!material||!ubicacion||!listaMaterialesEnUbicacion(ubicacion).some(m=>m.codigo===codigo)){toast("El material cambió de ubicación. Escanea la ubicación de nuevo.",1);$("conteoDialog").close();return}
   if(!Number.isFinite(contada)||contada<0){toast("Ingresa una existencia contada válida.",1);return}
   const actualCalculado=existencia(material);
-  if(Math.abs(actualCalculado.rest-anterior)>0.0001){toast("La existencia cambió mientras realizabas el conteo. Vuelve a abrir el ajuste.",1);$("conteoDialog").close();return}
+  const capturaPz=actualCalculado.modo==="long";
+  const actual=capturaPz?actualCalculado.qty:actualCalculado.rest;
+  const unidad=capturaPz?"PZ":actualCalculado.u;
+  if(Math.abs(actual-anterior)>0.0001){toast("La existencia cambió mientras realizabas el conteo. Vuelve a abrir el ajuste.",1);$("conteoDialog").close();return}
   $("conteoGuardar").disabled=true;
   try{
-    const{error}=await sb.rpc("registrar_conteo_ciclico",{p_codigo_material:codigo,p_ubicacion_codigo:ubicacionCodigo,p_existencia_anterior:anterior,p_existencia_contada:contada,p_unidad:actualCalculado.u,p_motivo:$("conteoMotivo").value.trim()});
+    const{error}=await rpcConteo(codigo,ubicacionCodigo,anterior,contada,unidad,$("conteoMotivo").value.trim(),capturaPz?actualCalculado:null);
     if(error)throw error;
     $("conteoDialog").close();
     conteoTrasladadoPendiente=false;
     try{await cargar()}catch(err){errDB(err,"Conteo guardado, pero no se pudo actualizar el inventario");return}
     renderHistUbicaciones();
     if(ubiConsultaCodigo)mostrarMaterialesPorUbicacion(ubiConsultaCodigo);
-    toast(`Conteo guardado para ${codigo}. Ajuste: ${fmt(contada-anterior)} ${actualCalculado.u}`);
+    toast(`Conteo guardado para ${codigo}. Ajuste: ${fmt(contada-anterior)} ${unidad}`);
   }catch(err){errDB(err,conteoTrasladadoPendiente?"El material ya se agregó a la ubicación, pero no se pudo guardar el conteo cíclico":"No se pudo guardar el conteo cíclico")}
   finally{$("conteoGuardar").disabled=false}
 });
@@ -16435,10 +16450,14 @@ function abrirConteoLote(){
   const tbody=$("conteoLoteBody");tbody.innerHTML="";
   for(const material of lista){
     const e=existencia(material);
+    const capturaPz=e.modo==="long";
+    const actual=capturaPz?e.qty:e.rest;
+    const unidad=capturaPz?"PZ":e.u;
+    const actualTxt=capturaPz?`${fmt(e.qty)} PZ`:`${fmt(e.rest)} ${e.u}`;
     const tr=document.createElement("tr");
-    tr.innerHTML=`<td><b>${esc(material.codigo)}</b></td><td class="l">${esc(material.descripcion||"")}</td><td class="num">${esc(fmt(e.rest))} ${esc(e.u)}</td><td class="num"><input type="number" class="conteo-lote-input" min="0" step="any" inputmode="decimal" aria-label="Contado de ${esc(material.codigo)}"></td><td class="num conteo-lote-diff">—</td>`;
+    tr.innerHTML=`<td><b>${esc(material.codigo)}</b></td><td class="l">${esc(material.descripcion||"")}</td><td class="num" title="${esc(existTxt(material))}">${esc(actualTxt)}</td><td class="num"><input type="number" class="conteo-lote-input" min="0" step="any" inputmode="decimal" aria-label="Contado de ${esc(material.codigo)}"></td><td class="num conteo-lote-diff">—</td>`;
     tbody.appendChild(tr);
-    conteoLoteItems.push({material,snapshot:r4(e.rest),unidad:e.u,input:tr.querySelector("input"),diff:tr.querySelector(".conteo-lote-diff")});
+    conteoLoteItems.push({material,snapshot:r4(actual),capturaPz,unidad,input:tr.querySelector("input"),diff:tr.querySelector(".conteo-lote-diff")});
     tr.querySelector("input").addEventListener("input",function(){actualizarDifLote(this)});
   }
   $("conteoLoteUbi").textContent=ubicacionConCodigo(loc);
@@ -16477,14 +16496,16 @@ async function guardarConteoLote(){
     const fresh=mats.find(m=>m.codigo===item.material.codigo);
     if(!fresh||!listaMaterialesEnUbicacion(loc).some(m=>m.codigo===item.material.codigo)){errores.push(`${item.material.codigo}: ya no está en esta ubicación`);continue}
     const actual=existencia(fresh);
-    if(Math.abs(actual.rest-item.snapshot)>0.0001){errores.push(`${item.material.codigo}: la existencia cambió mientras contabas`);continue}
-    aGuardar.push({item,contado,unidad:actual.u});
+    if((item.capturaPz?"long":"pz")!==actual.modo){errores.push(`${item.material.codigo}: la forma de conteo cambió, vuelve a abrir el conteo`);continue}
+    const actualValor=item.capturaPz?actual.qty:actual.rest;
+    if(Math.abs(actualValor-item.snapshot)>0.0001){errores.push(`${item.material.codigo}: la existencia cambió mientras contabas`);continue}
+    aGuardar.push({item,contado,unidad:item.capturaPz?"PZ":actual.u,base:item.capturaPz?actual:null});
   }
   $("conteoLoteGuardar").disabled=true;
   let guardados=0;
-  for(const{item,contado,unidad}of aGuardar){
+  for(const{item,contado,unidad,base}of aGuardar){
     try{
-      const{error}=await sb.rpc("registrar_conteo_ciclico",{p_codigo_material:item.material.codigo,p_ubicacion_codigo:locCodigo,p_existencia_anterior:item.snapshot,p_existencia_contada:r4(contado),p_unidad:unidad,p_motivo:motivo});
+      const{error}=await rpcConteo(item.material.codigo,locCodigo,item.snapshot,r4(contado),unidad,motivo,base);
       if(error)throw error;
       guardados++;
     }catch(err){const msg=String(err?.message||err||"Error").replace(/\s+/g," ").slice(0,140);errores.push(`${item.material.codigo}: ${msg}`)}
@@ -16747,13 +16768,23 @@ async function confirmarAsignacion(){
     toast(`Traspaso registrado a ${ubicacionConCodigo(ubicacionDestino)} · ${folio}`);
   }catch(err){errDB(err,"No se pudo registrar el traspaso");$("ubiConfirmar").disabled=false}
 }
+function conteoHistTxt(x,valor){
+  const n=Number(valor);
+  if(!Number.isFinite(n))return `— ${x.unidad}`;
+  const m=mats.find(mat=>mat.codigo===x.codigo_material);
+  if(m&&modoLong(m)){
+    const{L,u}=longBase(m);
+    if(x.unidad===u&&L>0)return `${fmt(n)} ${u} (≈${fmt(r4(n/L))} pz)`;
+  }
+  return `${fmt(n)} ${x.unidad}`;
+}
 function renderHistUbicaciones(){
   $("ubiHistEstado").innerHTML=[movimientosError,ajustesInventarioError].filter(Boolean).map(error=>`<div class="res bad">${esc(error)}</div>`).join("");
   const filas=movimientosUbicacion.slice().sort((a,b)=>new Date(b.created_at)-new Date(a.created_at));
   $("ubiHistBody").innerHTML=filas.map(x=>{const anterior=almacenesPorCodigo.get(x.ubicacion_anterior_almacen_codigo),nueva=almacenesPorCodigo.get(x.ubicacion_nueva_almacen_codigo),desde=`${esc(x.ubicacion_anterior||"Sin ubicación")}${x.ubicacion_anterior_codigo?` <small>(${esc(x.ubicacion_anterior_codigo)})</small>`:""}`,hacia=`${esc(x.ubicacion_nueva)}${x.ubicacion_nueva_codigo?` <small>(${esc(x.ubicacion_nueva_codigo)})</small>`:""}`;return`<tr><td>${esc(new Date(x.created_at).toLocaleString("es-MX"))}</td><td>${esc(x.folio)}</td><td>${esc(x.codigo_material)}</td><td>${esc(anterior?.nombre||"Sin almacén")}</td><td>${desde}</td><td>${esc(nueva?.nombre||"Sin almacén")}</td><td>${hacia}</td><td>${esc(resumenExistencia(x.existencia))}</td></tr>`}).join("");
   $("ubiHistVacio").hidden=filas.length>0;
   const conteos=mats.flatMap(m=>(m.ajustesInventario||[]).map(ajuste=>({...ajuste,codigo_material:m.codigo}))).sort((a,b)=>new Date(b.created_at)-new Date(a.created_at));
-  $("conteoHistBody").innerHTML=conteos.map(x=>`<tr><td>${esc(new Date(x.created_at).toLocaleString("es-MX"))}</td><td><b>${esc(x.codigo_material)}</b></td><td>${esc(x.ubicacion_nombre||x.ubicacion_codigo||"")}</td><td>${esc(fmt(Number(x.existencia_anterior)))} ${esc(x.unidad)}</td><td>${esc(fmt(Number(x.existencia_contada)))} ${esc(x.unidad)}</td><td>${esc(fmt(Number(x.diferencia)))} ${esc(x.unidad)}</td><td class="l">${esc(x.motivo||"—")}</td><td>${esc(x.usuario||"—")}</td></tr>`).join("");
+  $("conteoHistBody").innerHTML=conteos.map(x=>`<tr><td>${esc(new Date(x.created_at).toLocaleString("es-MX"))}</td><td><b>${esc(x.codigo_material)}</b></td><td>${esc(x.ubicacion_nombre||x.ubicacion_codigo||"")}</td><td>${esc(conteoHistTxt(x,x.existencia_anterior))}</td><td>${esc(conteoHistTxt(x,x.existencia_contada))}</td><td>${esc(conteoHistTxt(x,x.diferencia))}</td><td class="l">${esc(x.motivo||"—")}</td><td>${esc(x.usuario||"—")}</td></tr>`).join("");
   $("conteoHistVacio").hidden=conteos.length>0;
 }
 function resumenExistencia(e){

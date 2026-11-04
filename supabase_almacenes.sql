@@ -825,6 +825,8 @@ declare
   v_surtido numeric;
   v_ajustes numeric;
   v_existencia numeric;
+  v_existencia_contada numeric;
+  v_unidad_registro text;
 begin
   if not public.is_admin() then
     raise exception 'NO_AUTORIZADO';
@@ -893,9 +895,6 @@ begin
   where codigo_material = p_codigo_material;
 
   if v_modo_longitud then
-    if p_unidad <> v_unidad then
-      raise exception 'UNIDAD_DE_CONTEO_INVALIDA';
-    end if;
     v_factor := case v_unidad when 'mm' then 1 when 'cm' then 10 when 'm' then 1000 else 25.4 end;
     v_total := coalesce(nullif(v_material.data->>'cantidad', '')::numeric, 0) * v_longitud;
 
@@ -914,6 +913,26 @@ begin
     where d.codigo = p_codigo_material;
 
     v_existencia := floor((v_total - v_surtido + v_ajustes) * 10000 + 0.5) / 10000;
+
+    if p_unidad = 'PZ' then
+      -- El conteo de materia prima se captura en piezas. La existencia
+      -- anterior llega en piezas y el ajuste se guarda en unidad base para
+      -- no romper la vista de existencias ni los consumidores existentes.
+      v_unidad_registro := v_unidad;
+      v_existencia_contada := floor((p_existencia_contada * v_longitud) * 10000 + 0.5) / 10000;
+      if abs((v_existencia / v_longitud) - p_existencia_anterior) > 0.0001 then
+        raise exception 'EXISTENCIA_CAMBIO_DURANTE_CONTEO';
+      end if;
+    else
+      if p_unidad <> v_unidad then
+        raise exception 'UNIDAD_DE_CONTEO_INVALIDA';
+      end if;
+      v_unidad_registro := v_unidad;
+      v_existencia_contada := p_existencia_contada;
+      if abs(v_existencia - p_existencia_anterior) > 0.00005 then
+        raise exception 'EXISTENCIA_CAMBIO_DURANTE_CONTEO';
+      end if;
+    end if;
   else
     if p_unidad <> 'PZ' then
       raise exception 'UNIDAD_DE_CONTEO_INVALIDA';
@@ -926,10 +945,12 @@ begin
     where d.codigo = p_codigo_material;
 
     v_existencia := floor((v_total - v_surtido + v_ajustes) * 10000 + 0.5) / 10000;
-  end if;
+    v_unidad_registro := 'PZ';
+    v_existencia_contada := p_existencia_contada;
 
-  if abs(v_existencia - p_existencia_anterior) > 0.00005 then
-    raise exception 'EXISTENCIA_CAMBIO_DURANTE_CONTEO';
+    if abs(v_existencia - p_existencia_anterior) > 0.00005 then
+      raise exception 'EXISTENCIA_CAMBIO_DURANTE_CONTEO';
+    end if;
   end if;
 
   insert into public.ajustes_inventario_ciclico (
@@ -938,14 +959,20 @@ begin
   )
   values (
     p_codigo_material, v_ubicacion.codigo, v_ubicacion.nombre,
-    v_existencia, p_existencia_contada,
-    p_existencia_contada - v_existencia,
-    p_unidad, trim(coalesce(p_motivo, '')),
+    v_existencia, v_existencia_contada,
+    v_existencia_contada - v_existencia,
+    v_unidad_registro, trim(coalesce(p_motivo, '')),
     coalesce(nullif(auth.jwt()->>'email', ''), 'Administrador')
   )
   returning id into v_id;
 
-  return jsonb_build_object('id', v_id, 'diferencia', p_existencia_contada - v_existencia);
+  return jsonb_build_object(
+    'id', v_id,
+    'unidad', v_unidad_registro,
+    'existencia_anterior', v_existencia,
+    'existencia_contada', v_existencia_contada,
+    'diferencia', v_existencia_contada - v_existencia
+  );
 end;
 $$;
 
