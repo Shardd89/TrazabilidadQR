@@ -23,6 +23,7 @@ declare
   v_unidad text;
   v_es_mp boolean;
   v_longitud_individual numeric;
+  v_longitud_base numeric;
   v_unidad_longitud text;
   v_total_longitud numeric;
   v_total_piezas numeric;
@@ -73,48 +74,64 @@ begin
     end if;
 
     -- Extraer datos del material
-    v_es_mp := coalesce((v_material.data->>'esMP')::boolean, false);
-    v_longitud_individual := (v_material.data->>'longitudIndividual')::numeric;
-    v_unidad_longitud := coalesce(v_material.data->>'longU', v_material.data->>'longitudUnidad');
-    v_total_piezas := coalesce((v_material.data->>'cantidad')::numeric, 0);
+    v_es_mp := lower(coalesce(v_material.data->>'tipoRegistro', '')) in ('mp', 'materia prima')
+      or lower(coalesce(v_material.data->>'esMP', 'false')) = 'true';
+    v_total_piezas := coalesce(nullif(v_material.data->>'cantidad', '')::numeric, 0);
+    v_longitud_individual := coalesce(nullif(v_material.data->>'longitudIndividual', '')::numeric, 0);
+    v_longitud_base := coalesce(nullif(v_material.data->>'longitud', '')::numeric, 0);
+    v_unidad_longitud := coalesce(
+      nullif(v_material.data->>'longU', ''),
+      nullif(v_material.data->>'longitudUnidad', ''),
+      'mm'
+    );
+    if v_unidad_longitud not in ('mm', 'cm', 'm', 'in') then
+      v_unidad_longitud := 'mm';
+    end if;
 
-    -- Determinar modo: longitud o piezas
-    v_modo := case
-      when v_es_mp and v_longitud_individual is not null and v_longitud_individual > 0
-      then 'longitud'
-      else 'piezas'
-    end;
-
-    -- Calcular existencia actual
-    if v_modo = 'longitud' then
-      -- Convertir unidad a mm (base)
+    -- Determinar modo y unidad base (mismo criterio que existencia() del cliente):
+    -- si hay longitudIndividual la base es mm; si no, se usa longU/longitudUnidad.
+    if v_es_mp and v_longitud_individual > 0 then
+      v_modo := 'longitud';
+      v_longitud_base := v_longitud_individual;
+      v_factor := 1;
+    elsif v_es_mp and v_longitud_base > 0 then
+      v_modo := 'longitud';
       v_factor := case v_unidad_longitud
         when 'cm' then 10
         when 'm' then 1000
         when 'in' then 25.4
-        else 1  -- 'mm' o null → 1
+        else 1
       end;
-      v_total_longitud := v_total_piezas * v_longitud_individual * v_factor;
+    else
+      v_modo := 'piezas';
+      v_factor := 1;
+    end if;
 
-      -- Calcular surtido acumulado en mm
+    -- Calcular existencia actual
+    if v_modo = 'longitud' then
+      -- Total en unidad base
+      v_total_longitud := v_total_piezas * v_longitud_base;
+
+      -- Surtido acumulado convertido a la unidad base
       select coalesce(sum(
-        case 
-          when (d.data->>'modo') = 'longitud' then
-            (d.data->>'longitud')::numeric * 
-            case coalesce(d.data->>'unidad', 'mm')
+        coalesce(nullif(d.data->>'longitud', '')::numeric, 0)
+        * (case
+            when coalesce(d.data->>'unidad', '') in ('mm', 'cm', 'm', 'in')
+            then case d.data->>'unidad'
               when 'cm' then 10
               when 'm' then 1000
               when 'in' then 25.4
               else 1
             end
-          else 0
-        end
+            else v_factor
+          end)
+        / v_factor
       ), 0)
       into v_surtido_longitud
       from public.despachos d
       where d.codigo = v_codigo;
 
-      -- Calcular ajustes de inventario
+      -- Ajustes: registrar_conteo_ciclico guarda la diferencia en unidad base
       select coalesce(sum((a.diferencia)::numeric), 0)
       into v_ajustes
       from public.ajustes_inventario_ciclico a
@@ -124,19 +141,25 @@ begin
       v_existencia_longitud := v_total_longitud - v_surtido_longitud + v_ajustes;
 
       -- Validar que la longitud solicitada no exceda la existencia
-      v_longitud := (v_item->'data'->>'longitud')::numeric;
-      v_unidad := coalesce(v_item->'data'->>'unidad', 'mm');
-      v_factor := case v_unidad
-        when 'cm' then 10
-        when 'm' then 1000
-        when 'in' then 25.4
-        else 1
-      end;
+      v_longitud := coalesce(nullif(v_item->'data'->>'longitud', '')::numeric, 0);
+      v_unidad := coalesce(
+        nullif(v_item->'data'->>'unidad', ''),
+        case when v_longitud_individual > 0 then 'mm' else v_unidad_longitud end
+      );
+      if v_unidad not in ('mm', 'cm', 'm', 'in') then
+        v_unidad := case when v_longitud_individual > 0 then 'mm' else v_unidad_longitud end;
+      end if;
 
-      if v_longitud * v_factor > v_existencia_longitud + 0.0001 then
-        raise exception 'EXISTENCIA_INSUFICIENTE: % · Disponible: % mm · Solicitado: % %',
+      if (v_longitud * (case v_unidad
+            when 'cm' then 10
+            when 'm' then 1000
+            when 'in' then 25.4
+            else 1
+          end) / v_factor) > v_existencia_longitud + 0.0001 then
+        raise exception 'EXISTENCIA_INSUFICIENTE: % · Disponible: % % · Solicitado: % %',
           v_codigo,
           round(v_existencia_longitud, 4),
+          case when v_factor = 1 then 'mm' else v_unidad_longitud end,
           round(v_longitud, 4),
           v_unidad;
       end if;

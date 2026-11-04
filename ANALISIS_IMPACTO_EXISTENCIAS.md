@@ -1,8 +1,32 @@
 # Análisis de Impacto: Existencias en la Base de Datos
 
+> **Estado: IMPLEMENTADO (versión final).**
+>
+> La propuesta original de vista materializada se descartó porque
+> `REFRESH MATERIALIZED VIEW CONCURRENTLY` no puede ejecutarse dentro de una
+> función/transacción (y PostgREST ejecuta cada RPC en una transacción), además
+> de que un refresh normal bloquea lecturas.
+>
+> Implementación final:
+> - **Vista normal** `public.existencias_materiales` (siempre actualizada, sin refresh).
+> - RPC `obtener_existencias_materiales(p_codigos)` con contrato único
+>   (`modo`, `unidad`, `total`, `surtido`, `ajustes`, `existencia`).
+> - RPC `calcular_existencia_material(codigo)` para consultas puntuales.
+> - `index.html` consume el RPC en `cargar()` y usa `existencia()` con fallback
+>   local si el RPC no está disponible.
+> - `registrar_salida()` alineado a la misma unidad base que el cliente.
+> - Los `despachos` y `ajustes` **siguen descargándose** porque el cliente los
+>   necesita para historial, reimpresión y validación de piezas ya surtidas.
+>
+> Para activarlo hay que ejecutar en Supabase, en este orden:
+> 1. `supabase_existencias_vista.sql`
+> 2. `supabase_surtido_atomico.sql`
+
 ## 📋 Resumen
 
-Propuesta para mover el cálculo de existencias desde el cliente JavaScript al servidor PostgreSQL mediante una **vista materializada** + **índices optimizados** + **funciones RPC**.
+Mover el cálculo de existencias desde el cliente JavaScript al servidor PostgreSQL mediante una **vista normal** + **índices optimizados** + **funciones RPC**.
+
+> Las secciones siguientes describen la propuesta original (vista materializada) y se conservan como referencia histórica. La implementación vigente es la del recuadro superior.
 
 ---
 
@@ -409,18 +433,21 @@ function existencia(m) {
 
 ---
 
-## 📋 Checklist de Aprobación
+## 📋 Checklist de Implementación
 
-Marca lo que apruebas:
+- [x] ✅ Índice `ajustes_inventario_ciclico(codigo_material, unidad)`
+- [x] ✅ Función `factor_longitud(unidad)`
+- [x] ✅ Vista normal `existencias_materiales` (sin refresco)
+- [x] ✅ Función `obtener_existencias_materiales(codigos[])`
+- [x] ✅ Función `calcular_existencia_material(codigo)`
+- [x] ✅ Cliente: `cargar()` obtiene existencias del servidor
+- [x] ✅ Cliente: `existencia()` prioriza servidor con fallback local
+- [x] ✅ Cliente: refresco incremental en realtime
+- [x] ✅ `registrar_salida()` alineado a unidad base
+- [ ] ⏳ Ejecutar los SQL en Supabase (paso manual)
+- [ ] ⏳ Validar con datos reales (piezas, longitudIndividual, longU ≠ mm)
 
-- [ ] ✅ Aplicar índices (`despachos_codigo_idx`, etc.)
-- [ ] ✅ Crear función `calcular_existencia_material(codigo)`
-- [ ] ✅ Crear vista materializada `existencias_materiales`
-- [ ] ✅ Crear función `refrescar_existencias()`
-- [ ] ✅ Crear función `obtener_existencias_materiales(codigos[])`
-- [ ] ⏸️ Modificar cliente para usar existencias del servidor (después)
-- [ ] ❌ NO usar triggers automáticos (demasiado overhead)
-
----
-
-**¿Apruebas que aplique el SQL en `supabase_existencias_vista.sql` y agregue las llamadas a `refrescar_existencias()` en el código?**
+**Notas:**
+- No se usa vista materializada ni `refrescar_existencias()`.
+- No se usan triggers de refresco.
+- No se elimina la descarga de `despachos`/`ajustes`: se necesitan para el historial.

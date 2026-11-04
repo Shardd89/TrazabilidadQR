@@ -15700,6 +15700,33 @@ function errDB(e,msg){console.error(e);const t=String((e&&e.message)||e||"");
 async function leerTodo(tabla,cols,ord){const out=[];
   for(let i=0;;i+=1000){let q=sb.from(tabla).select(cols);ord.forEach(o=>{q=q.order(o)});const{data,error}=await q.range(i,i+999);if(error)throw error;out.push(...data);if(data.length<1000)break}
   return out}
+// --- Existencias calculadas en el servidor (con fallback local) ---
+let existenciasServidorError=false,existenciasT=null;
+async function leerExistenciasServidor(codigos){
+  if(!sb)return null;
+  try{
+    const{data,error}=await sb.rpc("obtener_existencias_materiales",codigos?.length?{p_codigos:codigos}:undefined);
+    if(error)throw error;
+    return Array.isArray(data)?data:null;
+  }catch(e){
+    if(!existenciasServidorError){existenciasServidorError=true;console.warn("Existencias del servidor no disponibles; se usa el cálculo local.",e)}
+    return null;
+  }
+}
+function aplicarExistenciasServidor(lista){
+  if(!Array.isArray(lista))return;
+  const por=new Map(lista.map(e=>[String(e.codigo),e]));
+  mats.forEach(m=>{m.existenciaServer=por.get(String(m.codigo))||null});
+  existenciasServidorError=false;
+}
+function invalidarExistencias(){mats.forEach(m=>{m.existenciaServer=null})}
+function programarExistencias(){
+  clearTimeout(existenciasT);
+  existenciasT=setTimeout(async()=>{
+    const lista=await leerExistenciasServidor();
+    if(lista){aplicarExistenciasServidor(lista);renderVisible()}
+  },400);
+}
 // Recarga los datos y conserva la edición, el QR y los renglones pendientes.
 let cargasActivas=0;
 function filasSkeleton(columnas,filas=4){
@@ -15726,6 +15753,7 @@ function ocultarCarga(){
 async function cargar(){
   mostrarCarga();
   try{
+  const existenciasServidor=leerExistenciasServidor();
   const[materialesResultado,despachosResultado,ajustesResultado]=await Promise.allSettled([
     leerTodo("materiales","codigo,data",["codigo"]),
     leerTodo("despachos","codigo,t,data,piezas",["t","id"]),
@@ -15744,6 +15772,7 @@ async function cargar(){
   const edI=$("editIndex").value,edCod=edI!==""&&mats[+edI]?mats[+edI].codigo:null;
   const act=actual,actAntes=act?JSON.stringify(act):"";
   mats=A.map(r=>({...normalizarMaterial(r.data),codigo:r.codigo,despachos:por[r.codigo]||[],ajustesInventario:ajustesPor[r.codigo]||[]}));
+  aplicarExistenciasServidor(await existenciasServidor);
   if(edCod){const i=mats.findIndex(x=>x.codigo===edCod);if(i<0)resetForm();else $("editIndex").value=i}
   surItems=surItems.filter(item=>mats.some(x=>x.codigo.toLowerCase()===item.codigo.toLowerCase()));
   surItems.forEach(item=>{const m=mats.find(x=>x.codigo.toLowerCase()===item.codigo.toLowerCase());if(item.piezas?.some(n=>piezasSurt(m).has(n)))item.errorPieza=true});
@@ -15873,7 +15902,12 @@ function suscribir(){
   const handler=payload=>{
     const tabla=payload?.table;
     if(tabla&&TABLAS_INCR.has(tabla)){
-      if(aplicarCambio(payload)){renderVisible();return}
+      if(aplicarCambio(payload)){
+        invalidarExistencias();
+        programarExistencias();
+        renderVisible();
+        return;
+      }
       fallback();
       return;
     }
@@ -17183,15 +17217,34 @@ function pesoEquivalente(m,longitud,total){
   const u=pesoUnidad(m),peso=Number(m.peso);
   return u&&total>0&&Number.isFinite(peso)?{peso:r4(peso*longitud/total),u}:null;
 }
-function existencia(m){
+function ajustesEnBase(m,u){
+  return(m.ajustesInventario||[]).reduce((s,a)=>{
+    const du=String(a.unidad||"");
+    if(!FAC[du])return s;
+    return s+Number(a.diferencia||0)*FAC[du]/FAC[u];
+  },0);
+}
+function existenciaLocal(m){
   const ds=m.despachos||[];
-  const ajustes=(m.ajustesInventario||[]).reduce((s,a)=>s+Number(a.diferencia||0),0);
   if(modoLong(m)){
     const{L,u}=longBase(m),total=m.cantidad*L;
-    const surtido=ds.reduce((s,d)=>s+longitudEnBase(d,u),0),rest=r4(total-surtido+ajustes);
-    return{modo:"long",u,L,total,rest,qty:r4(rest/L),peso:pesoEquivalente(m,rest,total)};
+    const surtido=ds.reduce((s,d)=>s+longitudEnBase(d,u),0),rest=r4(total-surtido+ajustesEnBase(m,u));
+    return{modo:"long",u,L,total,rest,qty:L>0?r4(rest/L):0,peso:pesoEquivalente(m,rest,total)};
   }
-  return{modo:"pz",u:m.um,rest:r4(m.cantidad-ds.reduce((s,d)=>s+(d.cantidad||0),0)+ajustes)}
+  const ajustes=(m.ajustesInventario||[]).reduce((s,a)=>s+(!a.unidad||a.unidad==="PZ"?Number(a.diferencia||0):0),0);
+  return{modo:"pz",u:m.um,rest:r4(m.cantidad-ds.reduce((s,d)=>s+(Number(d.cantidad)||0),0)+ajustes)};
+}
+function existencia(m){
+  const s=m.existenciaServer;
+  if(s&&s.modo){
+    const total=Number(s.total)||0,rest=r4(Number(s.existencia)||0);
+    if(s.modo==="longitud"){
+      const L=Number(s.longitud_base)||longBase(m).L;
+      return{modo:"long",u:s.unidad||"mm",L,total,rest,qty:L>0?r4(rest/L):0,peso:pesoEquivalente(m,rest,total)};
+    }
+    return{modo:"pz",u:s.unidad||m.um,rest};
+  }
+  return existenciaLocal(m);
 }
 function existTxt(m){const e=existencia(m);return e.modo==="long"?`${fmt(e.rest)} ${e.u} (≈${fmt(e.qty)} pz)${e.peso?` · ${fmt(e.peso.peso)} ${e.peso.u}`:""}`:`${fmt(e.rest)} ${e.u}`}
 let surItems=[],nextSurItem=1,stream=null,scanning=false,modoEscaneo="surtido",scanCooldown=new Map(),camMsgT=null;
@@ -17530,7 +17583,7 @@ async function confirmarSur(){
   const porCodigo=new Map();
   registros.forEach(({m,d})=>{
     const anteriores=porCodigo.get(m.codigo.toLowerCase())||[];
-    const temporal={...m,despachos:[...(m.despachos||[]),...anteriores]};
+    const temporal={...m,existenciaServer:null,despachos:[...(m.despachos||[]),...anteriores]};
     const exPost=existencia({...temporal,despachos:[...temporal.despachos,d]});
     d.existenciaRestante=exPost.rest;d.existenciaUnidad=exPost.u;
     if(exPost.peso){d.pesoRestante=exPost.peso.peso;d.pesoRestanteU=exPost.peso.u}
