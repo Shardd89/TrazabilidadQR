@@ -1,3 +1,22 @@
+-- ============================================================================
+-- INSTALACIÓN INICIAL · SCRIPT OBSOLETO PARA BASES YA MIGRADAS
+-- ----------------------------------------------------------------------------
+-- Este script solo debe usarse en una instalación nueva, antes de
+-- supabase_almacenes.sql. Si public.almacenes ya existe, se niega a ejecutarse
+-- para no recrear políticas FOR ALL ni una versión sin SECURITY DEFINER de
+-- asignar_inventario_ubicacion().
+-- ============================================================================
+
+begin;
+
+do $$
+begin
+  if to_regclass('public.almacenes') is not null then
+    raise exception 'SCRIPT_OBSOLETO: ejecute supabase_almacenes.sql. No vuelva a ejecutar supabase_ubicaciones.sql sobre una base existente.';
+  end if;
+end;
+$$;
+
 create table if not exists public.ubicaciones (
   codigo text primary key,
   nombre text not null,
@@ -23,20 +42,25 @@ alter table public.ubicaciones enable row level security;
 alter table public.movimientos_ubicacion enable row level security;
 
 drop policy if exists ubicaciones_staff_access on public.ubicaciones;
-create policy ubicaciones_staff_access on public.ubicaciones
-  for all to authenticated
-  using (public.is_staff())
+drop policy if exists ubicaciones_staff_select on public.ubicaciones;
+drop policy if exists ubicaciones_staff_insert on public.ubicaciones;
+create policy ubicaciones_staff_select on public.ubicaciones
+  for select to authenticated
+  using (public.is_staff());
+create policy ubicaciones_staff_insert on public.ubicaciones
+  for insert to authenticated
   with check (public.is_staff());
 
 drop policy if exists movimientos_ubicacion_staff_access on public.movimientos_ubicacion;
-create policy movimientos_ubicacion_staff_access on public.movimientos_ubicacion
-  for all to authenticated
-  using (public.is_staff())
-  with check (public.is_staff());
+drop policy if exists movimientos_ubicacion_staff_select on public.movimientos_ubicacion;
+create policy movimientos_ubicacion_staff_select on public.movimientos_ubicacion
+  for select to authenticated
+  using (public.is_staff());
 
-grant select, insert, update on public.ubicaciones to authenticated;
-grant select, insert on public.movimientos_ubicacion to authenticated;
-grant usage, select on sequence public.movimientos_ubicacion_id_seq to authenticated;
+grant select, insert on public.ubicaciones to authenticated;
+grant select on public.movimientos_ubicacion to authenticated;
+revoke insert, update, delete on public.movimientos_ubicacion from authenticated;
+revoke all on sequence public.movimientos_ubicacion_id_seq from authenticated;
 
 create or replace function public.asignar_inventario_ubicacion(
   p_ubicacion_codigo text,
@@ -45,7 +69,8 @@ create or replace function public.asignar_inventario_ubicacion(
 )
 returns integer
 language plpgsql
-set search_path = public
+security definer
+set search_path = public, pg_temp
 as $$
 declare
   v_ubicacion public.ubicaciones%rowtype;
@@ -112,4 +137,7 @@ begin
 end;
 $$;
 
+revoke all on function public.asignar_inventario_ubicacion(text, text, jsonb) from public, anon;
 grant execute on function public.asignar_inventario_ubicacion(text, text, jsonb) to authenticated;
+
+commit;

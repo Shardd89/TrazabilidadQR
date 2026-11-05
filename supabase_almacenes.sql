@@ -282,12 +282,14 @@ $$;
 drop policy if exists almacenes_staff_access on public.almacenes;
 drop policy if exists almacenes_staff_select on public.almacenes;
 drop policy if exists almacenes_staff_insert on public.almacenes;
+drop policy if exists almacenes_admin_insert on public.almacenes;
 drop policy if exists almacenes_admin_update on public.almacenes;
 drop policy if exists almacenes_admin_delete on public.almacenes;
 create policy almacenes_staff_select on public.almacenes
   for select to authenticated using (public.is_staff() or public.is_admin());
-create policy almacenes_staff_insert on public.almacenes
-  for insert to authenticated with check (public.is_staff() or public.is_admin());
+-- Alta de almacenes: solo admin (la UI ya oculta el formulario a staff).
+create policy almacenes_admin_insert on public.almacenes
+  for insert to authenticated with check (public.is_admin());
 create policy almacenes_admin_update on public.almacenes
   for update to authenticated using (public.is_admin()) with check (public.is_admin());
 create policy almacenes_admin_delete on public.almacenes
@@ -296,12 +298,14 @@ create policy almacenes_admin_delete on public.almacenes
 drop policy if exists ubicaciones_staff_access on public.ubicaciones;
 drop policy if exists ubicaciones_staff_select on public.ubicaciones;
 drop policy if exists ubicaciones_staff_insert on public.ubicaciones;
+drop policy if exists ubicaciones_admin_insert on public.ubicaciones;
 drop policy if exists ubicaciones_admin_update on public.ubicaciones;
 drop policy if exists ubicaciones_admin_delete on public.ubicaciones;
 create policy ubicaciones_staff_select on public.ubicaciones
   for select to authenticated using (public.is_staff() or public.is_admin());
-create policy ubicaciones_staff_insert on public.ubicaciones
-  for insert to authenticated with check (public.is_staff() or public.is_admin());
+-- Alta de ubicaciones: solo admin (la UI ya oculta el guardado a staff).
+create policy ubicaciones_admin_insert on public.ubicaciones
+  for insert to authenticated with check (public.is_admin());
 create policy ubicaciones_admin_update on public.ubicaciones
   for update to authenticated using (public.is_admin()) with check (public.is_admin());
 create policy ubicaciones_admin_delete on public.ubicaciones
@@ -318,8 +322,8 @@ drop policy if exists movimientos_ubicacion_admin_update on public.movimientos_u
 drop policy if exists movimientos_ubicacion_admin_delete on public.movimientos_ubicacion;
 create policy movimientos_ubicacion_staff_select on public.movimientos_ubicacion
   for select to authenticated using (public.is_staff() or public.is_admin());
-create policy movimientos_ubicacion_staff_insert on public.movimientos_ubicacion
-  for insert to authenticated with check (public.is_staff() or public.is_admin());
+-- Sin política de INSERT: los movimientos solo los crea
+-- asignar_inventario_ubicacion(), que es SECURITY DEFINER.
 create policy movimientos_ubicacion_admin_update on public.movimientos_ubicacion
   for update to authenticated using (public.is_admin()) with check (public.is_admin());
 create policy movimientos_ubicacion_admin_delete on public.movimientos_ubicacion
@@ -327,8 +331,10 @@ create policy movimientos_ubicacion_admin_delete on public.movimientos_ubicacion
 
 grant select, insert, update, delete on public.ubicaciones to authenticated;
 grant select on public.ubicaciones_codigos_alias to authenticated;
-grant select, insert, update, delete on public.movimientos_ubicacion to authenticated;
-grant usage, select on sequence public.movimientos_ubicacion_id_seq to authenticated;
+-- Los movimientos de ubicación solo los escribe la RPC SECURITY DEFINER.
+revoke insert, update, delete on public.movimientos_ubicacion from authenticated;
+grant select on public.movimientos_ubicacion to authenticated;
+revoke all on sequence public.movimientos_ubicacion_id_seq from authenticated;
 
 update public.materiales material
 set data = jsonb_set(
@@ -746,8 +752,10 @@ create policy materiales_admin_delete on public.materiales
 
 create policy despachos_staff_select on public.despachos
   for select to authenticated using (public.is_staff() or public.is_admin());
-create policy despachos_staff_insert on public.despachos
-  for insert to authenticated with check (public.is_staff() or public.is_admin());
+-- El surtido de staff pasa por registrar_salida() (SECURITY DEFINER).
+-- El INSERT directo queda solo para el administrador (restauración).
+create policy despachos_admin_insert on public.despachos
+  for insert to authenticated with check (public.is_admin());
 create policy despachos_admin_update on public.despachos
   for update to authenticated using (public.is_admin()) with check (public.is_admin());
 create policy despachos_admin_delete on public.despachos

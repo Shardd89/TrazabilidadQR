@@ -20,6 +20,8 @@
 -- Este script es idempotente: se puede ejecutar varias veces.
 -- ============================================================================
 
+begin;
+
 -- ----------------------------------------------------------------------------
 -- PASO 0: Limpiar objetos de la propuesta anterior (vista materializada)
 -- ----------------------------------------------------------------------------
@@ -199,7 +201,9 @@ revoke all on public.existencias_materiales from public, anon, authenticated;
 -- PASO 4: Función de consulta para el cliente
 -- ----------------------------------------------------------------------------
 
-create or replace function public.obtener_existencias_materiales(
+drop function if exists public.obtener_existencias_materiales(text[]);
+
+create function public.obtener_existencias_materiales(
   p_codigos text[] default null
 )
 returns table (
@@ -213,11 +217,17 @@ returns table (
   ajustes numeric,
   existencia numeric
 )
-language sql
+language plpgsql
 stable
 security definer
-set search_path = public
+set search_path = public, pg_temp
 as $$
+begin
+  if not (public.is_staff() or public.is_admin()) then
+    raise exception 'NO_AUTORIZADO';
+  end if;
+
+  return query
   select
     e.codigo,
     e.modo,
@@ -231,36 +241,51 @@ as $$
   from public.existencias_materiales e
   where p_codigos is null or e.codigo = any (p_codigos)
   order by e.codigo;
+end;
 $$;
 
 revoke all on function public.obtener_existencias_materiales(text[]) from public, anon;
 grant execute on function public.obtener_existencias_materiales(text[]) to authenticated;
 
 comment on function public.obtener_existencias_materiales(text[]) is
-  'Consulta rápida de existencias. Devuelve todos los materiales o solo los códigos indicados. Misma semántica que existencia() del cliente.';
+  'Consulta de existencias para staff/admin. Devuelve todos los materiales o solo los códigos indicados y rechaza con NO_AUTORIZADO al resto.';
 
 -- ----------------------------------------------------------------------------
 -- PASO 5: Cálculo puntual de un material (diagnóstico / verificaciones)
 -- ----------------------------------------------------------------------------
 
-create or replace function public.calcular_existencia_material(p_codigo text)
+drop function if exists public.calcular_existencia_material(text);
+
+create function public.calcular_existencia_material(p_codigo text)
 returns jsonb
-language sql
+language plpgsql
 stable
 security definer
-set search_path = public
+set search_path = public, pg_temp
 as $$
-  select coalesce(
-    (select to_jsonb(e) from public.existencias_materiales e where e.codigo = p_codigo),
+begin
+  if not (public.is_staff() or public.is_admin()) then
+    raise exception 'NO_AUTORIZADO';
+  end if;
+
+  return coalesce(
+    (
+      select to_jsonb(e)
+      from public.existencias_materiales e
+      where e.codigo = p_codigo
+    ),
     jsonb_build_object('codigo', p_codigo, 'error', 'MATERIAL_NO_ENCONTRADO')
   );
+end;
 $$;
 
 revoke all on function public.calcular_existencia_material(text) from public, anon;
 grant execute on function public.calcular_existencia_material(text) to authenticated;
 
 comment on function public.calcular_existencia_material(text) is
-  'Devuelve la existencia de un material con el mismo contrato que obtener_existencias_materiales().';
+  'Diagnóstico de existencia para staff/admin. Mismo contrato que obtener_existencias_materiales() y rechaza con NO_AUTORIZADO al resto.';
+
+commit;
 
 -- ----------------------------------------------------------------------------
 -- PASO 6: Verificación rápida (opcional, solo lectura)
