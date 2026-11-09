@@ -15417,6 +15417,7 @@ td small{color:var(--mut)}
     <p class="reg-modo-hint" id="regModoHint">Captura un material a la vez; al guardar se genera su QR.</p>
     <div class="res bad" id="regCamAviso" hidden>⚠ El escáner con cámara requiere HTTPS (o localhost).</div>
     <p id="registroAdminAviso" class="res bad" hidden>Solo el administrador puede registrar o editar materiales.</p>
+    <p id="entradasAviso" class="res bad" hidden></p>
     <form id="f" autocomplete="off" hidden>
       <input type="hidden" id="editIndex">
       <div class="grid">
@@ -15458,7 +15459,7 @@ td small{color:var(--mut)}
         <button type="button" class="bs" id="btnLimpiarLista">🗑️ Limpiar lista</button>
       </div>
       <div class="tw reg-multi-tw"><table>
-        <thead><tr><th>#</th><th>Código</th><th>Descripción</th><th>Clasificación</th><th>Ubicación</th><th class="num">Cantidad</th><th>Recibo</th><th></th></tr></thead>
+        <thead><tr><th>#</th><th>Código</th><th>Descripción</th><th>Clasificación</th><th>Ubicación</th><th class="num">Cantidad</th><th>Trazabilidad</th><th>Recibo</th><th></th></tr></thead>
         <tbody id="regMultiBody"></tbody>
       </table><div class="empty" id="regMultiVacio">Aún no hay filas. Completa el formulario y usa «Agregar a la lista».</div></div>
       <div class="acts">
@@ -15504,6 +15505,7 @@ td small{color:var(--mut)}
   <h2>Identificación QR</h2>
   <div id="qrBox">Guarde o seleccione un material para generar su QR</div>
   <div id="ficha" style="margin-top:12px"></div>
+  <div id="entradasBox" hidden style="margin-top:12px"></div>
   <label style="display:flex;gap:8px;align-items:center;color:var(--tx);font-weight:500;margin-top:12px"><input type="checkbox" id="qrCompacto" style="width:auto"> QR compacto (solo el código; la ficha se consulta en línea y siempre muestra lo actual)</label>
   <div class="acts">
     <button type="button" class="bp" id="bPrint" disabled>🖨️ Imprimir etiqueta</button>
@@ -15708,7 +15710,7 @@ function debounce(fn,ms){let t;return(...args)=>{clearTimeout(t);t=setTimeout(()
 const hoy=()=>new Date(Date.now()-new Date().getTimezoneOffset()*6e4).toISOString().slice(0,10);
 const fmt=n=>Number(n).toLocaleString("es-MX",{maximumFractionDigits:3});
 function totalTxt(m){return m.esMP&&m.um==="PZ"&&m.cantidad>0&&m.longitud>0?`${fmt(m.cantidad*m.longitud)} ${m.longU||m.longitudUnidad||"mm"}`:""}
-let mats=[],actual=null,orden={k:null,asc:true},esStaff=false,esAdmin=false,almacenes=[],ubicaciones=[],ubicacionesAlias=[],movimientosUbicacion=[],ajustesInventarioError="",almacenesError="",ubicacionesError="",ubicacionesAliasError="",movimientosError="",ubicacionDestino=null,asignacionItems=[];
+let mats=[],actual=null,actualBase=null,actualEntradaId=null,orden={k:null,asc:true},esStaff=false,esAdmin=false,almacenes=[],ubicaciones=[],ubicacionesAlias=[],movimientosUbicacion=[],ajustesInventarioError="",entradasError="",almacenesError="",ubicacionesError="",ubicacionesAliasError="",movimientosError="",ubicacionDestino=null,asignacionItems=[];
 let ubicacionesPorCodigo=new Map(),almacenesPorCodigo=new Map();
 function reconstruirIndices(){
   ubicacionesPorCodigo=new Map(ubicaciones.map(u=>[String(u.codigo),u]));
@@ -15732,15 +15734,150 @@ function normalizarMaterial(m){
   return{...m,um:"PZ",pesoU,tipoRegistro,esMP:tipoRegistro==="MP",seccionMaterial};
 }
 const nombreTipoRegistro=tipo=>({MP:"Materia prima",GENERAL:"Material general",CONSUMIBLES:"Consumibles"}[tipo]||"Material general");
-const matData=m=>{const{despachos,ajustesInventario,...r}=m;return r};
-const desData=d=>{const{t,piezas,...r}=d;return r};
-const desFila=(codigo,d)=>({codigo,t:d.t,data:desData(d),piezas:d.piezas||[]});
-const desDeFila=r=>({...r.data,t:Number(r.t),...(r.piezas&&r.piezas.length?{piezas:r.piezas}:{})});
+const matData=m=>{const{despachos,ajustesInventario,entradas,existenciaServer,entradaId,...r}=m;return r};
+const desData=d=>{const{t,piezas,entrada_id,...r}=d;return r};
+const desFila=(codigo,d)=>({codigo,t:d.t,data:desData(d),piezas:d.piezas||[],...(d.entrada_id!=null?{entrada_id:Number(d.entrada_id)}:{})});
+const desDeFila=r=>({...r.data,t:Number(r.t),...(r.piezas&&r.piezas.length?{piezas:r.piezas}:{}),...(r.entrada_id!=null?{entrada_id:Number(r.entrada_id)}:{})});
+
+// --- Entradas / recepciones de un material ---
+function entradaDeFila(r){
+  const d=r.data&&typeof r.data==="object"?r.data:{};
+  const base=normalizarMaterial(d);
+  return{...base,...d,
+    id:Number(r.id),
+    codigo:r.codigo_material,
+    cantidad:Number(r.cantidad)||0,
+    longitudIndividual:r.longitud_individual!=null?Number(r.longitud_individual):d.longitudIndividual,
+    longitud:r.longitud!=null?Number(r.longitud):d.longitud,
+    longitudUnidad:r.longitud_unidad||d.longU||d.longitudUnidad,
+    longU:r.longitud_unidad||d.longU||d.longitudUnidad,
+    peso:r.peso!=null?Number(r.peso):d.peso,
+    pesoU:r.peso_unidad||d.pesoU||d.pesoUnidad,
+    pesoUnidad:r.peso_unidad||d.pesoUnidad,
+    ubicacion:r.ubicacion_nombre||d.ubicacion||"",
+    ubicacionCodigo:r.ubicacion_codigo||d.ubicacionCodigo||null,
+    ubicacionAlmacenCodigo:r.almacen_codigo||d.ubicacionAlmacenCodigo||null,
+    fechaRecibo:r.fecha_recibo||d.fechaRecibo||"",
+    entradaId:Number(r.id),
+    created_at:r.created_at||d.created_at||""
+  };
+}
+function entradaDesdeMaterial(m){
+  return{
+    cantidad:Number(m.cantidad)||0,
+    longitudIndividual:m.longitudIndividual,
+    longitud:m.longitud,
+    longitudUnidad:m.longU||m.longitudUnidad||null,
+    peso:m.peso,
+    pesoUnidad:m.pesoU||m.pesoUnidad||null,
+    ubicacionCodigo:m.ubicacionCodigo||null,
+    ubicacion:m.ubicacion||"",
+    almacenCodigo:m.ubicacionAlmacenCodigo||null,
+    fechaRecibo:m.fechaRecibo||"",
+    data:matData(m)
+  };
+}
+function materialDeEntrada(m,e){
+  if(!e)return m;
+  return{...m,...e,
+    codigo:m.codigo,
+    descripcion:m.descripcion,
+    um:m.um,
+    tipoRegistro:m.tipoRegistro,
+    esMP:m.esMP,
+    entradas:[e],
+    existenciaServer:null,
+    entradaId:Number(e.id),
+    cantidad:Number(e.cantidad)||0,
+    longitudIndividual:e.longitudIndividual,
+    longitud:e.longitud,
+    longU:e.longitudUnidad||e.longU||null,
+    longitudUnidad:e.longitudUnidad||e.longU||null,
+    peso:e.peso,
+    pesoU:e.pesoU||e.pesoUnidad||null,
+    pesoUnidad:e.pesoU||e.pesoUnidad||null,
+    ubicacion:e.ubicacion||m.ubicacion,
+    ubicacionCodigo:e.ubicacionCodigo||m.ubicacionCodigo,
+    ubicacionAlmacenCodigo:e.ubicacionAlmacenCodigo||m.ubicacionAlmacenCodigo,
+    fechaRecibo:e.fechaRecibo||m.fechaRecibo,
+    despachos:(m.despachos||[]).filter(d=>Number(d.entrada_id)===Number(e.id)),
+    ajustesInventario:(m.ajustesInventario||[]).filter(a=>Number(a.entrada_id)===Number(e.id))
+  };
+}
+function longBaseEntrada(e){
+  const individual=Number(e.longitudIndividual);
+  if(Number.isFinite(individual)&&individual>0)return{L:individual,u:"mm"};
+  const L=Number(e.longitud),u0=e.longitudUnidad||e.longU;
+  return{L,u:okU(u0)?u0:"mm"};
+}
+function entradaEnBase(e){
+  const{L,u}=longBaseEntrada(e);
+  const cantidad=Number(e.cantidad)||0;
+  return{mode:L>0?"long":"pz",u,L,total:L>0?cantidad*L:cantidad,cantidad};
+}
+function existenciaEntrada(m,e){
+  const b=entradaEnBase(e);
+  const ds=(m.despachos||[]).filter(d=>Number(d.entrada_id)===Number(e.id));
+  const usar=(m.entradas?.length===1)?(m.despachos||[]):ds;
+  if(b.mode==="long"){
+    const surtido=usar.reduce((s,d)=>s+longitudEnBase(d,b.u),0);
+    const ajustes=(m.ajustesInventario||[]).filter(a=>Number(a.entrada_id)===Number(e.id)).reduce((s,a)=>s+ajustesEnBase({ajustesInventario:[a]},b.u),0);
+    const rest=r4(b.total-surtido+ajustes);
+    return{modo:"long",u:b.u,L:b.L,total:b.total,rest,qty:b.L>0?r4(rest/b.L):0,peso:pesoEquivalente(e,rest,b.total)};
+  }
+  const surtido=usar.reduce((s,d)=>s+(Number(d.cantidad)||0),0);
+  const ajustes=(m.ajustesInventario||[]).filter(a=>Number(a.entrada_id)===Number(e.id)).reduce((s,a)=>s+(!a.unidad||a.unidad==="PZ"?Number(a.diferencia||0):0),0);
+  return{modo:"pz",u:"PZ",rest:r4(b.cantidad-surtido+ajustes)};
+}
+function entradaTxt(e){
+  const b=entradaEnBase(e);
+  return b.mode==="long"?`${fmt(b.cantidad)} PZ · ${fmt(b.total)} ${b.u}`:`${fmt(b.cantidad)} PZ`;
+}
+function existEntradaTxt(m,e){
+  const x=existenciaEntrada(m,e);
+  return x.modo==="long"?`${fmt(x.rest)} ${x.u}${x.qty==null?"":" (≈"+fmt(x.qty)+" pz)"}`:`${fmt(x.rest)} PZ`;
+}
+function trazabilidadEntrada(e){
+  return[e?.manufactura,e?.numeroHeat?`Heat ${e.numeroHeat}`:"",e?.numeroLoteMP||e?.lote?`Lote ${e.numeroLoteMP||e.lote}`:"",e?.numeroCertificado?`Cert ${e.numeroCertificado}`:"",e?.ordenMaterial?`Orden ${e.ordenMaterial}`:"",e?.poNumber?`PO ${e.poNumber}`:""].filter(Boolean).join(" · ");
+}
+function firmaEntrada(e){
+  return[e?.cantidad,e?.longitudIndividual,e?.longitud,e?.longitudUnidad||e?.longU,e?.ubicacionCodigo||e?.ubicacion,e?.fechaRecibo,e?.numeroHeat,e?.numeroLoteMP||e?.lote,e?.numeroCertificado,e?.manufactura,e?.ordenMaterial,e?.poNumber].map(v=>String(v??"").trim()).join("|");
+}
+function entradaImportada(m,e){
+  return entradaDeFila({
+    id:e.id,
+    codigo_material:m.codigo,
+    cantidad:e.cantidad,
+    longitud_individual:e.longitudIndividual,
+    longitud:e.longitud,
+    longitud_unidad:e.longitudUnidad||e.longU,
+    peso:e.peso,
+    peso_unidad:e.pesoU||e.pesoUnidad,
+    ubicacion_codigo:e.ubicacionCodigo,
+    ubicacion_nombre:e.ubicacion,
+    almacen_codigo:e.ubicacionAlmacenCodigo,
+    fecha_recibo:e.fechaRecibo,
+    data:e.data&&typeof e.data==="object"?e.data:{}
+  });
+}
+async function registrarEntradas(items){
+  if(!sb)throw new Error("Supabase no está disponible.");
+  const{data,error}=await sb.rpc("registrar_entradas",{p_items:items});
+  if(error)throw error;
+  return data;
+}
 function errDB(e,msg){console.error(e);const t=String((e&&e.message)||e||"");
   toast(/EXISTENCIA_CAMBIO_DURANTE_CONTEO/.test(t)?"La existencia cambió mientras realizabas el conteo. Actualiza la consulta e inténtalo de nuevo.":/PIEZA_YA_SURTIDA/.test(t)?"⚠ Una de esas piezas ya fue surtida desde otro equipo":/duplicate|23505/.test(t+((e&&e.code)||""))?"⚠ El código ya existe, use otro.":`${msg} (${t.slice(0,90)})`,1)}
 async function leerTodo(tabla,cols,ord){const out=[];
   for(let i=0;;i+=1000){let q=sb.from(tabla).select(cols);ord.forEach(o=>{q=q.order(o)});const{data,error}=await q.range(i,i+999);if(error)throw error;out.push(...data);if(data.length<1000)break}
   return out}
+async function leerTodoCompat(tabla,cols,ord,colsSinEntrada){
+  try{return await leerTodo(tabla,cols,ord)}
+  catch(err){
+    if(!colsSinEntrada||!/entrada_id|PGRST204|42703|schema cache|column/i.test(String(err?.message||err)))throw err;
+    return leerTodo(tabla,colsSinEntrada,ord);
+  }
+}
 // --- Existencias calculadas en el servidor (con fallback local) ---
 let existenciasServidorError=false,existenciasT=null;
 async function leerExistenciasServidor(codigos){
@@ -15795,33 +15932,44 @@ async function cargar(){
   mostrarCarga();
   try{
   const existenciasServidor=leerExistenciasServidor();
-  const[materialesResultado,despachosResultado,ajustesResultado]=await Promise.allSettled([
+  const[materialesResultado,despachosResultado,ajustesResultado,entradasResultado]=await Promise.allSettled([
     leerTodo("materiales","codigo,data",["codigo"]),
-    leerTodo("despachos","codigo,t,data,piezas",["t","id"]),
-    leerTodo("ajustes_inventario_ciclico","id,codigo_material,ubicacion_codigo,ubicacion_nombre,existencia_anterior,existencia_contada,diferencia,unidad,motivo,usuario,created_at",["id"])
+    leerTodoCompat("despachos","codigo,t,data,piezas,entrada_id",["t","id"],"codigo,t,data,piezas"),
+    leerTodoCompat("ajustes_inventario_ciclico","id,codigo_material,entrada_id,ubicacion_codigo,ubicacion_nombre,existencia_anterior,existencia_contada,diferencia,unidad,motivo,usuario,created_at",["id"],"id,codigo_material,ubicacion_codigo,ubicacion_nombre,existencia_anterior,existencia_contada,diferencia,unidad,motivo,usuario,created_at"),
+    leerTodo("entradas_material","id,codigo_material,cantidad,longitud_individual,longitud,longitud_unidad,peso,peso_unidad,ubicacion_codigo,ubicacion_nombre,almacen_codigo,fecha_recibo,data,created_at",["id"])
   ]);
   if(materialesResultado.status==="rejected")throw materialesResultado.reason;
   if(despachosResultado.status==="rejected")throw despachosResultado.reason;
   const A=materialesResultado.value,B=despachosResultado.value;
+  entradasError=entradasResultado.status==="rejected"
+    ?(/PGRST205|42P01|does not exist|schema cache/i.test(String(entradasResultado.reason?.message||entradasResultado.reason))?"Falta aplicar la migración supabase_entradas_material.sql para habilitar el registro acumulado por lote.":`No se pudieron cargar las entradas de material: ${String(entradasResultado.reason?.message||entradasResultado.reason)}`)
+    :"";
+  if(entradasResultado.status==="rejected")console.error(entradasResultado.reason);
   ajustesInventarioError=ajustesResultado.status==="rejected"
     ?(/PGRST205|42P01|does not exist|schema cache/i.test(String(ajustesResultado.reason?.message||ajustesResultado.reason))?"Falta aplicar o actualizar la migración supabase_almacenes.sql para habilitar los conteos cíclicos.":`No se pudieron cargar los conteos cíclicos: ${String(ajustesResultado.reason?.message||ajustesResultado.reason)}`)
     :"";
   if(ajustesResultado.status==="rejected")console.error(ajustesResultado.reason);
   const ajustesPor={};
   if(ajustesResultado.status==="fulfilled")ajustesResultado.value.forEach(a=>{(ajustesPor[a.codigo_material]=ajustesPor[a.codigo_material]||[]).push(a)});
+  const entradasPor={};
+  if(entradasResultado.status==="fulfilled")entradasResultado.value.forEach(e=>{(entradasPor[e.codigo_material]=entradasPor[e.codigo_material]||[]).push(entradaDeFila(e))});
   const por={};B.forEach(r=>{(por[r.codigo]=por[r.codigo]||[]).push(desDeFila(r))});
   const edI=$("editIndex").value,edCod=edI!==""&&mats[+edI]?mats[+edI].codigo:null;
-  const act=actual,actAntes=act?JSON.stringify(act):"";
-  mats=A.map(r=>({...normalizarMaterial(r.data),codigo:r.codigo,despachos:por[r.codigo]||[],ajustesInventario:ajustesPor[r.codigo]||[]}));
+  const act=actualBase,actEntrada=actualEntradaId,actAntes=act?JSON.stringify(act):"";
+  mats=A.map(r=>({...normalizarMaterial(r.data),codigo:r.codigo,despachos:por[r.codigo]||[],ajustesInventario:ajustesPor[r.codigo]||[],entradas:entradasPor[r.codigo]||[]}));
   aplicarExistenciasServidor(await existenciasServidor);
   if(edCod){const i=mats.findIndex(x=>x.codigo===edCod);if(i<0)resetForm();else $("editIndex").value=i}
   surItems=surItems.filter(item=>mats.some(x=>x.codigo.toLowerCase()===item.codigo.toLowerCase()));
-  surItems.forEach(item=>{const m=mats.find(x=>x.codigo.toLowerCase()===item.codigo.toLowerCase());if(item.piezas?.some(n=>piezasSurt(m).has(n)))item.errorPieza=true});
+  surItems.forEach(item=>{const m=mats.find(x=>x.codigo.toLowerCase()===item.codigo.toLowerCase());if(item.piezas?.some(n=>piezasSurt(m,item.entradaId).has(n)))item.errorPieza=true});
   render();
   if(!$("vInv").hidden)renderInventario();
   if(!$("vSur").hidden){renderHist();renderSur()}
   renderInicio();
-  if(act){const a=mats.find(x=>x.codigo===act.codigo);if(a){if(JSON.stringify(a)!==actAntes)mostrar(a);else actual=a}}
+  if(act){const a=mats.find(x=>x.codigo===act.codigo);if(a){
+    const e=actEntrada?a.entradas?.find(x=>Number(x.id)===Number(actEntrada)):null;
+    if(JSON.stringify(a)!==actAntes||!e)mostrar(a,e?e.id:null);
+    else{actualBase=a;actualEntradaId=e.id;actual=materialDeEntrada(a,e)}
+  }else{actual=null;actualBase=null;actualEntradaId=null}}
   }finally{ocultarCarga()}
 }
 async function cargarUbicaciones(){
@@ -15863,7 +16011,7 @@ async function subirLista(ms,ds){
 let rtT=null,canalRT=null;
 function dejarCanal(){const c=canalRT;canalRT=null;if(!sb||!c)return;try{sb.removeChannel(c).catch(()=>{})}catch{}}
 // --- Realtime incremental: actualiza solo lo que llegó de Supabase ---
-const TABLAS_INCR=new Set(["materiales","despachos","ajustes_inventario_ciclico"]);
+const TABLAS_INCR=new Set(["materiales","despachos","ajustes_inventario_ciclico","entradas_material"]);
 function renderVisible(){
   if(!$("vInicio").hidden)renderInicio();
   if(!$("vReg").hidden)render();
@@ -15872,7 +16020,7 @@ function renderVisible(){
 }
 function syncSurItems(){
   surItems=surItems.filter(item=>mats.some(m=>String(m.codigo).toLowerCase()===String(item.codigo).toLowerCase()));
-  surItems.forEach(item=>{const m=mats.find(x=>String(x.codigo).toLowerCase()===String(item.codigo).toLowerCase());if(m&&item.piezas?.some(n=>piezasSurt(m).has(n)))item.errorPieza=true})
+  surItems.forEach(item=>{const m=mats.find(x=>String(x.codigo).toLowerCase()===String(item.codigo).toLowerCase());if(m&&item.piezas?.some(n=>piezasSurt(m,item.entradaId).has(n)))item.errorPieza=true})
 }
 const edCodActual=()=>{const i=+$("editIndex").value;return i>=0&&mats[i]?mats[i].codigo:null};
 const edSet=cod=>{if(!cod)return;const i=mats.findIndex(m=>String(m.codigo).toLowerCase()===String(cod).toLowerCase());if(i<0){resetForm()}else $("editIndex").value=i};
@@ -15883,17 +16031,20 @@ function upsyncMat(type,p){
     const i=mats.findIndex(m=>keyMin(m.codigo)===keyMin(codigo));
     if(i>=0)mats.splice(i,1);
     const st=edCodActual();if(st&&keyMin(st)===keyMin(codigo))resetForm();
-    if(actual&&keyMin(actual.codigo)===keyMin(codigo)){actual=null;resetForm()}
+    if(actual&&keyMin(actual.codigo)===keyMin(codigo)){actual=null;actualBase=null;actualEntradaId=null;resetForm()}
     syncSurItems();return true;
   }
   const cod=p.new?.codigo;if(!cod)return false;
   const st=edCodActual();
   const i=mats.findIndex(m=>keyMin(m.codigo)===keyMin(cod));
   const prev=i>=0?mats[i]:null;
-  const nuevo={...normalizarMaterial(p.new.data||{}),codigo:cod,despachos:prev?prev.despachos:[],ajustesInventario:prev?prev.ajustesInventario:[]};
+  const nuevo={...normalizarMaterial(p.new.data||{}),codigo:cod,despachos:prev?prev.despachos:[],ajustesInventario:prev?prev.ajustesInventario:[],entradas:prev?prev.entradas:[]};
   if(i>=0)mats.splice(i,1,nuevo);else mats.push(nuevo);
   if(st)edSet(st);
-  if(actual&&prev&&keyMin(actual.codigo)===keyMin(cod))actual=nuevo;
+  if(actualBase&&prev&&keyMin(actualBase.codigo)===keyMin(cod)){
+    const e=actualEntradaId?(nuevo.entradas||[]).find(x=>Number(x.id)===Number(actualEntradaId)):null;
+    actualBase=nuevo;actual=e?materialDeEntrada(nuevo,e):nuevo;
+  }else if(actual&&prev&&keyMin(actual.codigo)===keyMin(cod))actual=nuevo;
   syncSurItems();return true;
 }
 function upsyncDesp(type,p){
@@ -15927,6 +16078,29 @@ function upsyncAjuste(type,p){
   if(j>=0)m.ajustesInventario[j]=a;else m.ajustesInventario=[...(m.ajustesInventario||[]),a];
   return true;
 }
+function upsyncEntrada(type,p){
+  const cod=p.new?.codigo_material||p.old?.codigo_material;if(!cod)return false;
+  const i=mats.findIndex(m=>keyMin(m.codigo)===keyMin(cod));if(i<0)return false;
+  const m=mats[i];
+  if(type==="DELETE"){
+    const id=p.old?.id;if(id==null)return false;
+    m.entradas=(m.entradas||[]).filter(e=>Number(e.id)!==Number(id));
+  }else{
+    const e=entradaDeFila(p.new);
+    const j=(m.entradas||[]).findIndex(x=>Number(x.id)===Number(e.id));
+    if(j>=0)m.entradas[j]=e;else m.entradas=[...(m.entradas||[]),e].sort((a,b)=>Number(a.id)-Number(b.id));
+  }
+  m.cantidad=(m.entradas||[]).reduce((s,e)=>s+(Number(e.cantidad)||0),0);
+  if(actualBase&&keyMin(actualBase.codigo)===keyMin(cod)){
+    const panel=$("vReg")?.querySelector('[data-module-screen="qr"]');
+    if(panel&&!panel.hidden){
+      const e=actualEntradaId?(m.entradas||[]).find(x=>Number(x.id)===Number(actualEntradaId)):null;
+      if(actualEntradaId&&!e)actualEntradaId=null;
+      mostrar(m,actualEntradaId);
+    }
+  }
+  return true;
+}
 function aplicarCambio(payload){
   try{
     const tabla=payload?.table,type=payload?.eventType;
@@ -15934,6 +16108,7 @@ function aplicarCambio(payload){
     if(tabla==="materiales")return upsyncMat(type,payload);
     if(tabla==="despachos")return upsyncDesp(type,payload);
     if(tabla==="ajustes_inventario_ciclico")return upsyncAjuste(type,payload);
+    if(tabla==="entradas_material")return upsyncEntrada(type,payload);
     return false;
   }catch(e){console.error("realtime incremental:",e);return false}
 }
@@ -15954,7 +16129,7 @@ function suscribir(){
     }
     fallback();
   };
-  canalRT=sb.channel("cambios").on("postgres_changes",{event:"*",schema:"public",table:"materiales"},handler).on("postgres_changes",{event:"*",schema:"public",table:"despachos"},handler).on("postgres_changes",{event:"*",schema:"public",table:"almacenes"},handler).on("postgres_changes",{event:"*",schema:"public",table:"ubicaciones"},handler).on("postgres_changes",{event:"*",schema:"public",table:"ubicaciones_codigos_alias"},handler).on("postgres_changes",{event:"*",schema:"public",table:"movimientos_ubicacion"},handler).on("postgres_changes",{event:"*",schema:"public",table:"ajustes_inventario_ciclico"},handler).subscribe(estado=>{if((estado==="CHANNEL_ERROR"||estado==="TIMED_OUT")&&canalRT){const c=canalRT;canalRT=null;try{sb.removeChannel(c).catch(()=>{})}catch{}}});
+  canalRT=sb.channel("cambios").on("postgres_changes",{event:"*",schema:"public",table:"materiales"},handler).on("postgres_changes",{event:"*",schema:"public",table:"despachos"},handler).on("postgres_changes",{event:"*",schema:"public",table:"almacenes"},handler).on("postgres_changes",{event:"*",schema:"public",table:"ubicaciones"},handler).on("postgres_changes",{event:"*",schema:"public",table:"ubicaciones_codigos_alias"},handler).on("postgres_changes",{event:"*",schema:"public",table:"movimientos_ubicacion"},handler).on("postgres_changes",{event:"*",schema:"public",table:"ajustes_inventario_ciclico"},handler).on("postgres_changes",{event:"*",schema:"public",table:"entradas_material"},handler).subscribe(estado=>{if((estado==="CHANNEL_ERROR"||estado==="TIMED_OUT")&&canalRT){const c=canalRT;canalRT=null;try{sb.removeChannel(c).catch(()=>{})}catch{}}});
 }
 // --- Sesión ---
 function lgMostrar(msg){$("lgCarga").hidden=true;$("lgF").hidden=false;$("lgMsg").hidden=!msg;$("lgMsg").textContent=msg||""}
@@ -15962,7 +16137,7 @@ function limpiarSesionLocal(){try{Object.keys(localStorage).filter(k=>k.indexOf(
 function errorSesion(e){const c=Number(e?.status||e?.code||0);return c===401||c===403||/jwt|token|session|sesi[oó]n/i.test(String(e?.message||""))}
 async function cerrarSesion(){try{const{error}=await sb.auth.signOut();if(error)throw error}catch(e){console.warn("No se pudo revocar la sesión en el servidor; se cierra localmente.",e)}limpiarSesionLocal();salirUI()}
 function actualizarVisibilidadAdmin(){["bJson","bCsv","bImp","bExcel","bCsvS","bUbiExportar","ubicacionesImportar","btnGuardar","btnGuardarLista","regModo","regModoHint"].forEach(id=>$(id).hidden=!esAdmin);$("registroAdminAviso").hidden=esAdmin}
-function salirUI(){esStaff=false;esAdmin=false;actualizarVisibilidadAdmin();seleccionados.clear();$("rolUsuario").hidden=true;$("conteoEstado").hidden=true;document.body.classList.remove("auth");dejarCanal();camOff();if($("conteoDialog").open)$("conteoDialog").close();mats=[];surItems=[];almacenes=[];ubicaciones=[];ubicacionesAlias=[];movimientosUbicacion=[];reconstruirIndices();ajustesInventarioError="";almacenesError="";ubicacionesError="";ubicacionesAliasError="";movimientosError="";ubicacionDestino=null;asignacionItems=[];actual=null;regMulti=[];modoRegistro="unico";resetForm();renderRegMulti();actualizarModoRegistroUI();render();renderInicio();lgMostrar()}
+function salirUI(){esStaff=false;esAdmin=false;actualizarVisibilidadAdmin();seleccionados.clear();$("rolUsuario").hidden=true;$("conteoEstado").hidden=true;document.body.classList.remove("auth");dejarCanal();camOff();if($("conteoDialog").open)$("conteoDialog").close();mats=[];surItems=[];almacenes=[];ubicaciones=[];ubicacionesAlias=[];movimientosUbicacion=[];reconstruirIndices();ajustesInventarioError="";entradasError="";almacenesError="";ubicacionesError="";ubicacionesAliasError="";movimientosError="";ubicacionDestino=null;asignacionItems=[];actual=null;actualBase=null;actualEntradaId=null;regMulti=[];modoRegistro="unico";resetForm();renderRegMulti();actualizarModoRegistroUI();render();renderInicio();lgMostrar()}
 let entrando=false;
 async function entrar(){
   if(!sb||entrando)return false;
@@ -16050,7 +16225,7 @@ $("btnAuto").onclick=()=>{let n=0;const usados=[...mats,...regMulti].map(m=>Stri
 function establecerFormularioAbierto(abierto){$("f").hidden=!abierto;$("tituloForm").setAttribute("aria-expanded",String(abierto))}
 $("tituloForm").addEventListener("click",()=>establecerFormularioAbierto($("f").hidden));
 $("tituloForm").addEventListener("keydown",e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();establecerFormularioAbierto($("f").hidden)}});
-function resetForm(){$("f").reset();document.querySelectorAll("[data-na]").forEach(c=>{c.checked=false;$(c.dataset.na).closest(".na-field").querySelector(".na-value-wrap")?.removeAttribute("hidden");$(c.dataset.na).hidden=false});CAMPOS_EXTRA.forEach(([,id])=>$(id).hidden=false);actualizarCamposSeccion();$("editIndex").value="";$("fechaRecibo").value=hoy();$("tituloForm").textContent=modoRegistro==="multiple"?"Registro múltiple de materiales":"Registro de material";$("btnGuardar").textContent=modoRegistro==="multiple"?"➕ Agregar a la lista":"💾 Guardar y generar QR";$("btnCancelar").hidden=true;$("detTraza").open=false;establecerFormularioAbierto(modoRegistro==="multiple")}
+function resetForm(){$("f").reset();document.querySelectorAll("[data-na]").forEach(c=>{c.checked=false;$(c.dataset.na).closest(".na-field").querySelector(".na-value-wrap")?.removeAttribute("hidden");$(c.dataset.na).hidden=false});CAMPOS_EXTRA.forEach(([,id])=>$(id).hidden=false);actualizarCamposSeccion();$("editIndex").value="";$("fechaRecibo").value=hoy();$("cantidad").readOnly=false;$("cantidad").title="";$("tituloForm").textContent=modoRegistro==="multiple"?"Registro múltiple de materiales":"Registro de material";$("btnGuardar").textContent=modoRegistro==="multiple"?"➕ Agregar a la lista":"💾 Guardar y generar QR";$("btnCancelar").hidden=true;$("detTraza").open=false;establecerFormularioAbierto(modoRegistro==="multiple")}
 
 function materialDesdeFormulario(){
   recalcularTotalMM();
@@ -16083,21 +16258,29 @@ $("f").addEventListener("submit",async e=>{
   if(!esAdmin){toast("Solo el administrador puede registrar o editar materiales.",1);return}
   if(modoRegistro==="multiple"){agregarFilaMultiple();return}
   const {m,idx,anterior}=materialDesdeFormulario();
-  const dup=mats.findIndex(x=>x.codigo.toLowerCase()===m.codigo.toLowerCase());
-  if(dup!==-1&&String(dup)!==idx){toast("⚠ El código ya existe, use otro.",1);return}
+  if(!m.codigo){toast("El código es obligatorio.",1);return}
+  if(!(Number(m.cantidad)>0)){toast("La cantidad debe ser mayor que cero.",1);return}
   const oldCod=idx!==""?mats[idx].codigo:null;$("btnGuardar").disabled=true;
-  let registrandoUbicacion=true,ubicacionCreada=false,ubicacionCorregida=false;
+  let registrandoUbicacion=true,ubicacionCreada=false,ubicacionCorregida=false,entradaId=null;
   try{
     const destino=await resolverUbicacionRegistro(m.ubicacion,m.tipoRegistro,anterior?.ubicacionCodigo);
     registrandoUbicacion=false;
     if(destino){m.ubicacion=destino.ubicacion.nombre;m.ubicacionCodigo=destino.ubicacion.codigo;m.ubicacionAlmacenCodigo=destino.ubicacion.almacen_codigo;m.ubicacionAlmacenNombre=destino.almacen.nombre;ubicacionCreada=destino.creada;ubicacionCorregida=!!destino.corregida}
     if(idx!==""){
+      // Edición de datos base: la cantidad no se toca cuando el material ya
+      // tiene entradas; se controla con recepciones y conteos.
+      if(anterior?.entradas?.length)m.cantidad=anterior.cantidad;
       const{error}=await sb.from("materiales").update({codigo:m.codigo,data:matData(m)}).eq("codigo",oldCod);if(error)throw error;
-    }else{const{error}=await sb.from("materiales").insert({codigo:m.codigo,data:matData(m)});if(error)throw error}
+    }else{
+      const r=await registrarEntradas([{codigo:m.codigo,material:matData(m),entrada:entradaDesdeMaterial(m)}]);
+      entradaId=r?.entradas?.[0]?.id??null;
+    }
   }catch(err){errDB(err,registrandoUbicacion?"No se pudo registrar la ubicación":ubicacionCreada?"No se pudo guardar el material; la ubicación quedó registrada":ubicacionCorregida?"No se pudo guardar el material; el código de ubicación y sus materiales anteriores ya se corrigieron":"No se pudo guardar");$("btnGuardar").disabled=false;await cargar().catch(()=>{});return}
   $("btnGuardar").disabled=false;await cargar().catch(()=>{});
-  toast(`${idx!==""?"Material actualizado":"Material guardado"}${ubicacionCreada?" · ubicación agregada a Ubicaciones y QR":ubicacionCorregida?" · código de ubicación corregido a "+m.ubicacionCodigo:""} ✔`);
-  const m2=mats.find(x=>x.codigo===m.codigo)||m;resetForm();render();try{mostrar(m2)}catch(err){console.error(err);toast("Guardado, pero falló el QR",1)}
+  const m2=mats.find(x=>x.codigo===m.codigo)||m;
+  const entrada=entradaId?m2.entradas?.find(x=>Number(x.id)===Number(entradaId)):null;
+  toast(`${idx!==""?"Material actualizado":entrada?"Entrada agregada":"Material guardado"}${idx===""?` · Existencia total: ${existTxt(m2)}`:""}${ubicacionCreada?" · ubicación agregada a Ubicaciones y QR":ubicacionCorregida?" · código de ubicación corregido a "+m.ubicacionCodigo:""} ✔`);
+  resetForm();render();try{mostrar(m2,entrada?entrada.id:null)}catch(err){console.error(err);toast("Guardado, pero falló el QR",1)}
 });
 $("btnCancelar").onclick=()=>{resetForm();toast("Edición cancelada")};
 
@@ -16132,6 +16315,7 @@ function renderRegMulti(){
     <td>${esc(nombreTipoRegistro(m.tipoRegistro))}</td>
     <td>${esc(m.ubicacion)}</td>
     <td class="num">${esc(m.cantidad)} ${esc(m.um||"PZ")}</td>
+    <td class="l">${esc(trazabilidadEntrada(m)||"—")}</td>
     <td>${esc(m.fechaRecibo)}</td>
     <td><button type="button" class="reg-multi-del" data-quitar="${i}" title="Quitar fila" aria-label="Quitar ${esc(m.codigo)}">✕</button></td>
   </tr>`).join("");
@@ -16150,10 +16334,8 @@ function limpiarCamposFilaMultiple(){
 function agregarFilaMultiple(){
   if(regMulti.length>=MAX_REGISTRO_MULTIPLE){toast(`Máximo ${MAX_REGISTRO_MULTIPLE} filas por lote. Guarda la lista antes de agregar más.`,1);return}
   const {m}=materialDesdeFormulario();
-  const clave=String(m.codigo||"").toLowerCase();
-  if(!clave){toast("El código es obligatorio.",1);return}
-  if(mats.some(x=>String(x.codigo).toLowerCase()===clave)){toast("⚠ El código ya existe, use otro.",1);return}
-  if(regMulti.some(x=>String(x.codigo).toLowerCase()===clave)){toast("⚠ Ese código ya está en la lista.",1);return}
+  if(!m.codigo){toast("El código es obligatorio.",1);return}
+  if(!(Number(m.cantidad)>0)){toast("La cantidad debe ser mayor que cero.",1);return}
   regMulti.push(m);
   renderRegMulti();
   limpiarCamposFilaMultiple();
@@ -16173,12 +16355,9 @@ $("btnLimpiarLista").onclick=()=>{
 $("btnGuardarLista").onclick=async()=>{
   if(!esAdmin){toast("Solo el administrador puede registrar materiales.",1);return}
   if(!regMulti.length){toast("Agrega al menos una fila a la lista.",1);return}
-  const vistos=new Set();
   for(const m of regMulti){
-    const clave=String(m.codigo).toLowerCase();
-    if(vistos.has(clave)){toast(`⚠ El código ${m.codigo} está repetido en la lista.`,1);return}
-    vistos.add(clave);
-    if(mats.some(x=>String(x.codigo).toLowerCase()===clave)){toast(`⚠ El código ${m.codigo} ya existe en el catálogo.`,1);return}
+    if(!m.codigo){toast("Todas las filas deben tener código.",1);return}
+    if(!(Number(m.cantidad)>0)){toast(`La cantidad de ${m.codigo} debe ser mayor que cero.`,1);return}
   }
   const btn=$("btnGuardarLista");btn.disabled=true;
   let ubicacionCreada=false,ubicacionCorregida=false,resolviendoUbicacion=true;
@@ -16200,12 +16379,11 @@ $("btnGuardarLista").onclick=async()=>{
         if(destino.corregida)ubicacionCorregida=true;
       }
     }
-    const filas=regMulti.map(m=>({codigo:m.codigo,data:matData(m)}));
-    for(let i=0;i<filas.length;i+=200){const{error}=await sb.from("materiales").insert(filas.slice(i,i+200));if(error)throw error}
+    const items=regMulti.map(m=>({codigo:m.codigo,material:matData(m),entrada:entradaDesdeMaterial(m)}));
+    await registrarEntradas(items);
   }catch(err){
     errDB(err,resolviendoUbicacion?"No se pudo registrar una de las ubicaciones":ubicacionCreada?"No se pudieron guardar todos los materiales; algunas ubicaciones quedaron registradas":"No se pudieron guardar los materiales");
     await cargar().catch(()=>{});
-    regMulti=regMulti.filter(m=>!mats.some(x=>String(x.codigo).toLowerCase()===String(m.codigo).toLowerCase()));
     renderRegMulti();
     return;
   }
@@ -16215,7 +16393,7 @@ $("btnGuardarLista").onclick=async()=>{
   await cargar().catch(()=>{});
   limpiarCamposFilaMultiple();
   render();
-  toast(`${total} material(es) guardados${ubicacionCreada?" · ubicación agregada a Ubicaciones y QR":""}${ubicacionCorregida?" · código de ubicación corregido":""} ✔`);
+  toast(`${total} entrada(s) registradas${ubicacionCreada?" · ubicación agregada a Ubicaciones y QR":""}${ubicacionCorregida?" · código de ubicación corregido":""} ✔`);
 };
 document.querySelectorAll(".reg-modo-btn").forEach(b=>b.addEventListener("click",()=>establecerModoRegistro(b.dataset.modo)));
 renderRegMulti();
@@ -16242,6 +16420,7 @@ const b64e=t=>btoa(encodeURIComponent(t).replace(/%([0-9A-F]{2})/g,(_,h)=>String
 const b64d=t=>{t=t.replace(/-/g,"+").replace(/_/g,"/");while(t.length%4)t+="=";return decodeURIComponent(Array.from(atob(t),c=>"%"+c.charCodeAt(0).toString(16).padStart(2,"0")).join(""))};
 function payload(m){
   const o={c:m.codigo,d:m.descripcion,l:m.lote,p:m.proveedor,u:"PZ",q:m.cantidad,m:m.esMP?1:0,ub:m.ubicacion,fr:m.fechaRecibo,fm:m.fechaModificacion};
+  if(m.entradaId)o.e=Number(m.entradaId);
   if(m.esMP)Object.assign(o,{lo:m.longitud,lu:m.longU||m.longitudUnidad,s:m.seccion,su:m.secU||m.diametroUnidad,di:m.diametro,al:m.alto,an:m.ancho});
   if(m.peso!=null){o.pe=m.peso;o.pu=m.pesoUnidadPendiente?"?":m.pesoU||m.pesoUnidad}
   const extras={tipoRegistro:"tr",seccionMaterial:"sm",tipoMaterial:"tm",especificacionMedida:"em",longitudIndividual:"li",manufactura:"mf",numeroHeat:"nh",numeroLoteMP:"nl",numeroCertificado:"nc",totalMM:"tmm",ordenMaterial:"ord",poNumber:"po"};
@@ -16253,7 +16432,7 @@ const MAX_IND=100;
 function esIndividual(m){return !!m&&Number.isInteger(m.cantidad)&&m.cantidad>=1&&m.cantidad<=MAX_IND}
 // n = nº de pieza (sin n → QR master del registro completo)
 function qrTexto(m,n){
-  if(compacto())return `${BASE}#c=${encodeURIComponent(m.codigo)}${n?`&p=${n}-${m.cantidad}`:""}`;
+  if(compacto())return `${BASE}#c=${encodeURIComponent(m.codigo)}${m.entradaId?`&e=${m.entradaId}`:""}${n?`&p=${n}-${m.cantidad}`:""}`;
   const o=payload(m);if(n){o.pn=n;o.pt=m.cantidad}else if((m.despachos||[]).length)o.x=existTxt(m)
   return `${BASE}#d=${b64e(JSON.stringify(o))}`}
 // Devuelve {n,t} si el QR leído es de una pieza individual
@@ -16261,7 +16440,13 @@ function pzDe(txt){
   txt=String(txt||"");let x=/#(?:[^#]*&)?d=([^&\s]+)/.exec(txt);
   if(x){try{const o=JSON.parse(b64d(x[1]));return o.pn>0?{n:+o.pn,t:+o.pt||0}:null}catch{return null}}
   x=/#(?:[^#]*&)?p=(\d+)-(\d+)/.exec(txt);return x?{n:+x[1],t:+x[2]}:null}
-function piezasSurt(m){const s=new Set();(m.despachos||[]).forEach(d=>(d.piezas||[]).forEach(n=>s.add(n)));return s}
+function entradaDeQR(txt){
+  const s=String(txt||"");let x=/#(?:[^#]*&)?d=([^&\s]+)/.exec(s);
+  if(x){try{const o=JSON.parse(b64d(x[1]));return o.e!=null&&Number.isFinite(Number(o.e))?Number(o.e):null}catch{return null}}
+  x=/#(?:[^#]*&)?e=(\d+)/.exec(s);
+  return x?Number(x[1]):null;
+}
+function piezasSurt(m,entradaId){const s=new Set();(m.despachos||[]).forEach(d=>{if(entradaId==null||Number(d.entrada_id)===Number(entradaId))(d.piezas||[]).forEach(n=>s.add(n))});return s}
 // Extrae el código de un QR nuevo (enlace) o de uno antiguo (texto "Código: ...")
 function codDe(txt){
   txt=String(txt||"");let x=/#(?:[^#]*&)?d=([^&\s]+)/.exec(txt);
@@ -16282,24 +16467,59 @@ function dibujarQR(txt,px=240){
   c.style.cssText="width:220px;height:220px;image-rendering:pixelated";
   return c;
 }
-function mostrar(m){
+function mostrar(m,entradaId=null){
   const pagina=document.querySelector('.section-tab[data-module="vReg"][aria-current="page"]')?.dataset.page;
   activarSubpantalla("vReg",pagina==="historial"?"historial":"captura");
   $("vReg").classList.add("qr-visible");
-  actual=m;const box=$("qrBox");box.innerHTML="";
-  const txt=qrTexto(m);
+  const entrada=entradaId!=null?(m.entradas||[]).find(x=>Number(x.id)===Number(entradaId)):null;
+  actualBase=m;actualEntradaId=entrada?Number(entrada.id):null;
+  const visible=entrada?materialDeEntrada(m,entrada):m;
+  actual=visible;const box=$("qrBox");box.innerHTML="";
+  const txt=qrTexto(visible);
   const c=dibujarQR(txt);
   if(c)box.appendChild(c);else{box.textContent="No se pudo generar el QR: los datos son demasiado largos. Acorte descripción o ubicación.";actual=null}
-  const rows=[["Código",m.codigo],["Almacén",m.ubicacionAlmacenNombre||almacenesPorCodigo.get(m.ubicacionAlmacenCodigo)?.nombre],["Ubicación",m.ubicacion],["Clasificación",nombreTipoRegistro(m.tipoRegistro)],["Tipo material",m.tipoMaterial],["Descripción",m.descripcion],
-    ["Sección / especificación",seccionEspecificacion(m)],["Longitud IND",m.longitudIndividual!=null?`${m.longitudIndividual} mm`:""],["Manufactura",m.manufactura],["N.º Heat",m.numeroHeat],["N.º lote MP",m.numeroLoteMP||m.lote],["N.º cert.",m.numeroCertificado],["Total mm",m.totalMM],["Fecha de recibo",m.fechaRecibo],["Cantidad",`${m.cantidad} ${m.um}`],
-    ["Etiqueta",`MASTER · ${m.cantidad} ${m.um}`+(esIndividual(m)?` (+ ${m.cantidad} QR individuales)`:` (sin QR individuales: la cantidad debe ser entera y de 1 a ${MAX_IND})`)],
-    ["Peso",m.peso!=null?`${m.peso}${m.pesoU||m.pesoUnidad?" "+(m.pesoU||m.pesoUnidad):m.pesoUnidadPendiente?" (unidad sin definir)":""}`:""],["Orden",m.ordenMaterial],["PO number",m.poNumber],
-    ["Existencia",existTxt(m)],["Últ. modificación",m.fechaModificacion]];
+  const rows=[["Código",visible.codigo],["Entrada / lote",entrada?`#${entrada.id}${entrada.fechaRecibo?" · "+entrada.fechaRecibo:""}`:""],["Almacén",visible.ubicacionAlmacenNombre||almacenesPorCodigo.get(visible.ubicacionAlmacenCodigo)?.nombre],["Ubicación",visible.ubicacion],["Clasificación",nombreTipoRegistro(visible.tipoRegistro)],["Tipo material",visible.tipoMaterial],["Descripción",visible.descripcion],
+    ["Sección / especificación",seccionEspecificacion(visible)],["Longitud IND",visible.longitudIndividual!=null?`${visible.longitudIndividual} mm`:""],["Manufactura",visible.manufactura],["N.º Heat",visible.numeroHeat],["N.º lote MP",visible.numeroLoteMP||visible.lote],["N.º cert.",visible.numeroCertificado],["Total mm",visible.totalMM],["Fecha de recibo",visible.fechaRecibo],["Cantidad",`${visible.cantidad} ${visible.um}`],
+    ["Etiqueta",`MASTER · ${visible.cantidad} ${visible.um}`+(esIndividual(visible)?` (+ ${visible.cantidad} QR individuales)`:` (sin QR individuales: la cantidad debe ser entera y de 1 a ${MAX_IND})`)],
+    ["Peso",visible.peso!=null?`${visible.peso}${visible.pesoU||visible.pesoUnidad?" "+(visible.pesoU||visible.pesoUnidad):visible.pesoUnidadPendiente?" (unidad sin definir)":""}`:""],["Orden",visible.ordenMaterial],["PO number",visible.poNumber],
+    ["Existencia",entrada?existEntradaTxt(m,entrada):existTxt(visible)],["Existencia total del código",entrada?existTxt(m):""],["Últ. modificación",visible.fechaModificacion]];
   $("ficha").innerHTML=rows.filter(r=>r[1]).map(r=>`<div class="d"><b>${r[0]}</b><span>${esc(r[1])}</span></div>`).join("");
   $("bPrint").disabled=$("bPng").disabled=!actual;
-  const ind=!!actual&&esIndividual(m);$("piezasBox").hidden=!ind;$("pzDet").open=false;$("pzGrid").innerHTML="";
-  if(ind)$("piezasInfo").innerHTML=`<b>${m.cantidad} ${esc(m.um)}</b> (≤ ${MAX_IND}): además del QR master se generan <b>${m.cantidad} QR individuales</b>, uno por pieza (1/${m.cantidad} … ${m.cantidad}/${m.cantidad}).`;
+  const ind=!!actual&&esIndividual(visible);$("piezasBox").hidden=!ind;$("pzDet").open=false;$("pzGrid").innerHTML="";
+  if(ind)$("piezasInfo").innerHTML=`<b>${visible.cantidad} ${esc(visible.um)}</b> (≤ ${MAX_IND}): además del QR master se generan <b>${visible.cantidad} QR individuales</b>, uno por pieza (1/${visible.cantidad} … ${visible.cantidad}/${visible.cantidad}).`;
+  renderEntradas(m,actualEntradaId);
 }
+function renderEntradas(m,seleccionada){
+  const box=$("entradasBox");if(!box)return;
+  const es=m.entradas||[];
+  if(!es.length){box.hidden=true;box.innerHTML="";return}
+  box.hidden=false;
+  const filas=es.map((e,i)=>{
+    const actual=Number(e.id)===Number(seleccionada);
+    return `<tr${actual?' style="background:rgba(0,0,0,.04)"':""}>
+      <td>${i+1}</td>
+      <td><b>#${esc(e.id)}</b><br><small>${esc(e.fechaRecibo||"")}</small></td>
+      <td class="num">${esc(entradaTxt(e))}</td>
+      <td class="l">${esc(trazabilidadEntrada(e)||"—")}</td>
+      <td class="l">${esc(e.ubicacion||"Sin ubicación")}</td>
+      <td class="num">${esc(existEntradaTxt(m,e))}</td>
+      <td style="white-space:nowrap"><button type="button" class="ic" data-entrada="${esc(e.id)}" title="Ver QR de esta entrada">🔳</button><button type="button" class="ic" data-print-entrada="${esc(e.id)}" title="Imprimir etiqueta de esta entrada">🖨️</button></td>
+    </tr>`}).join("");
+  box.innerHTML=`<div class="reg-multi-head"><div><b>Entradas / lotes</b> <span class="chip">${es.length}</span></div><button type="button" class="bs" data-entrada="total"${seleccionada==null?" disabled":""}>Ver total del código</button></div>
+    <div class="tw"><table><thead><tr><th>#</th><th>Entrada</th><th class="num">Cantidad</th><th>Trazabilidad</th><th>Ubicación</th><th class="num">Existencia</th><th></th></tr></thead><tbody>${filas}</tbody></table></div>`;
+}
+$("entradasBox").addEventListener("click",e=>{
+  const b=e.target.closest("[data-entrada],[data-print-entrada]");if(!b||!actualBase)return;
+  const es=actualBase.entradas||[];
+  if(b.dataset.printEntrada!=null){
+    const entrada=es.find(x=>Number(x.id)===Number(b.dataset.printEntrada));if(!entrada)return;
+    const em=materialDeEntrada(actualBase,entrada),u=qrData(em,0);
+    if(!u){toast("No se pudo generar el QR de la entrada",1);return}
+    imprimirEtq([{m:em,n:0,src:u}]);return;
+  }
+  const valor=b.dataset.entrada;
+  mostrar(actualBase,valor==="total"?null:Number(valor));
+});
 function qrPieza(m,n){return dibujarQR(qrTexto(m,n))}
 $("pzDet").addEventListener("toggle",()=>{
   const g=$("pzGrid");if(!$("pzDet").open||g.childElementCount||!actual||!esIndividual(actual))return;
@@ -16311,10 +16531,10 @@ $("pzDet").addEventListener("toggle",()=>{
 const ETQ={qr:50,lv:2,fs:11,cl:3};
 function qrData(m,n){const c=dibujarQR(qrTexto(m,n),600);return c?c.toDataURL("image/png"):null}
 function etqHTML(m,n,src){
-  const f=ETQ,N=m.cantidad,tag=n?`PIEZA ${n} / ${N}`:`MASTER · ${esc(N)} ${esc(m.um)}`;
+  const f=ETQ,N=m.cantidad,tag=n?`PIEZA ${n} / ${N}`:`MASTER · ${esc(N)} ${esc(m.um)}${m.entradaId?` · Entrada #${esc(m.entradaId)}`:""}`;
   let t=`<b class="cd">${esc(m.codigo)}</b><span class="tg">${tag}</span>`;
   if(f.lv>=1)t+=`<small class="ds">${esc(m.descripcion)}</small>`;
-  if(f.lv>=2)t+=[m.lote?"Lote: "+m.lote:"",seccionEspecificacion(m),m.longitudIndividual!=null?`Long IND: ${m.longitudIndividual} mm`:"",m.peso!=null?`Peso: ${m.peso}${m.pesoU||m.pesoUnidad?" "+(m.pesoU||m.pesoUnidad):m.pesoUnidadPendiente?" (unidad sin definir)":""}`:"",m.ubicacion?"Ubic: "+m.ubicacion:"",m.fechaRecibo?"Recibo: "+m.fechaRecibo:""].filter(Boolean).map(x=>`<small>${esc(x)}</small>`).join("");
+  if(f.lv>=2)t+=[m.lote?"Lote: "+m.lote:"",m.numeroHeat?"Heat: "+m.numeroHeat:"",seccionEspecificacion(m),m.longitudIndividual!=null?`Long IND: ${m.longitudIndividual} mm`:"",m.peso!=null?`Peso: ${m.peso}${m.pesoU||m.pesoUnidad?" "+(m.pesoU||m.pesoUnidad):m.pesoUnidadPendiente?" (unidad sin definir)":""}`:"",m.ubicacion?"Ubic: "+m.ubicacion:"",m.fechaRecibo?"Recibo: "+m.fechaRecibo:""].filter(Boolean).map(x=>`<small>${esc(x)}</small>`).join("");
   return `<div class="pz${n?"":" mst"}"><img src="${src}" alt="QR"><div class="tx">${t}</div></div>`}
 function cssEtq(){const f=ETQ;
   return `@media print{@page{size:auto;margin:0}
@@ -16353,37 +16573,41 @@ function zipBytes(files){ // files: [{name,data:Uint8Array}]
   return new Blob([...parts,...cen,new Uint8Array(end.buffer)],{type:"application/zip"})}
 const durl=u=>Uint8Array.from(atob(u.split(",")[1]),c=>c.charCodeAt(0));
 const safeN=t=>String(t).replace(/[^\w.\-]+/g,"_");
-const nomPz=(m,n)=>`QR_${safeN(m.codigo)}_pieza_${String(n).padStart(String(m.cantidad).length,"0")}_de_${m.cantidad}.png`;
+const nomPz=(m,n)=>`QR_${safeN(m.codigo)}${m.entradaId?`_E${m.entradaId}`:""}_pieza_${String(n).padStart(String(m.cantidad).length,"0")}_de_${m.cantidad}.png`;
 async function bajarBlob(nombre,blob){
   if(matchMedia("(pointer:coarse)").matches){try{const f=new File([blob],nombre,{type:blob.type});if(navigator.canShare&&navigator.canShare({files:[f]})){await navigator.share({files:[f],title:nombre});return}}catch(e){if(e.name==="AbortError")return}}
   const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=nombre;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}
 $("bPngPz").onclick=()=>{
   if(!actual||!esIndividual(actual))return;const m=actual,F=[];
   for(let n=1;n<=m.cantidad;n++){const u=qrData(m,n);if(!u){toast("No se pudo generar el QR de la pieza "+n,1);return}F.push({name:nomPz(m,n),data:durl(u)})}
-  bajarBlob(`QR_${safeN(m.codigo)}_piezas.zip`,zipBytes(F));toast(`${F.length} PNG en ZIP ⬇️`);
+  bajarBlob(`QR_${safeN(m.codigo)}${m.entradaId?`_E${m.entradaId}`:""}_piezas.zip`,zipBytes(F));toast(`${F.length} PNG en ZIP ⬇️`);
 };
 $("pzGrid").addEventListener("click",e=>{
   const d=e.target.closest(".pzi");if(!d||!actual)return;const n=+d.dataset.n,u=qrData(actual,n);if(!u)return;
   bajarBlob(nomPz(actual,n),new Blob([durl(u)],{type:"image/png"}));
 });
 $("bPrintAll").onclick=()=>imprimirPiezas(true);
-$("bPng").onclick=()=>{const u=qrURL();if(!u||!actual)return;const a=document.createElement("a");a.href=u;a.download=`QR_${actual.codigo}.png`;a.click()};
+$("bPng").onclick=()=>{const u=qrURL();if(!u||!actual)return;const a=document.createElement("a");a.href=u;a.download=`QR_${actual.codigo}${actual.entradaId?`_E${actual.entradaId}`:""}.png`;a.click()};
 $("bPrint").onclick=()=>{if(!actual)return;const u=qrData(actual,0);if(!u){toast("No se pudo generar el QR",1);return}imprimirEtq([{m:actual,n:0,src:u}])};
 // Etiquetas de los materiales seleccionados en el historial
 function imprimirSeleccionados(){
   const lista=mats.filter(m=>seleccionados.has(m.codigo));
   if(!lista.length){toast("Seleccione al menos un material para imprimir sus etiquetas.",1);return}
   const conPiezas=$("incluirPiezasSel").checked;
-  const piezas=conPiezas?lista.filter(esIndividual).reduce((s,m)=>s+m.cantidad,0):0;
-  const total=lista.length+piezas;
-  if(total>50&&!confirm(`Se van a imprimir ${total} etiquetas (${lista.length} master${piezas?` + ${piezas} de piezas`:""}). ¿Desea continuar?`))return;
+  const piezas=conPiezas?lista.filter(m=>!(m.entradas?.length>1)&&esIndividual(m)).reduce((s,m)=>s+m.cantidad,0):0;
+  const total=lista.reduce((s,m)=>s+Math.max(1,(m.entradas||[]).length),0)+piezas;
+  if(total>50&&!confirm(`Se van a imprimir ${total} etiquetas. ¿Desea continuar?`))return;
   const L=[];
   for(const m of lista){
-    const u=qrData(m,0);if(!u){toast(`No se pudo generar el QR de ${m.codigo}`,1);return}
-    L.push({m,n:0,src:u});
-    if(conPiezas&&esIndividual(m))for(let n=1;n<=m.cantidad;n++){
-      const up=qrData(m,n);if(!up){toast(`No se pudo generar el QR de la pieza ${n} de ${m.codigo}`,1);return}
-      L.push({m,n,src:up});
+    const entradas=m.entradas?.length?m.entradas:[null];
+    for(const entrada of entradas){
+      const em=entrada?materialDeEntrada(m,entrada):m;
+      const u=qrData(em,0);if(!u){toast(`No se pudo generar el QR de ${m.codigo}${entrada?` · entrada ${entrada.id}`:""}`,1);return}
+      L.push({m:em,n:0,src:u});
+      if(conPiezas&&entradas.length===1&&esIndividual(em))for(let n=1;n<=em.cantidad;n++){
+        const up=qrData(em,n);if(!up){toast(`No se pudo generar el QR de la pieza ${n} de ${m.codigo}`,1);return}
+        L.push({m:em,n,src:up});
+      }
     }
   }
   imprimirEtq(L);
@@ -16391,14 +16615,19 @@ function imprimirSeleccionados(){
 $("bPrintSel").onclick=imprimirSeleccionados;
 
 // --- Tabla ---
+function actualizarAvisoEntradas(){
+  const el=$("entradasAviso");if(!el)return;
+  el.hidden=!entradasError;el.textContent=entradasError||"";
+}
 function render(){
+  actualizarAvisoEntradas();
   const codigos=new Set(mats.map(m=>m.codigo));seleccionados.forEach(c=>{if(!codigos.has(c))seleccionados.delete(c)});
   const q=$("buscar").value.toLowerCase().trim(),t=$("ftipo").value;
   let lista=mats.map((m,i)=>({m,i})).filter(({m})=>(!t||(t==="mp"?m.esMP:t==="consumibles"?m.tipoRegistro==="CONSUMIBLES":m.tipoRegistro==="GENERAL"))&&(!q||[m.codigo,m.descripcion,m.lote,m.proveedor,m.ubicacion,m.tipoMaterial,m.especificacionMedida,m.longitudIndividual,m.manufactura,m.numeroHeat,m.numeroLoteMP,m.numeroCertificado,m.totalMM,m.tipoMoneda,m.ordenMaterial,m.poNumber].join(" ").toLowerCase().includes(q))&&(!filtroEspecial||FILTROS[filtroEspecial].test(m)));
   if(orden.k)lista.sort((a,b)=>{const x=a.m[orden.k],y=b.m[orden.k];const r=typeof x==="number"?x-y:String(x??"").localeCompare(String(y??""),"es",{numeric:true});return orden.asc?r:-r});
   $("tbody").innerHTML=lista.map(({m,i})=>`<tr>
     <td><input type="checkbox" class="row-select" data-select="${esc(m.codigo)}" aria-label="Seleccionar ${esc(m.codigo)}" ${seleccionados.has(m.codigo)?"checked":""}></td>
-    <td><b>${esc(m.codigo)}</b></td><td class="l">${esc(m.descripcion)}</td><td>${esc(m.cantidad)} PZ · ${esc(existTxt(m))}</td>
+    <td><b>${esc(m.codigo)}</b></td><td class="l">${esc(m.descripcion)}</td><td>${esc(m.cantidad)} PZ · ${esc(existTxt(m))}${m.entradas?.length?`<br><small>${m.entradas.length} entrada(s)</small>`:""}</td>
     <td>${tagTipo(m)}</td>
     <td>${esc(m.ubicacion||"Sin ubicación")}</td><td>${esc(m.fechaRecibo)}</td>
     <td style="white-space:nowrap"><button type="button" class="ic" data-a="qr" data-i="${i}" title="Ver QR">🔳</button>${esAdmin?`<button type="button" class="ic" data-a="ed" data-i="${i}" title="Editar">✏️</button><button type="button" class="ic" data-a="del" data-i="${i}" title="Eliminar">🗑️</button>`:""}</td></tr>`).join("");
@@ -17145,9 +17374,11 @@ function alternarQrMaterial(m){
     $("vReg").classList.remove("qr-visible");
     $("qrBox").innerHTML="Guarde o seleccione un material para generar su QR";
     $("ficha").innerHTML="";
+    $("entradasBox").hidden=true;$("entradasBox").innerHTML="";
     $("bPrint").disabled=$("bPng").disabled=true;
     $("piezasBox").hidden=true;
     $("pzGrid").innerHTML="";
+    actualBase=null;actualEntradaId=null;
     return;
   }
   mostrar(m);
@@ -17202,6 +17433,7 @@ function editar(i){
   if(modoRegistro!=="unico"){modoRegistro="unico";actualizarModoRegistroUI()}
   activarSubpantalla("vReg","captura");
   const m=mats[i];resetForm();$("editIndex").value=i;
+  if(m.entradas?.length){$("cantidad").readOnly=true;$("cantidad").title="La cantidad se controla con las entradas/lotes y los conteos. No se edita directamente."}
   const values={codigo:m.codigo,descripcion:m.descripcion,um:m.um,cantidad:m.cantidad,ubicacion:m.ubicacion,fechaRecibo:m.fechaRecibo,tipoRegistro:m.tipoRegistro|| (m.esMP?"MP":"GENERAL"),seccionMaterial:m.noAplica?.seccionMaterial?"":m.seccionMaterial,altoMaterial:m.alto,anchoMaterial:m.ancho,diametroMaterial:m.diametro,
     tipoMaterial:m.tipoMaterial??(m.esMP?"Materia prima":m.tipoRegistro==="CONSUMIBLES"?"Consumibles":"Material general"),especificacionMedida:m.especificacionMedida,longitudIndividual:m.longitudIndividual,manufactura:m.manufactura,
     numeroHeat:m.numeroHeat,numeroLoteMP:m.numeroLoteMP??m.lote,numeroCertificado:m.numeroCertificado,totalMM:m.totalMM,peso:m.peso,ordenMaterial:m.ordenMaterial,poNumber:m.poNumber};
@@ -17229,14 +17461,21 @@ async function bajar(nombre,contenido,tipo){
 $("bJson").onclick=()=>{if(!esAdmin){toast("Solo el administrador puede exportar información.",1);return}bajar("trazabilidad_materiales.json",JSON.stringify(mats,null,2),"application/json");toast("JSON exportado ⬇️")};
 $("bCsv").onclick=()=>{
   if(!esAdmin){toast("Solo el administrador puede exportar información.",1);return}
-  const cols=["UBICACION","CODIGO","CLASIFICACION","TIPO MATERIAL","DESCRIPCION","ESPECIFICACION MEDIDA","SECCION","ALTO (MM)","ANCHO (MM)","DIAMETRO (MM)","LONGITUD IND (MM)","MANUFACTURA","N°HEAT","N°LOTE MP","N°CERT.","TOTAL MM","FECHA DE RECIBO","CTD","PESO","UM","ORDEN","PO NUMBER"];
+  const cols=["ENTRADA","UBICACION","CODIGO","CLASIFICACION","TIPO MATERIAL","DESCRIPCION","ESPECIFICACION MEDIDA","SECCION","ALTO (MM)","ANCHO (MM)","DIAMETRO (MM)","LONGITUD IND (MM)","MANUFACTURA","N°HEAT","N°LOTE MP","N°CERT.","TOTAL MM","FECHA DE RECIBO","CTD","PESO","UM","ORDEN","PO NUMBER","EXISTENCIA"];
   const c=v=>{let t=String(v??"");if(/^[=+\-@\t\r]/.test(t))t="'"+t;return `"${t.replace(/"/g,'""')}"`};
   const value=(m,key,v)=>m.noAplica?.[key]?"No aplica":v;
-  const rows=mats.map(m=>[m.ubicacion,m.codigo,nombreTipoRegistro(m.tipoRegistro).toUpperCase(),value(m,"tipoMaterial",m.tipoMaterial),m.descripcion,
-    value(m,"especificacionMedida",m.especificacionMedida),value(m,"seccionMaterial",m.seccionMaterial),m.alto,m.ancho,m.diametro,value(m,"longitudIndividual",m.longitudIndividual),value(m,"manufactura",m.manufactura),value(m,"numeroHeat",m.numeroHeat),
-    value(m,"numeroLoteMP",m.numeroLoteMP||m.lote),value(m,"numeroCertificado",m.numeroCertificado),value(m,"totalMM",m.totalMM),
-    m.fechaRecibo,m.cantidad,value(m,"peso",m.peso),m.noAplica?.peso?"No aplica":m.pesoUnidadPendiente?"Sin especificar":m.pesoU||m.pesoUnidad||"LB",
-    value(m,"ordenMaterial",m.ordenMaterial),value(m,"poNumber",m.poNumber)]);
+  const rows=[];
+  mats.forEach(m=>{
+    const entradas=m.entradas?.length?m.entradas:[null];
+    entradas.forEach(e=>{
+      const x=e?materialDeEntrada(m,e):m;
+      rows.push([e?e.id:"",x.ubicacion,x.codigo,nombreTipoRegistro(x.tipoRegistro).toUpperCase(),value(x,"tipoMaterial",x.tipoMaterial),x.descripcion,
+        value(x,"especificacionMedida",x.especificacionMedida),value(x,"seccionMaterial",x.seccionMaterial),x.alto,x.ancho,x.diametro,value(x,"longitudIndividual",x.longitudIndividual),value(x,"manufactura",x.manufactura),value(x,"numeroHeat",x.numeroHeat),
+        value(x,"numeroLoteMP",x.numeroLoteMP||x.lote),value(x,"numeroCertificado",x.numeroCertificado),value(x,"totalMM",x.totalMM),
+        x.fechaRecibo,x.cantidad,value(x,"peso",x.peso),x.noAplica?.peso?"No aplica":x.pesoUnidadPendiente?"Sin especificar":x.pesoU||x.pesoUnidad||"LB",
+        value(x,"ordenMaterial",x.ordenMaterial),value(x,"poNumber",x.poNumber),e?existEntradaTxt(m,e):existTxt(m)]);
+    });
+  });
   bajar("trazabilidad_materiales.csv","\ufeff"+[cols.join(","),...rows.map(row=>row.map(c).join(","))].join("\r\n"),"text/csv;charset=utf-8");toast("CSV exportado ⬇️");
 };
 $("bImp").onclick=()=>{if(!esAdmin){toast("Solo el administrador puede restaurar información.",1);return}$("fileImp").click()};
@@ -17305,7 +17544,7 @@ function materialDesdeExcel(row,mapped,esMateriaPrima=false){
   const tipoArchivo=text("tipoRegistro").toUpperCase(),esMP=/^(?:MP|MATERIA PRIMA)$/.test(tipoArchivo)||esMateriaPrima||/materia\s*prima|^mp$/i.test(text("tipoMaterial")),esConsumible=/^CONSUMIBLES?$/.test(tipoArchivo);
   const seccionMaterial=noAplica.seccionMaterial?"":normalizarSeccion(get("seccionMaterial"))||inferirSeccion(`${text("especificacionMedida")} ${text("descripcion")}`);
   const fechaRecibo=fechaExcel(get("fechaRecibo"));
-  if(!codigo||!descripcion||cantidad==null||cantidad<0||!fechaRecibo||(umOriginal&&!pesoUnitMap[umOriginal]&&!umCantidad&&!noAplica.peso))return null;
+  if(!codigo||!descripcion||cantidad==null||cantidad<=0||!fechaRecibo||(umOriginal&&!pesoUnitMap[umOriginal]&&!umCantidad&&!noAplica.peso))return null;
   const extra=Object.fromEntries(CAMPOS_EXTRA.map(([key])=>[key,noAplica[key]?["peso","totalMM","longitudIndividual"].includes(key)?null:"":["peso","totalMM","longitudIndividual"].includes(key)?numeroExcel(raw[key]):stringValue(key)]));
   if(!noAplica.totalMM&&extra.longitudIndividual!=null)extra.totalMM=cantidad*extra.longitudIndividual;
   return{codigo,descripcion,lote:extra.numeroLoteMP,proveedor:"",um:"PZ",cantidad,ubicacion,fechaRecibo,
@@ -17314,46 +17553,6 @@ function materialDesdeExcel(row,mapped,esMateriaPrima=false){
     diametro:seccionMaterial==="RND"?numeroExcel(get("diametro")):null,
     alto:["SQ","FLAT"].includes(seccionMaterial)?numeroExcel(get("alto")):null,
     ancho:["SQ","FLAT"].includes(seccionMaterial)?numeroExcel(get("ancho")):null,...extra,noAplica,despachos:[]};
-}
-function consolidarExcelPorCodigo(materiales){
-  const porCodigo=new Map();let filasAgrupadas=0;
-  const camposIguales=["tipoRegistro","seccionMaterial","tipoMaterial","especificacionMedida","manufactura","totalMM","ubicacion","alto","ancho","diametro"];
-  const camposCombinables=["numeroHeat","numeroLoteMP","numeroCertificado"];
-  materiales.forEach(m=>{
-    const clave=m.codigo.toLocaleLowerCase(),anterior=porCodigo.get(clave);
-    if(!anterior){porCodigo.set(clave,m);return}
-    for(const campo of camposIguales.filter(c=>c!=="totalMM")){
-      const a=String(anterior[campo]??"").trim(),b=String(m[campo]??"").trim();
-      if(a&&b&&a!==b)throw new Error(`El código ${m.codigo} aparece con valores distintos en "${campo}". Corrija esas filas antes de importar.`);
-      if(!a&&b)anterior[campo]=m[campo];
-    }
-    if(anterior.longitudIndividual!=null&&m.longitudIndividual!=null&&anterior.longitudIndividual!==m.longitudIndividual)
-      throw new Error(`El código ${m.codigo} aparece con longitudes individuales distintas. Corrija esas filas antes de importar.`);
-    if(anterior.longitudIndividual==null)anterior.longitudIndividual=m.longitudIndividual;
-    camposCombinables.forEach(campo=>{
-      const valores=[...new Set([anterior[campo],m[campo]].flatMap(v=>String(v??"").split(" / ")).map(v=>v.trim()).filter(Boolean))];
-      anterior[campo]=valores.join(" / ");
-    });
-    anterior.lote=anterior.numeroLoteMP;
-    if(anterior.peso!=null&&m.peso!=null&&anterior.pesoU!==m.pesoU)
-      throw new Error(`El código ${m.codigo} tiene pesos con unidades distintas o sin unidad. No se pueden sumar con seguridad.`);
-    anterior.cantidad+=m.cantidad;
-    if(m.peso!=null){
-      anterior.peso=anterior.peso==null?m.peso:anterior.peso+m.peso;
-      if(!anterior.pesoU)anterior.pesoU=m.pesoU;
-    }
-    anterior.pesoUnidadPendiente=anterior.peso!=null&&!anterior.pesoU;
-    if(anterior.longitudIndividual!=null&&!anterior.noAplica?.totalMM)
-      anterior.totalMM=anterior.cantidad*anterior.longitudIndividual;
-    else if(anterior.totalMM!=null&&m.totalMM!=null)anterior.totalMM+=m.totalMM;
-    const descripciones=[...new Set([anterior.descripcion,m.descripcion].filter(Boolean))];
-    anterior.descripcion=descripciones.join(" / ");
-    anterior.fechaRecibo=[anterior.fechaRecibo,m.fechaRecibo].sort()[0];
-    const ordenes=[...new Set([anterior.ordenMaterial,m.ordenMaterial].flatMap(v=>String(v??"").split(" / ")).map(v=>v.trim()).filter(Boolean))];
-    anterior.ordenMaterial=ordenes.join(" / ");
-    filasAgrupadas++;
-  });
-  return{materiales:[...porCodigo.values()],filasAgrupadas};
 }
 async function importarExcel(file){
   if(!esAdmin)throw new Error("Solo el administrador puede importar información.");
@@ -17368,13 +17567,41 @@ async function importarExcel(file){
     const material=materialDesdeExcel(row,mapped,esMateriaPrima);if(!material){invalidos++;return}
     filas.push(material);
   });
-  const{materiales:consolidados,filasAgrupadas}=consolidarExcelPorCodigo(filas);
+  if(!filas.length)throw new Error(`No hay filas válidas para importar. Inválidas: ${invalidos}.`);
   const codigosExistentes=new Set(mats.map(m=>m.codigo.toLocaleLowerCase()));
-  const nuevos=consolidados.filter(m=>!codigosExistentes.has(m.codigo.toLocaleLowerCase()));
-  const existentes=consolidados.length-nuevos.length;
-  if(!nuevos.length){toast(`No se agregaron materiales. Ya existentes: ${existentes} · filas agrupadas: ${filasAgrupadas} · inválidas: ${invalidos}`,1);return}
-  try{await subirLista(nuevos,[]);await cargar();renderHist();toast(`Importados: ${nuevos.length} · filas agrupadas: ${filasAgrupadas} · ya existentes: ${existentes} · inválidas: ${invalidos}`)}
-  catch(err){errDB(err,"No se pudo importar el Excel");await cargar().catch(()=>{})}
+  const codigosNuevos=new Set(),filasExistentes=filas.filter(m=>codigosExistentes.has(m.codigo.toLocaleLowerCase()));
+  filas.forEach(m=>{if(!codigosExistentes.has(m.codigo.toLocaleLowerCase()))codigosNuevos.add(m.codigo.toLocaleLowerCase())});
+  const cache=new Map();let ubicacionCreada=false,ubicacionCorregida=false,resolviendoUbicacion=true;
+  for(const m of filas){
+    const clave=`${m.tipoRegistro}|${String(m.ubicacion).trim().toLowerCase()}`;
+    let destino=cache.get(clave);
+    if(destino===undefined){
+      try{
+        resolviendoUbicacion=true;
+        destino=await resolverUbicacionRegistro(m.ubicacion,m.tipoRegistro,null);
+      }catch(err){
+        console.warn("Importación: no se pudo registrar la ubicación",m.ubicacion,err);
+        destino=null;
+      }
+      cache.set(clave,destino);
+    }
+    resolviendoUbicacion=false;
+    if(destino){
+      m.ubicacion=destino.ubicacion.nombre;m.ubicacionCodigo=destino.ubicacion.codigo;
+      m.ubicacionAlmacenCodigo=destino.ubicacion.almacen_codigo;m.ubicacionAlmacenNombre=destino.almacen.nombre;
+      if(destino.creada)ubicacionCreada=true;
+      if(destino.corregida)ubicacionCorregida=true;
+    }
+  }
+  try{
+    const items=filas.map(m=>({codigo:m.codigo,material:matData(m),entrada:entradaDesdeMaterial(m)}));
+    for(let i=0;i<items.length;i+=50)await registrarEntradas(items.slice(i,i+50));
+    await cargar();renderHist();
+    toast(`Entradas importadas: ${filas.length} · códigos nuevos: ${codigosNuevos.size} · entradas a códigos existentes: ${filasExistentes.length} · inválidas: ${invalidos}${ubicacionCreada?" · ubicación agregada":""}${ubicacionCorregida?" · código de ubicación corregido":""} ✔`);
+  }catch(err){
+    errDB(err,resolviendoUbicacion?"No se pudo registrar una de las ubicaciones":ubicacionCreada?"No se pudieron importar todas las entradas; algunas ubicaciones quedaron registradas":"No se pudo importar el Excel");
+    await cargar().catch(()=>{});
+  }
 }
 $("fileExcel").onchange=async e=>{
   const file=e.target.files[0];e.target.value="";if(!file)return;
@@ -17384,13 +17611,64 @@ $("fileImp").onchange=e=>{
   if(!esAdmin){e.target.value="";toast("Solo el administrador puede restaurar información.",1);return}
   const f=e.target.files[0];if(!f)return;const r=new FileReader();
   r.onload=async()=>{try{
-    const a=JSON.parse(r.result);if(!Array.isArray(a))throw 0;let nuevos=0,omit=0,surt=0;
+    const a=JSON.parse(r.result);if(!Array.isArray(a))throw 0;let nuevos=0,omit=0,surt=0,entradasImportadas=0,entradasOmitidas=0;
     const antesC=new Set(mats.map(x=>x.codigo.toLowerCase())),antesT=new Set(mats.flatMap(x=>(x.despachos||[]).map(d=>x.codigo.toLowerCase()+"|"+d.t)));
-    a.forEach(m=>{if(!m||!m.codigo){omit++;return}Object.assign(m,normalizarMaterial(m));m.codigo=String(m.codigo);m.esMP=!!m.esMP;m.cantidad=Number(m.cantidad)||0;m.despachos=Array.isArray(m.despachos)?m.despachos.filter(d=>d&&typeof d==="object"):[];const ex=mats.find(x=>x.codigo.toLowerCase()===String(m.codigo).toLowerCase());if(ex){const ids=new Set((ex.despachos||[]).map(d=>d.t));let add=0;(m.despachos||[]).forEach(d=>{if(!ids.has(d.t)){(ex.despachos=ex.despachos||[]).push(d);add++}});if(add)surt+=add;else omit++;return}mats.push(m);nuevos++});
-    const msN=mats.filter(m=>!antesC.has(m.codigo.toLowerCase())),dsN=mats.flatMap(m=>(m.despachos||[]).filter(d=>d&&d.t!=null&&!antesT.has(m.codigo.toLowerCase()+"|"+d.t)).map(d=>({codigo:m.codigo,d})));
+    const entradasExistentes=new Set(mats.flatMap(x=>(x.entradas||[]).map(en=>Number(en.id))));
+    const itemsEntradas=[];
+    a.forEach(raw=>{
+      if(!raw||!raw.codigo){omit++;return}
+      const m={...raw};Object.assign(m,normalizarMaterial(m));
+      m.codigo=String(m.codigo);m.esMP=!!m.esMP;m.cantidad=Number(m.cantidad)||0;
+      m.despachos=Array.isArray(m.despachos)?m.despachos.filter(d=>d&&typeof d==="object"):[];
+      m.entradas=Array.isArray(m.entradas)?m.entradas.filter(en=>en&&typeof en==="object"&&Number(en.cantidad)>0):[];
+      const ex=mats.find(x=>x.codigo.toLowerCase()===String(m.codigo).toLowerCase());
+      if(ex){
+        const ids=new Set((ex.despachos||[]).map(d=>d.t));let add=0;
+        (m.despachos||[]).forEach(d=>{if(!ids.has(d.t)){(ex.despachos=ex.despachos||[]).push(d);add++}});
+        if(add)surt+=add;else omit++;
+        const firmas=new Set((ex.entradas||[]).map(firmaEntrada));
+        for(const en of m.entradas){
+          const normalizada=entradaImportada(m,en),firma=firmaEntrada(normalizada);
+          if(firmas.has(firma)){entradasOmitidas++;continue}
+          firmas.add(firma);
+          itemsEntradas.push({codigo:m.codigo,material:matData(m),entrada:entradaDesdeMaterial(normalizada),oldId:en.id});
+        }
+        return;
+      }
+      mats.push(m);nuevos++;
+      if(m.entradas.length){
+        const firmas=new Set();
+        for(const en of m.entradas){
+          const normalizada=entradaImportada(m,en),firma=firmaEntrada(normalizada);
+          if(firmas.has(firma)){entradasOmitidas++;continue}
+          firmas.add(firma);
+          itemsEntradas.push({codigo:m.codigo,material:matData(m),entrada:entradaDesdeMaterial(normalizada),oldId:en.id});
+        }
+      }
+    });
+    const mapaEntradas=new Map();
+    try{
+      for(let i=0;i<itemsEntradas.length;i+=50){
+        const lote=itemsEntradas.slice(i,i+50);
+        const res=await registrarEntradas(lote.map(x=>({codigo:x.codigo,material:x.material,entrada:x.entrada})));
+        (res?.entradas||[]).forEach((r,j)=>{const old=lote[j]?.oldId;if(old!=null&&r?.id!=null)mapaEntradas.set(Number(old),Number(r.id))});
+      }
+      entradasImportadas=itemsEntradas.length;
+    }catch(err){errDB(err,"No se pudieron restaurar las entradas del respaldo");await cargar().catch(()=>{});return}
+    const msN=mats.filter(m=>!antesC.has(m.codigo.toLowerCase())&&!m.entradas?.length);
+    const dsN=mats.flatMap(m=>(m.despachos||[]).filter(d=>d&&d.t!=null&&!antesT.has(m.codigo.toLowerCase()+"|"+d.t)).map(d=>{
+      let entrada_id=d.entrada_id;
+      if(entrada_id!=null){
+        const asignada=mapaEntradas.get(Number(entrada_id));
+        if(asignada!=null)entrada_id=asignada;
+        else if(!entradasExistentes.has(Number(entrada_id)))entrada_id=null;
+      }
+      return {codigo:m.codigo,d:{...d,entrada_id}};
+    }));
     try{await subirLista(msN,dsN)}catch(err){errDB(err,"No se pudo subir a Supabase");await cargar().catch(()=>{});return}
-    await cargar().catch(()=>{});renderHist();toast(`Nuevos: ${nuevos} · surtidos fusionados: ${surt} · sin cambios: ${omit}`);
-  }catch{toast("Archivo JSON no válido",1)}};
+    await cargar().catch(()=>{});renderHist();
+    toast(`Nuevos: ${nuevos} · entradas: ${entradasImportadas}${entradasOmitidas?` (${entradasOmitidas} ya existían)`:""} · surtidos fusionados: ${surt} · sin cambios: ${omit}`);
+  }catch(err){toast(err?.message||"Archivo JSON no válido",1)}};
   r.readAsText(f);e.target.value="";
 };
 
@@ -17423,6 +17701,22 @@ function ajustesEnBase(m,u){
 }
 function existenciaLocal(m){
   const ds=m.despachos||[];
+  if(m.entradas?.length){
+    const entradas=m.entradas;
+    const hayLong=entradas.some(e=>longBaseEntrada(e).L>0);
+    if(hayLong){
+      const total=entradas.reduce((s,e)=>{const b=entradaEnBase(e);return s+(b.L>0?b.total*FAC[b.u]:0)},0);
+      const surtido=ds.reduce((s,d)=>s+longitudEnBase(d,"mm"),0);
+      const rest=r4(total-surtido+ajustesEnBase(m,"mm"));
+      const largos=[...new Set(entradas.map(e=>{const b=entradaEnBase(e);return b.L>0?r4(b.L*FAC[b.u]):0}).filter(L=>L>0))];
+      const L=largos.length===1?largos[0]:null;
+      return{modo:"long",u:"mm",L,total,rest,qty:L>0?r4(rest/L):null,peso:pesoEquivalente(m,rest,total)};
+    }
+    const total=entradas.reduce((s,e)=>s+(Number(e.cantidad)||0),0);
+    const surtido=ds.reduce((s,d)=>s+(Number(d.cantidad)||0),0);
+    const ajustes=(m.ajustesInventario||[]).reduce((s,a)=>s+(!a.unidad||a.unidad==="PZ"?Number(a.diferencia||0):0),0);
+    return{modo:"pz",u:"PZ",rest:r4(total-surtido+ajustes)};
+  }
   if(modoLong(m)){
     const{L,u}=longBase(m),total=m.cantidad*L;
     const surtido=ds.reduce((s,d)=>s+longitudEnBase(d,u),0),rest=r4(total-surtido+ajustesEnBase(m,u));
@@ -17436,14 +17730,14 @@ function existencia(m){
   if(s&&s.modo){
     const total=Number(s.total)||0,rest=r4(Number(s.existencia)||0);
     if(s.modo==="longitud"){
-      const L=Number(s.longitud_base)||longBase(m).L;
-      return{modo:"long",u:s.unidad||"mm",L,total,rest,qty:L>0?r4(rest/L):0,peso:pesoEquivalente(m,rest,total)};
+      const L=s.longitudes_mezcladas?null:(Number(s.longitud_base)||longBase(m).L);
+      return{modo:"long",u:s.unidad||"mm",L,total,rest,qty:L>0?r4(rest/L):null,peso:pesoEquivalente(m,rest,total),mezcladas:!!s.longitudes_mezcladas};
     }
     return{modo:"pz",u:s.unidad||m.um,rest};
   }
   return existenciaLocal(m);
 }
-function existTxt(m){const e=existencia(m);return e.modo==="long"?`${fmt(e.rest)} ${e.u} (≈${fmt(e.qty)} pz)${e.peso?` · ${fmt(e.peso.peso)} ${e.peso.u}`:""}`:`${fmt(e.rest)} ${e.u}`}
+function existTxt(m){const e=existencia(m);return e.modo==="long"?`${fmt(e.rest)} ${e.u}${e.qty==null?" (longitudes mezcladas)":` (≈${fmt(e.qty)} pz)`}${e.peso?` · ${fmt(e.peso.peso)} ${e.peso.u}`:""}`:`${fmt(e.rest)} ${e.u}`}
 let surItems=[],nextSurItem=1,stream=null,scanning=false,modoEscaneo="surtido",scanCooldown=new Map(),camMsgT=null;
 // Borrador de surtido (sessionStorage) y últimos datos capturados (localStorage)
 const K_SUR_BORRADOR="trazabilidad_sur_borrador_v1",K_SUR_DATOS="trazabilidad_sur_datos_v1";
@@ -17560,7 +17854,8 @@ function escanear(txt){
     camOff();
     const material=mats.find(m=>m.codigo.toLowerCase()===cod);
     if(!material){toast(cod?`Código no registrado: ${cod}`:"El QR no contiene un código de material válido.",1);return}
-    mostrar(material);
+    const entradaId=entradaDeQR(txt);
+    mostrar(material,entradaId&&(material.entradas||[]).some(e=>Number(e.id)===entradaId)?entradaId:null);
     $("vReg").querySelector('[data-module-screen="qr"]').scrollIntoView({behavior:"smooth",block:"start"});
     toast(`Material encontrado: ${material.codigo}`);return
   }
@@ -17582,7 +17877,7 @@ function escanearPieza(i,n,txt){
 // Ajusta cantidad/longitud del renglón según las piezas escaneadas.
 function recalcularPiezasSur(item,m){
   const e=existencia(m),n=item.piezas?.length||0;
-  if(e.modo==="long"){item.longitud=String(r4(n*e.L));item.unidad=e.u}
+  if(e.modo==="long"){item.longitud=e.L>0?String(r4(n*e.L)):"";item.unidad=e.u}
   else item.longitud="";
   item.cantidad=n;
 }
@@ -17592,7 +17887,7 @@ function agregarSurItem(i,pieza=null){
     const clave=m.codigo.toLowerCase();
     let item=surItems.find(x=>x.codigo.toLowerCase()===clave&&x.piezas?.length);
     if(!item){
-      item={id:nextSurItem++,codigo:m.codigo,cantidad:1,longitud:e.modo==="long"?String(e.L):"",unidad:e.modo==="long"?e.u:"",piezas:[]};
+      item={id:nextSurItem++,codigo:m.codigo,cantidad:1,longitud:e.modo==="long"&&e.L>0?String(e.L):"",unidad:e.modo==="long"?e.u:"",piezas:[]};
       surItems.push(item);
     }
     if(!item.piezas.includes(pieza)){
@@ -17619,7 +17914,7 @@ let det=null,audioCtx=null,wake=null,torchOn=false,busy=false,tUlt=0,txtUlt="",v
 try{if("BarcodeDetector" in window)det=new BarcodeDetector({formats:["qr_code"]})}catch{}
 function compacto(){try{return localStorage.getItem("qr_compacto2")!=="0"}catch{return true}}
 $("qrCompacto").checked=compacto();
-$("qrCompacto").onchange=()=>{try{localStorage.setItem("qr_compacto2",$("qrCompacto").checked?"1":"0")}catch{}if(actual)mostrar(actual)};
+$("qrCompacto").onchange=()=>{try{localStorage.setItem("qr_compacto2",$("qrCompacto").checked?"1":"0")}catch{}if(actualBase)mostrar(actualBase,actualEntradaId)};
 if(!window.isSecureContext||!navigator.mediaDevices){$("camAviso").hidden=false;$("invCamAviso").hidden=false;$("regCamAviso").hidden=false}
 if(matchMedia("(pointer:fine)").matches)$("manual").open=true;
 function feedback(){
@@ -17712,10 +18007,12 @@ function calcSur(){
       else if(quedan<0){html=`⚠ Excede la existencia disponible para este renglón (${fmt(disponible)} ${esc(e.u)}).`;errores.push(`${esc(m.codigo)}: longitud total excedida`)}
       else{
         const peso=pesoEquivalente(m,lr,e.total),pesoRest=pesoEquivalente(m,quedan,e.total);
-        const piezas=item.piezas?.length===r4(lr/e.L)?item.piezas.slice():undefined;
-        d={modo:"longitud",longitud:lr,unidad:e.u,cantidad:r4(lr/e.L),piezasEq:r4(lr/e.L),...(piezas?{piezas}:{}),...(peso?{pesoSurtido:peso.peso,pesoU:peso.u}:{})};
+        const piezasEq=e.L>0?r4(lr/e.L):null;
+        const piezas=piezasEq!=null&&item.piezas?.length===piezasEq?item.piezas.slice():undefined;
+        d={modo:"longitud",longitud:lr,unidad:e.u,...(piezasEq!=null?{cantidad:piezasEq,piezasEq}:{}),...(piezas?{piezas}:{}),...(peso?{pesoSurtido:peso.peso,pesoU:peso.u}:{})};
         html=`Surtir: <b>${fmt(lr)} ${esc(e.u)}</b>${peso?` · ≈ ${fmt(peso.peso)} ${peso.u}`:""}<br>Restante después de este renglón: ${fmt(quedan)} ${esc(e.u)}${pesoRest?` · ≈ ${fmt(pesoRest.peso)} ${pesoRest.u}`:""}`;
-        if(!piezas&&item.piezas?.length)html+=`<br><small class="sur-item-meta">⚠ La longitud no coincide con ${item.piezas.length} pieza(s) de ${fmt(e.L)} ${esc(e.u)}; las piezas escaneadas no se marcarán como surtidas.</small>`;
+        if(piezasEq==null&&item.piezas?.length)html+=`<br><small class="sur-item-meta">⚠ Este código mezcla longitudes; capture la longitud manualmente. Las piezas escaneadas no se marcarán como surtidas.</small>`;
+        else if(!piezas&&item.piezas?.length)html+=`<br><small class="sur-item-meta">⚠ La longitud no coincide con ${item.piezas.length} pieza(s) de ${fmt(e.L)} ${esc(e.u)}; las piezas escaneadas no se marcarán como surtidas.</small>`;
         totalPorCodigo.set(m.codigo.toLowerCase(),anterior+lr);
       }
     }else{
@@ -17835,7 +18132,7 @@ function pesoSurtido(m,d){
   return null;
 }
 function surTxt(m,d){
-  const base=d.modo==="longitud"?`${fmt(d.longitud)} ${d.unidad} ≈ ${fmt(d.piezasEq)} pz`:`${fmt(d.cantidad)} ${m.um}`;
+  const base=d.modo==="longitud"?`${fmt(d.longitud)} ${d.unidad}${d.piezasEq!=null?` ≈ ${fmt(d.piezasEq)} pz`:""}`:`${fmt(d.cantidad)} ${m.um}`;
   const peso=d.modo==="longitud"?pesoSurtido(m,d):null;
   return base+(peso?` · ≈ ${fmt(peso.peso)} ${peso.u}`:"")+(d.piezas&&d.piezas.length?` (pzas ${d.piezas.join(",")})`:"");
 }
@@ -17920,35 +18217,59 @@ $("bCsvS").onclick=()=>{
 // --- Ficha: página que se abre al escanear el QR con la cámara del celular ---
 function limpiaP(o){
   const t=v=>v==null?"":String(v).slice(0,300),n=v=>v==null?null:(Number(v)||0);
-  return{codigo:t(o.c),descripcion:t(o.d),lote:t(o.l),proveedor:t(o.p),um:"PZ",cantidad:n(o.q)??0,esMP:!!o.m,ubicacion:t(o.ub),fechaRecibo:t(o.fr),fechaModificacion:t(o.fm),
+  return{codigo:t(o.c),entradaId:n(o.e)||null,descripcion:t(o.d),lote:t(o.l),proveedor:t(o.p),um:"PZ",cantidad:n(o.q)??0,esMP:!!o.m,ubicacion:t(o.ub),fechaRecibo:t(o.fr),fechaModificacion:t(o.fm),
     tipoRegistro:o.tr==="MP"||o.m?"MP":o.tr==="CONSUMIBLES"?"CONSUMIBLES":"GENERAL",seccionMaterial:["SQ","FLAT","RND"].includes(o.sm)?o.sm:"",tipoMaterial:t(o.tm),especificacionMedida:t(o.em),longitudIndividual:n(o.li),manufactura:t(o.mf),numeroHeat:t(o.nh),numeroLoteMP:t(o.nl),numeroCertificado:t(o.nc),totalMM:n(o.tmm),tipoMoneda:t(o.mon),ordenMaterial:t(o.ord),poNumber:t(o.po),noAplica:o.na&&typeof o.na==="object"?o.na:{},
     peso:n(o.pe),pesoU:o.pu==="LB"||o.pu==="KG"?o.pu:o.u==="LB"||o.u==="KG"?o.u:null,pesoUnidadPendiente:o.pu==="?",longitud:n(o.lo),longU:okU(o.lu)?o.lu:"mm",seccion:o.s==="cuadrado"?"cuadrado":"redondo",
     secU:["mm","cm","in"].includes(o.su)?o.su:"mm",diametro:n(o.di),alto:n(o.al),ancho:n(o.an),despachos:[],existSnap:t(o.x)}}
 function filasFicha(m,ex,pz){
   const et=pz?`Pieza ${pz.n} de ${pz.t||m.cantidad}`:`MASTER · ${m.cantidad} ${m.um}`;
   const st=pz&&ex?(piezasSurt(m).has(pz.n)?"⚠ SURTIDA":"En existencia"):"";
-  return[["Código",m.codigo],["Etiqueta",et],["Estado de la pieza",st],["Clasificación",nombreTipoRegistro(m.tipoRegistro)],["Tipo material",m.tipoMaterial],["Descripción",m.descripcion],["Proveedor",m.proveedor],
+  return[["Código",m.codigo],["Entrada / lote",m.entradaId?`#${m.entradaId}${m.fechaRecibo?" · "+m.fechaRecibo:""}`:""],["Etiqueta",et],["Estado de la pieza",st],["Clasificación",nombreTipoRegistro(m.tipoRegistro)],["Tipo material",m.tipoMaterial],["Descripción",m.descripcion],["Proveedor",m.proveedor],
     ["Sección / especificación",seccionEspecificacion(m)],["Longitud IND",m.longitudIndividual!=null?`${m.longitudIndividual} mm`:""],["Manufactura",m.manufactura],["N.º Heat",m.numeroHeat],["N.º lote MP",m.numeroLoteMP||m.lote],["N.º cert.",m.numeroCertificado],["Total mm",m.totalMM],["Fecha de recibo",m.fechaRecibo],["Cantidad",`${m.cantidad} ${m.um}`],
     ["Peso",m.peso!=null?`${m.peso}${m.pesoU||m.pesoUnidad?" "+(m.pesoU||m.pesoUnidad):m.pesoUnidadPendiente?" (unidad sin definir)":""}`:""],["Orden",m.ordenMaterial],["PO number",m.poNumber],
     ["Existencia",ex?existTxt(m):""],["Existencia al imprimir la etiqueta",!ex&&m.existSnap?m.existSnap:""],["Últ. modificación",m.fechaModificacion]]}
 function salirFicha(){document.body.classList.remove("ficha");$("fichaView").hidden=true;document.title="Trazabilidad de Material · QR";try{history.replaceState(null,"",location.pathname+location.search)}catch{}}
 async function iniciarFicha(){
   const x=/#(?:[^#]*&)?(d|c)=([^&\s]+)/.exec(location.hash);if(!x)return;
-  const pz=pzDe(location.hash);let snap=null,cod="";
-  try{if(x[1]==="d"){snap=limpiaP(JSON.parse(b64d(x[2])));cod=snap.codigo}else cod=decodeURIComponent(x[2])}catch{}
+  const pz=pzDe(location.hash);let snap=null,cod="",entradaId=null;
+  try{if(x[1]==="d"){snap=limpiaP(JSON.parse(b64d(x[2])));cod=snap.codigo;entradaId=snap.entradaId!=null?Number(snap.entradaId):null}else{cod=decodeURIComponent(x[2]);entradaId=entradaDeQR(location.hash)}}catch{}
   document.body.classList.add("ficha");$("fichaView").hidden=false;window.scrollTo(0,0);
   $("fApp").onclick=salirFicha;$("fPdf").onclick=()=>{limpiarEtqCss();window.print()};
   if(!cod){$("fCod").textContent="QR no válido";$("fDatos").innerHTML='<div class="res bad">No se pudo leer la información de este QR. Genere la etiqueta de nuevo.</div>';$("fNota").textContent="";$("fPdf").hidden=true;return}
-  $("fCod").textContent=cod;document.title="Ficha "+cod;$("fDatos").innerHTML='<div class="res">Consultando…</div>';$("fNota").textContent="";$("fPdf").hidden=true;$("fSur").hidden=true;
+  const titulo=cod+(entradaId!=null?` · Entrada #${entradaId}`:"");
+  $("fCod").textContent=titulo;document.title="Ficha "+titulo;$("fDatos").innerHTML='<div class="res">Consultando…</div>';$("fNota").textContent="";$("fPdf").hidden=true;$("fSur").hidden=true;
   let m=mats.find(k=>String(k.codigo).toLowerCase()===cod.toLowerCase())||null,live=!!m,red=false,noReg=false;
   if(!m){
-    try{if(!sb)throw 0;const r=await sb.rpc("ficha_publica",{p_codigo:cod});if(r.error)throw r.error;
-      if(r.data){
-        const a=await sb.rpc("ficha_existencia_publica",{p_codigo:cod});if(a.error)throw a.error;
-        const diferencia=Number(a.data);if(a.data==null||!Number.isFinite(diferencia))throw new Error("La respuesta del ajuste de inventario no es válida.");
-        m={...r.data.m,despachos:(r.data.d||[]).map(desDeFila),ajustesInventario:[{diferencia}]};live=true
-      }else noReg=true}
-    catch{red=true}
+    try{
+      if(!sb)throw 0;
+      if(entradaId!=null){
+        const r=await sb.rpc("ficha_entrada_publica",{p_entrada_id:entradaId});if(r.error)throw r.error;
+        if(r.data){
+          const entrada=entradaDeFila(r.data.e);
+          const base={...r.data.m,codigo:(r.data.m&&r.data.m.codigo)||entrada.codigo,entradas:[entrada],despachos:(r.data.d||[]).map(desDeFila)};
+          m=materialDeEntrada(base,entrada);
+          const a=await sb.rpc("ficha_existencia_entrada_publica",{p_entrada_id:entradaId});if(a.error)throw a.error;
+          const diferencia=Number(a.data);if(a.data==null||!Number.isFinite(diferencia))throw new Error("La respuesta del ajuste de inventario no es válida.");
+          m.ajustesInventario=[{diferencia,entrada_id:Number(entradaId),unidad:"PZ"}];
+          live=true;
+        }else noReg=true;
+      }else{
+        const r=await sb.rpc("ficha_publica",{p_codigo:cod});if(r.error)throw r.error;
+        if(r.data){
+          const a=await sb.rpc("ficha_existencia_publica",{p_codigo:cod});if(a.error)throw a.error;
+          const diferencia=Number(a.data);if(a.data==null||!Number.isFinite(diferencia))throw new Error("La respuesta del ajuste de inventario no es válida.");
+          m={...r.data.m,despachos:(r.data.d||[]).map(desDeFila),ajustesInventario:[{diferencia}]};live=true
+        }else noReg=true
+      }
+    }catch{red=true}
+  }
+  if(m&&entradaId!=null){
+    const e=(m.entradas||[]).find(x=>Number(x.id)===Number(entradaId));
+    if(e)m=materialDeEntrada(m,e);
+    else{
+      entradaId=null;
+      $("fCod").textContent=cod;document.title="Ficha "+cod;
+    }
   }
   let solo=false;if(!m){if(snap)m=snap;else{m={codigo:cod};solo=true}}
   const hora=new Date().toLocaleString("es-MX");
@@ -17957,7 +18278,7 @@ async function iniciarFicha(){
     $("fNota").textContent="";return}
   $("fPdf").hidden=false;
   $("fDatos").innerHTML=filasFicha(m,live,pz).filter(r=>r[1]).map(r=>`<div class="d"><b>${r[0]}</b><span>${esc(r[1])}</span></div>`).join("");
-  $("fNota").textContent=live?`Datos en línea del sistema de trazabilidad. Consultado: ${hora}.`:`${noReg?"Este código ya no está registrado en el sistema.":"No se pudo consultar el sistema."} Se muestran los datos grabados al generar la etiqueta${m.fechaModificacion?" (últ. modificación: "+m.fechaModificacion+")":""}, que no reflejan surtidos posteriores. Consultado: ${hora}.`;
+  $("fNota").textContent=live?`Datos en línea${entradaId!=null?` de la entrada #${entradaId}`:""} del sistema de trazabilidad. Consultado: ${hora}.`:`${noReg?"Este código ya no está registrado en el sistema.":"No se pudo consultar el sistema."} Se muestran los datos grabados al generar la etiqueta${m.fechaModificacion?" (últ. modificación: "+m.fechaModificacion+")":""}, que no reflejan surtidos posteriores. Consultado: ${hora}.`;
   $("fSur").hidden=!(esStaff&&live);
   $("fSur").onclick=()=>{const c=pz?location.hash:m.codigo;salirFicha();document.querySelector('.tab[data-v="vSur"]').click();escanear(c)};
 }
