@@ -15819,14 +15819,15 @@ function existenciaEntrada(m,e){
   const b=entradaEnBase(e);
   const ds=(m.despachos||[]).filter(d=>Number(d.entrada_id)===Number(e.id));
   const usar=(m.entradas?.length===1)?(m.despachos||[]):ds;
+  const usarAjustes=(m.entradas?.length===1)?(m.ajustesInventario||[]):(m.ajustesInventario||[]).filter(a=>Number(a.entrada_id)===Number(e.id));
   if(b.mode==="long"){
     const surtido=usar.reduce((s,d)=>s+longitudEnBase(d,b.u),0);
-    const ajustes=(m.ajustesInventario||[]).filter(a=>Number(a.entrada_id)===Number(e.id)).reduce((s,a)=>s+ajustesEnBase({ajustesInventario:[a]},b.u),0);
+    const ajustes=usarAjustes.reduce((s,a)=>s+ajustesEnBase({ajustesInventario:[a]},b.u),0);
     const rest=r4(b.total-surtido+ajustes);
     return{modo:"long",u:b.u,L:b.L,total:b.total,rest,qty:b.L>0?r4(rest/b.L):0,peso:pesoEquivalente(e,rest,b.total)};
   }
   const surtido=usar.reduce((s,d)=>s+(Number(d.cantidad)||0),0);
-  const ajustes=(m.ajustesInventario||[]).filter(a=>Number(a.entrada_id)===Number(e.id)).reduce((s,a)=>s+(!a.unidad||a.unidad==="PZ"?Number(a.diferencia||0):0),0);
+  const ajustes=usarAjustes.reduce((s,a)=>s+(!a.unidad||a.unidad==="PZ"?Number(a.diferencia||0):0),0);
   return{modo:"pz",u:"PZ",rest:r4(b.cantidad-surtido+ajustes)};
 }
 function entradaTxt(e){
@@ -15959,7 +15960,12 @@ async function cargar(){
   mats=A.map(r=>({...normalizarMaterial(r.data),codigo:r.codigo,despachos:por[r.codigo]||[],ajustesInventario:ajustesPor[r.codigo]||[],entradas:entradasPor[r.codigo]||[]}));
   aplicarExistenciasServidor(await existenciasServidor);
   if(edCod){const i=mats.findIndex(x=>x.codigo===edCod);if(i<0)resetForm();else $("editIndex").value=i}
-  surItems=surItems.filter(item=>mats.some(x=>x.codigo.toLowerCase()===item.codigo.toLowerCase()));
+  surItems=surItems.filter(item=>{
+    const m=mats.find(x=>x.codigo.toLowerCase()===item.codigo.toLowerCase());
+    if(!m)return false;
+    if(item.entradaId!=null&&!entradaValida(m,item.entradaId))return false;
+    return true;
+  });
   surItems.forEach(item=>{const m=mats.find(x=>x.codigo.toLowerCase()===item.codigo.toLowerCase());if(item.piezas?.some(n=>piezasSurt(m,item.entradaId).has(n)))item.errorPieza=true});
   render();
   if(!$("vInv").hidden)renderInventario();
@@ -16019,7 +16025,12 @@ function renderVisible(){
   if(!$("vInv").hidden)renderInventario()
 }
 function syncSurItems(){
-  surItems=surItems.filter(item=>mats.some(m=>String(m.codigo).toLowerCase()===String(item.codigo).toLowerCase()));
+  surItems=surItems.filter(item=>{
+    const m=mats.find(x=>String(x.codigo).toLowerCase()===String(item.codigo).toLowerCase());
+    if(!m)return false;
+    if(item.entradaId!=null&&!entradaValida(m,item.entradaId))return false;
+    return true;
+  });
   surItems.forEach(item=>{const m=mats.find(x=>String(x.codigo).toLowerCase()===String(item.codigo).toLowerCase());if(m&&item.piezas?.some(n=>piezasSurt(m,item.entradaId).has(n)))item.errorPieza=true})
 }
 const edCodActual=()=>{const i=+$("editIndex").value;return i>=0&&mats[i]?mats[i].codigo:null};
@@ -17737,6 +17748,32 @@ function existencia(m){
   }
   return existenciaLocal(m);
 }
+// --- Surtido por entrada/lote (Fase 2) ---
+function entradaValida(m,id){
+  return id!=null&&(m?.entradas||[]).some(e=>Number(e.id)===Number(id));
+}
+function entradaDeItem(m,item){
+  if(!m||item?.entradaId==null)return null;
+  return(m.entradas||[]).find(e=>Number(e.id)===Number(item.entradaId))||null;
+}
+function resolverEntradaQR(m,entradaId){
+  if(entradaId!=null)return entradaValida(m,entradaId)?entradaDeItem(m,{entradaId}):null;
+  const es=m?.entradas||[];
+  return es.length===1?es[0]:null;
+}
+function existenciaItem(m,item){
+  const e=entradaDeItem(m,item);
+  return e?existenciaEntrada(m,e):existencia(m);
+}
+function claveSurItem(item){
+  return item?.entradaId!=null?`e:${item.entradaId}`:`c:${String(item?.codigo||"").toLowerCase()}`;
+}
+function esIndividualEntrada(e){
+  return !!e&&Number.isInteger(Number(e.cantidad))&&Number(e.cantidad)>=1&&Number(e.cantidad)<=MAX_IND;
+}
+function resumenEntrada(e){
+  return[e?.fechaRecibo,e?.numeroHeat?`Heat ${e.numeroHeat}`:"",e?.numeroLoteMP||e?.lote?`Lote ${e.numeroLoteMP||e.lote}`:"",e?.numeroCertificado?`Cert ${e.numeroCertificado}`:"",e?.ubicacion].filter(Boolean).join(" · ");
+}
 function existTxt(m){const e=existencia(m);return e.modo==="long"?`${fmt(e.rest)} ${e.u}${e.qty==null?" (longitudes mezcladas)":` (≈${fmt(e.qty)} pz)`}${e.peso?` · ${fmt(e.peso.peso)} ${e.peso.u}`:""}`:`${fmt(e.rest)} ${e.u}`}
 let surItems=[],nextSurItem=1,stream=null,scanning=false,modoEscaneo="surtido",scanCooldown=new Map(),camMsgT=null;
 // Borrador de surtido (sessionStorage) y últimos datos capturados (localStorage)
@@ -17757,7 +17794,11 @@ function restaurarBorradorSur(){
   const b=leerGuardado(K_SUR_BORRADOR,true);if(!b)return;
   const campos=b.campos&&typeof b.campos==="object"?b.campos:{};
   CAMPOS_SUR.forEach(id=>{const el=campoSur(id);if(el&&typeof campos[id]==="string")el.value=campos[id]});
-  const items=(Array.isArray(b.items)?b.items:[]).filter(it=>it&&it.codigo&&mats.some(m=>m.codigo.toLowerCase()===String(it.codigo).toLowerCase()));
+  const items=(Array.isArray(b.items)?b.items:[]).filter(it=>{
+    if(!it||!it.codigo)return false;
+    const m=mats.find(x=>x.codigo.toLowerCase()===String(it.codigo).toLowerCase());
+    return !!m&&(it.entradaId==null||entradaValida(m,it.entradaId));
+  });
   surItems=items;
   nextSurItem=Math.max(Number(b.next)||1,items.reduce((s,it)=>Math.max(s,Number(it.id)||0),0)+1);
   if(!items.length&&!CAMPOS_SUR.some(id=>campos[id]))limpiarBorradorSur();
@@ -17861,33 +17902,55 @@ function escanear(txt){
   }
   const i=mats.findIndex(m=>m.codigo.toLowerCase()===cod);
   if(i<0){camUltimo(txt);camAvisoSc(cod?`Código no registrado: ${cod}`:"El QR no contiene un código de material válido.");return}
-  const pz=pzDe(txt);if(pz){escanearPieza(i,pz.n,txt);return}
+  const m=mats[i],entradaQr=entradaDeQR(txt);
+  if(entradaQr!=null&&!entradaValida(m,entradaQr)){
+    camAvisoSc(`La entrada #${entradaQr} no pertenece a ${m.codigo}`);
+    return;
+  }
+  const pz=pzDe(txt);if(pz){escanearPieza(i,pz.n,txt,entradaQr);return}
   camUltimo(txt);
-  agregarSurItem(i);renderSur();
+  agregarSurItem(i,null,entradaQr);renderSur();
 }
-// Los QR de pieza se acumulan en un solo renglón por material y no permiten duplicados.
-function escanearPieza(i,n,txt){
+// Los QR de pieza se acumulan en un solo renglón por material/entrada y no permiten duplicados.
+function escanearPieza(i,n,txt,entradaId=null){
   const m=mats[i];
   camUltimo(txt||String(n));
-  if(!esIndividual(m)||n<1||n>m.cantidad){camAvisoSc(`Pieza ${n} no válida para ${m.codigo}`);return}
-  if(piezasSurt(m).has(n)){camAvisoSc(`⚠ La pieza ${n}/${m.cantidad} de ${m.codigo} ya fue surtida`);return}
-  if(surItems.some(x=>x.codigo.toLowerCase()===m.codigo.toLowerCase()&&x.piezas?.includes(n))){camAvisoSc(`La pieza ${n} ya está en el surtido actual`);return}
-  agregarSurItem(i,n);renderSur();
+  const entrada=resolverEntradaQR(m,entradaId);
+  if((m.entradas||[]).length>1&&!entrada){
+    camAvisoSc(`El QR no indica el lote. Escanee la etiqueta de la entrada de ${m.codigo}`);
+    return;
+  }
+  const cap=entrada?Number(entrada.cantidad):Number(m.cantidad);
+  if(!Number.isInteger(cap)||cap<1||cap>MAX_IND||!Number.isInteger(Number(n))||n<1||n>cap){
+    camAvisoSc(`Pieza ${n} no válida para ${m.codigo}${entrada?` · Entrada #${entrada.id}`:""}`);
+    return;
+  }
+  if(piezasSurt(m,entrada?entrada.id:null).has(n)){
+    camAvisoSc(`⚠ La pieza ${n}/${cap} de ${m.codigo}${entrada?` · Entrada #${entrada.id}`:""} ya fue surtida`);
+    return;
+  }
+  if(surItems.some(x=>x.codigo.toLowerCase()===m.codigo.toLowerCase()&&Number(x.entradaId||0)===Number(entrada?entrada.id:0)&&x.piezas?.includes(n))){
+    camAvisoSc(`La pieza ${n} ya está en el surtido actual`);
+    return;
+  }
+  agregarSurItem(i,n,entrada?entrada.id:null);renderSur();
 }
 // Ajusta cantidad/longitud del renglón según las piezas escaneadas.
 function recalcularPiezasSur(item,m){
-  const e=existencia(m),n=item.piezas?.length||0;
+  const e=existenciaItem(m,item),n=item.piezas?.length||0;
   if(e.modo==="long"){item.longitud=e.L>0?String(r4(n*e.L)):"";item.unidad=e.u}
   else item.longitud="";
   item.cantidad=n;
 }
-function agregarSurItem(i,pieza=null){
-  const m=mats[i],e=existencia(m);
+function agregarSurItem(i,pieza=null,entradaId=null){
+  const m=mats[i],entrada=resolverEntradaQR(m,entradaId);
+  const eid=entrada?Number(entrada.id):null;
+  const e=entrada?existenciaEntrada(m,entrada):existencia(m);
   if(pieza!=null){
     const clave=m.codigo.toLowerCase();
-    let item=surItems.find(x=>x.codigo.toLowerCase()===clave&&x.piezas?.length);
+    let item=surItems.find(x=>x.codigo.toLowerCase()===clave&&Number(x.entradaId||0)===Number(eid||0)&&x.piezas?.length);
     if(!item){
-      item={id:nextSurItem++,codigo:m.codigo,cantidad:1,longitud:e.modo==="long"&&e.L>0?String(e.L):"",unidad:e.modo==="long"?e.u:"",piezas:[]};
+      item={id:nextSurItem++,codigo:m.codigo,entradaId:eid,cantidad:1,longitud:e.modo==="long"&&e.L>0?String(e.L):"",unidad:e.modo==="long"?e.u:"",piezas:[]};
       surItems.push(item);
     }
     if(!item.piezas.includes(pieza)){
@@ -17896,7 +17959,7 @@ function agregarSurItem(i,pieza=null){
     }
     recalcularPiezasSur(item,m);
   }else{
-    surItems.push({id:nextSurItem++,codigo:m.codigo,cantidad:1,longitud:"",unidad:e.modo==="long"?e.u:"",piezas:[]});
+    surItems.push({id:nextSurItem++,codigo:m.codigo,entradaId:eid,cantidad:1,longitud:"",unidad:e.modo==="long"?e.u:"",piezas:[]});
   }
   programarGuardarSur();
 }
@@ -17965,10 +18028,16 @@ function renderSur(){
   let h="";
   h+=surItems.map((item,n)=>{
     const m=mats.find(x=>x.codigo.toLowerCase()===item.codigo.toLowerCase());if(!m)return"";
-    const e=existencia(m),lote=m.numeroLoteMP||m.lote||"";
+    const entradas=m.entradas||[];
+    const entrada=entradaDeItem(m,item);
+    const e=entrada?existenciaEntrada(m,entrada):existencia(m);
+    const lote=entrada?(entrada.numeroLoteMP||entrada.lote||""):(m.numeroLoteMP||m.lote||"");
+    const heat=entrada?entrada.numeroHeat:m.numeroHeat;
+    const selector=entradas.length?`<div class="sur-entry"><label for="sEnt-${item.id}">Entrada / lote</label><select id="sEnt-${item.id}"><option value="">— Seleccione lote —</option>${entradas.map(x=>`<option value="${esc(x.id)}"${Number(item.entradaId)===Number(x.id)?" selected":""}>#${esc(x.id)}${resumenEntrada(x)?` · ${esc(resumenEntrada(x))}`:""} · disp. ${esc(existEntradaTxt(m,x))}</option>`).join("")}</select></div>`:"";
     return`<section class="mp"><div class="sur-item-head"><b>${n+1}. ${esc(m.codigo)} · ${esc(m.descripcion)}</b><button type="button" class="bd" data-quitar="${item.id}">Quitar</button></div>
-      ${lote||m.numeroHeat?`<small class="sur-item-meta">Lote / Heat: ${esc([lote,m.numeroHeat].filter(Boolean).join(" / "))}</small>`:""}
-      <div class="sur-item-qty"><span><b>Existencia actual:</b> ${esc(existTxt(m))}</span>
+      ${selector}
+      ${lote||heat?`<small class="sur-item-meta">Lote / Heat: ${esc([lote,heat].filter(Boolean).join(" / "))}</small>`:""}
+      <div class="sur-item-qty"><span><b>${entrada?"Existencia del lote:":"Existencia actual:"}</b> ${esc(entrada?existEntradaTxt(m,entrada):existTxt(m))}</span>
       ${e.modo==="long"?`<div class="sur-entry"><label for="sLen-${item.id}">Longitud (pieza de ${esc(fmt(e.L))} ${esc(e.u)})</label><input type="number" id="sLen-${item.id}" min="0" step="any" inputmode="decimal" placeholder="Longitud" value="${esc(item.longitud)}"><select id="sU-${item.id}">${["mm","cm","m","in"].map(u=>`<option value="${u}"${(item.unidad||e.u)===u?" selected":""}>${u}</option>`).join("")}</select></div>`:
       `<label class="sur-entry"><span>Cantidad (${esc(m.um)})</span><input type="number" id="sCnt-${item.id}" min="0" step="any" value="${esc(item.cantidad)}"${item.piezas?.length?' readonly title="Se calcula con las piezas escaneadas"':""}></label>`}</div>
       ${item.piezas?.length?`<div class="sur-chips" aria-label="Piezas escaneadas">${item.piezas.map(n=>`<span class="sur-chip">Pieza ${esc(n)}<button type="button" data-quitar-pieza="${esc(n)}" data-item="${item.id}" aria-label="Quitar pieza ${esc(n)}" title="Quitar pieza ${esc(n)}">✕</button></span>`).join("")}</div>`:""}
@@ -17977,10 +18046,21 @@ function renderSur(){
   h+=`<div class="res" id="sRes"></div><div class="acts sur-actions"><button type="button" class="bp" id="sOk">✅ Confirmar salida múltiple</button><button type="button" class="bd" id="sNo">Vaciar salida</button></div>`;
   P.innerHTML=h;
   surItems.forEach(item=>{
-    const len=$(`sLen-${item.id}`),unit=$(`sU-${item.id}`),cnt=$(`sCnt-${item.id}`);
+    const len=$(`sLen-${item.id}`),unit=$(`sU-${item.id}`),cnt=$(`sCnt-${item.id}`),sel=$(`sEnt-${item.id}`);
     if(len)len.oninput=()=>{item.longitud=len.value;programarGuardarSur();calcSur()};
     if(unit)unit.onchange=()=>{item.unidad=unit.value;programarGuardarSur();calcSur()};
     if(cnt)cnt.oninput=()=>{item.cantidad=Number(cnt.value);programarGuardarSur();calcSur()};
+    if(sel)sel.onchange=()=>{
+      item.entradaId=sel.value?Number(sel.value):null;
+      item.piezas=[];item.errorPieza=false;
+      const m=mats.find(x=>x.codigo.toLowerCase()===item.codigo.toLowerCase());
+      const entrada=entradaDeItem(m,item);
+      const e=entrada?existenciaEntrada(m,entrada):existencia(m);
+      item.longitud=e.modo==="long"&&e.L>0?String(e.L):"";
+      item.unidad=e.modo==="long"?e.u:"";
+      item.cantidad=1;
+      programarGuardarSur();renderSur();
+    };
   });
   P.querySelectorAll("[data-quitar]").forEach(b=>b.onclick=()=>{surItems=surItems.filter(x=>x.id!==Number(b.dataset.quitar));programarGuardarSur();renderSur()});
   P.querySelectorAll("[data-quitar-pieza]").forEach(b=>b.onclick=()=>{
@@ -17993,36 +18073,57 @@ function renderSur(){
   $("sNo").onclick=()=>{surItems=[];limpiarBorradorSur();renderSur();enfocar()};$("sOk").onclick=confirmarSur;calcSur();camPanelUpdate();
 }
 function calcSur(){
-  const totalPorCodigo=new Map(),salidas=[],errores=[];
+  const totalPorClave=new Map(),salidas=[],errores=[];
   surItems.forEach(item=>{
     const m=mats.find(x=>x.codigo.toLowerCase()===item.codigo.toLowerCase());
-    if(!m){errores.push(`${esc(item.codigo)} ya no está registrado`);return}
-    const e=existencia(m),anterior=totalPorCodigo.get(m.codigo.toLowerCase())||0;
-    if(item.errorPieza){errores.push(`${esc(m.codigo)}: una pieza seleccionada ya fue surtida`);return}
+    if(!m){errores.push(`${esc(item.codigo)} ya no está registrado`);item.d=null;return}
+    const entradas=m.entradas||[];
+    const entrada=entradaDeItem(m,item);
+    if(item.entradaId!=null&&!entrada){
+      errores.push(`${esc(m.codigo)}: la entrada #${item.entradaId} ya no existe`);
+      const R=$(`sItemRes-${item.id}`);if(R){R.innerHTML="La entrada seleccionada ya no existe. Elija otro lote.";R.classList.add("bad")}
+      item.d=null;return;
+    }
+    if(entradas.length>1&&!entrada){
+      errores.push(`${esc(m.codigo)}: seleccione la entrada/lote`);
+      const R=$(`sItemRes-${item.id}`);if(R){R.innerHTML="Seleccione la entrada / lote a surtir.";R.classList.add("bad")}
+      item.d=null;return;
+    }
+    const e=entrada?existenciaEntrada(m,entrada):existencia(m);
+    const clave=claveSurItem(item),anterior=totalPorClave.get(clave)||0;
+    if(item.piezas?.length){
+      const surtidas=piezasSurt(m,entrada?entrada.id:null);
+      if(item.piezas.some(n=>surtidas.has(n))){
+        errores.push(`${esc(m.codigo)}${entrada?` · Entrada #${entrada.id}`:""}: una pieza seleccionada ya fue surtida`);
+        const R=$(`sItemRes-${item.id}`);if(R){R.innerHTML="Una pieza seleccionada ya fue surtida.";R.classList.add("bad")}
+        item.d=null;return;
+      }
+    }
     let d=null,html="";
+    const pesoBase=entrada||m;
     if(e.modo==="long"){
       const len=Number(item.longitud)||0,u=okU(item.unidad)?item.unidad:e.u;
       const lr=r4(len*FAC[u]/FAC[e.u]),disponible=r4(e.rest-anterior),quedan=r4(disponible-lr);
       if(len<=0){html="Capture la longitud a surtir."}
-      else if(quedan<0){html=`⚠ Excede la existencia disponible para este renglón (${fmt(disponible)} ${esc(e.u)}).`;errores.push(`${esc(m.codigo)}: longitud total excedida`)}
+      else if(quedan<0){html=`⚠ Excede la existencia disponible del lote (${fmt(disponible)} ${esc(e.u)}).`;errores.push(`${esc(m.codigo)}${entrada?` · Entrada #${entrada.id}`:""}: longitud total excedida`)}
       else{
-        const peso=pesoEquivalente(m,lr,e.total),pesoRest=pesoEquivalente(m,quedan,e.total);
+        const peso=pesoEquivalente(pesoBase,lr,e.total),pesoRest=pesoEquivalente(pesoBase,quedan,e.total);
         const piezasEq=e.L>0?r4(lr/e.L):null;
         const piezas=piezasEq!=null&&item.piezas?.length===piezasEq?item.piezas.slice():undefined;
-        d={modo:"longitud",longitud:lr,unidad:e.u,...(piezasEq!=null?{cantidad:piezasEq,piezasEq}:{}),...(piezas?{piezas}:{}),...(peso?{pesoSurtido:peso.peso,pesoU:peso.u}:{})};
+        d={modo:"longitud",longitud:lr,unidad:e.u,...(piezasEq!=null?{cantidad:piezasEq,piezasEq}:{}),...(piezas?{piezas}:{}),...(peso?{pesoSurtido:peso.peso,pesoU:peso.u}:{}),...(entrada?{entrada_id:Number(entrada.id)}:{})};
         html=`Surtir: <b>${fmt(lr)} ${esc(e.u)}</b>${peso?` · ≈ ${fmt(peso.peso)} ${peso.u}`:""}<br>Restante después de este renglón: ${fmt(quedan)} ${esc(e.u)}${pesoRest?` · ≈ ${fmt(pesoRest.peso)} ${pesoRest.u}`:""}`;
-        if(piezasEq==null&&item.piezas?.length)html+=`<br><small class="sur-item-meta">⚠ Este código mezcla longitudes; capture la longitud manualmente. Las piezas escaneadas no se marcarán como surtidas.</small>`;
+        if(piezasEq==null&&item.piezas?.length)html+=`<br><small class="sur-item-meta">⚠ Este lote mezcla longitudes; capture la longitud manualmente. Las piezas escaneadas no se marcarán como surtidas.</small>`;
         else if(!piezas&&item.piezas?.length)html+=`<br><small class="sur-item-meta">⚠ La longitud no coincide con ${item.piezas.length} pieza(s) de ${fmt(e.L)} ${esc(e.u)}; las piezas escaneadas no se marcarán como surtidas.</small>`;
-        totalPorCodigo.set(m.codigo.toLowerCase(),anterior+lr);
+        totalPorClave.set(clave,anterior+lr);
       }
     }else{
       const qty=Number(item.cantidad)||0,disponible=r4(e.rest-anterior),quedan=r4(disponible-qty);
       if(qty<=0){html="Indique una cantidad mayor que cero."}
-      else if(quedan<0){html=`⚠ Excede la existencia disponible para este renglón (${fmt(disponible)} ${esc(e.u)}).`;errores.push(`${esc(m.codigo)}: cantidad total excedida`)}
+      else if(quedan<0){html=`⚠ Excede la existencia disponible del lote (${fmt(disponible)} ${esc(e.u)}).`;errores.push(`${esc(m.codigo)}${entrada?` · Entrada #${entrada.id}`:""}: cantidad total excedida`)}
       else{
-        d={modo:"pieza",cantidad:qty,...(item.piezas?.length===qty?{piezas:item.piezas.slice()}:{})};
+        d={modo:"pieza",cantidad:qty,...(item.piezas?.length===qty?{piezas:item.piezas.slice()}:{}),...(entrada?{entrada_id:Number(entrada.id)}:{})};
         html=`Surtir: <b>${fmt(qty)} ${esc(e.u)}</b><br>Restante después de este renglón: ${fmt(quedan)} ${esc(e.u)}`;
-        totalPorCodigo.set(m.codigo.toLowerCase(),anterior+qty);
+        totalPorClave.set(clave,anterior+qty);
       }
     }
     const R=$(`sItemRes-${item.id}`);if(R){R.innerHTML=html;R.classList.toggle("bad",!d)}
@@ -18039,23 +18140,34 @@ async function confirmarSur(){
   if(!orden){toast("Capture la orden de producción para generar el comprobante de salida.",1);$("orden").focus();return}
   guardarDatosSur();
   const t=Date.now(),folio=folioSalida(t),fecha=new Date(t).toLocaleString("es-MX"),registros=[];
-  lineas.forEach(({m,d},i)=>{
+  lineas.forEach(({item,m,d},i)=>{
+    const entrada=entradaDeItem(m,item);
     const reg={...d,t:t+i,folio,fecha,orden,
       entrega:$("entrega").value.trim(),recibe:$("recibe").value.trim(),maquina:(campoSur("maquina")?.value||"").trim(),
       motivo:$("motivo").value.trim(),observaciones:$("observaciones").value.trim(),
-      material:{codigo:m.codigo,descripcion:m.descripcion,tipoRegistro:m.tipoRegistro,lote:m.numeroLoteMP||m.lote,numeroHeat:m.numeroHeat,ubicacion:m.ubicacion,seccionMaterial:m.seccionMaterial,especificacionMedida:m.especificacionMedida}};
-    registros.push({m,d:reg});
+      material:{codigo:m.codigo,descripcion:m.descripcion,tipoRegistro:m.tipoRegistro,lote:entrada?(entrada.numeroLoteMP||entrada.lote):(m.numeroLoteMP||m.lote),numeroHeat:entrada?entrada.numeroHeat:m.numeroHeat,ubicacion:entrada?entrada.ubicacion:m.ubicacion,seccionMaterial:m.seccionMaterial,especificacionMedida:m.especificacionMedida,entrada:entrada?`#${entrada.id}`:""}};
+    registros.push({m,d:reg,item,entrada});
   });
   $("sOk").disabled=true;
   try{
-    const items=registros.map(({m,d})=>({codigo:m.codigo,t:d.t,data:desData(d),piezas:d.piezas||[]}));
+    const items=registros.map(({m,d,item})=>({codigo:m.codigo,t:d.t,data:desData(d),piezas:d.piezas||[],...(item.entradaId!=null?{entrada_id:Number(item.entradaId)}:{})}));
     const{data,error}=await sb.rpc("registrar_salida",{p_folio:folio,p_items:items});
     if(error)throw error;
     if(!data||Number(data.registrados)!==registros.length)throw new Error(`Se esperaban ${registros.length} renglones, pero el servidor confirmó ${data?.registrados??0}`);
   }catch(err){
     let msg="No se pudo registrar la salida";
     const errTxt=String(err?.message||err||"");
-    if(/EXISTENCIA_INSUFICIENTE/i.test(errTxt)){
+    if(/EXISTENCIA_INSUFICIENTE_ENTRADA/i.test(errTxt)){
+      const match=/EXISTENCIA_INSUFICIENTE_ENTRADA:\s*([^\s·]+)\s*·\s*Entrada #(\d+)\s*·\s*Disponible:\s*([^\s]+)\s*([^\s·]+)\s*·\s*Solicitado:\s*([^\s]+)/.exec(errTxt);
+      if(match)msg=`Existencia insuficiente en ${match[1]} · Entrada #${match[2]} · Disponible: ${match[3]} ${match[4]} · Solicitado: ${match[5]}`;
+      else msg="Existencia insuficiente en el lote seleccionado. Actualice e intente de nuevo.";
+    }else if(/ENTRADA_REQUERIDA/i.test(errTxt)){
+      const match=/ENTRADA_REQUERIDA:\s*([^\s·]+)/.exec(errTxt);
+      msg=match?`Seleccione el lote/entrada de ${match[1]} antes de confirmar`:"Seleccione el lote/entrada de cada material antes de confirmar.";
+    }else if(/ENTRADA_NO_ENCONTRADA/i.test(errTxt)){
+      const match=/ENTRADA_NO_ENCONTRADA:\s*(\d+)/.exec(errTxt);
+      msg=match?`La entrada #${match[1]} ya no existe. Actualice y elija otro lote.`:"Una de las entradas seleccionadas ya no existe.";
+    }else if(/EXISTENCIA_INSUFICIENTE/i.test(errTxt)){
       const match=/EXISTENCIA_INSUFICIENTE:\s*([^\s·]+)\s*·\s*Disponible:\s*([^\s]+)\s*([^\s·]+)\s*·\s*Solicitado:\s*([^\s]+)/.exec(errTxt);
       if(match)msg=`Existencia insuficiente de ${match[1]} · Disponible: ${match[2]} ${match[3]} · Solicitado: ${match[4]}`;
       else msg="Existencia insuficiente. Otro usuario pudo haber surtido este material mientras preparabas la salida.";
@@ -18074,14 +18186,16 @@ async function confirmarSur(){
     return;
   }
   await cargar().catch(()=>{});
-  const porCodigo=new Map();
-  registros.forEach(({m,d})=>{
-    const anteriores=porCodigo.get(m.codigo.toLowerCase())||[];
+  const porClave=new Map();
+  registros.forEach(({m,d,item,entrada})=>{
+    const clave=entrada?`e:${entrada.id}`:`c:${m.codigo.toLowerCase()}`;
+    const anteriores=porClave.get(clave)||[];
     const temporal={...m,existenciaServer:null,despachos:[...(m.despachos||[]),...anteriores]};
-    const exPost=existencia({...temporal,despachos:[...temporal.despachos,d]});
+    const conNuevo={...temporal,despachos:[...temporal.despachos,d]};
+    const exPost=entrada?existenciaEntrada(conNuevo,entrada):existencia(conNuevo);
     d.existenciaRestante=exPost.rest;d.existenciaUnidad=exPost.u;
     if(exPost.peso){d.pesoRestante=exPost.peso.peso;d.pesoRestanteU=exPost.peso.u}
-    porCodigo.set(m.codigo.toLowerCase(),[...anteriores,d]);
+    porClave.set(clave,[...anteriores,d]);
   });
   const confirmados=registros.map(({m,d})=>({m:mats.find(x=>x.codigo.toLowerCase()===m.codigo.toLowerCase())||m,d}));
   imprimirSalidaGrupo(confirmados,folio);
@@ -18122,19 +18236,23 @@ function renderInicio(){
   $("homeHoyNum").textContent=hoyMovs.length;
   $("homeHoyLista").innerHTML=hoyMovs.slice(0,4).map(({m,d})=>`<li><b>${esc(m.codigo)}</b> · ${esc(d.folio||folioSalida(d.t))}</li>`).join("")+(hoyMovs.length>4?`<li class="home-more">+${hoyMovs.length-4} más</li>`:(hoyMovs.length?"":`<li class="home-more">Sin surtidos hoy</li>`));
 }
+function entradaDeDespacho(m,d){
+  return d?.entrada_id!=null?(m?.entradas||[]).find(e=>Number(e.id)===Number(d.entrada_id))||null:null;
+}
 function pesoSurtido(m,d){
-  const u=d.pesoU||pesoUnidad(m);
+  const entrada=entradaDeDespacho(m,d),base=entrada||m;
+  const u=d.pesoU||pesoUnidad(base);
   if(d.pesoSurtido!=null&&["LB","KG"].includes(u))return{peso:Number(d.pesoSurtido),u};
   if(d.modo==="longitud"){
-    const e=existencia(m);
-    return pesoEquivalente(m,longitudEnBase(d,e.u),e.total);
+    const e=entrada?existenciaEntrada(m,entrada):existencia(m);
+    return pesoEquivalente(base,longitudEnBase(d,e.u),e.total);
   }
   return null;
 }
 function surTxt(m,d){
   const base=d.modo==="longitud"?`${fmt(d.longitud)} ${d.unidad}${d.piezasEq!=null?` ≈ ${fmt(d.piezasEq)} pz`:""}`:`${fmt(d.cantidad)} ${m.um}`;
   const peso=d.modo==="longitud"?pesoSurtido(m,d):null;
-  return base+(peso?` · ≈ ${fmt(peso.peso)} ${peso.u}`:"")+(d.piezas&&d.piezas.length?` (pzas ${d.piezas.join(",")})`:"");
+  return base+(peso?` · ≈ ${fmt(peso.peso)} ${peso.u}`:"")+(d.piezas&&d.piezas.length?` (pzas ${d.piezas.join(",")})`:"")+(d.entrada_id!=null?` · Entrada #${d.entrada_id}`:"");
 }
 function imprimirSalida(m,d){
   imprimirSalidaGrupo([{m,d}],d.folio||folioSalida(d.t));
@@ -18147,14 +18265,17 @@ function imprimirSalidaGrupo(items,folio){
     ["Máquina / línea",base.maquina],["Motivo / uso",base.motivo]
   ];
   const renglones=items.map(({m,d})=>{
+    const entrada=entradaDeDespacho(m,d);
     const p=d.modo==="longitud"?pesoSurtido(m,d):null;
     const surtido=d.modo==="longitud"?`${fmt(d.longitud)} ${d.unidad} (${fmt(d.piezasEq)} pz eq.)`:`${fmt(d.cantidad)} ${m.um}`;
-    const despues={...m,despachos:[...(m.despachos||[]).filter(x=>x.t!==d.t),d]},rest=existencia(despues);
+    const despues={...m,despachos:[...(m.despachos||[]).filter(x=>x.t!==d.t),d]};
+    const rest=entrada?existenciaEntrada(despues,entrada):existencia(despues);
     const restL=d.existenciaRestante??rest.rest,restU=d.existenciaUnidad||rest.u;
     const restPeso=d.pesoRestante!=null?{peso:d.pesoRestante,u:d.pesoRestanteU}:rest.peso;
     const restantes=`${fmt(restL)} ${restU}${restPeso?` (≈ ${fmt(restPeso.peso)} ${restPeso.u})`:""}`;
     const material=d.material||m;
-    return`<tr><td>${esc(material.codigo)}</td><td>${esc(nombreTipoRegistro(material.tipoRegistro||(m.esMP?"MP":"GENERAL")))}</td><td>${esc(material.descripcion)}</td>
+    const codigoTxt=esc(material.codigo)+(d.entrada_id!=null?`<br><small>Entrada #${esc(d.entrada_id)}</small>`:"");
+    return`<tr><td>${codigoTxt}</td><td>${esc(nombreTipoRegistro(material.tipoRegistro||(m.esMP?"MP":"GENERAL")))}</td><td>${esc(material.descripcion)}</td>
       <td>${esc([material.lote,material.numeroHeat].filter(Boolean).join(" / ")||"—")}</td>
       <td>${esc([material.seccionMaterial,material.especificacionMedida].filter(Boolean).join(" · ")||"—")}</td>
       <td>${esc(material.ubicacion||"—")}</td><td>${esc(surtido)}</td>
@@ -18194,7 +18315,7 @@ function renderHist(){
   });
   $("hBody").innerHTML=[...groups.values()].map(g=>{
     const materiales=new Set(g.items.map(({m})=>m.codigo)),ultima=g.items[0].d.fecha||"";
-    const detalles=g.items.map(({m,i,j,d})=>`<tr><td>${esc(d.fecha)}</td><td><b>${esc(m.codigo)}</b><br><small>${esc(d.folio||folioSalida(d.t))}</small></td><td>${esc(surTxt(m,d))}</td><td><button type="button" class="ic" data-action="pdf" data-folio="${esc(d.folio||folioSalida(d.t))}" title="PDF / Imprimir salida completa">📄</button>${esAdmin?` <button type="button" class="ic" data-action="anular" data-i="${i}" data-j="${j}" title="Anular este renglón">↩️</button>`:""}</td></tr>`).join("");
+    const detalles=g.items.map(({m,i,j,d})=>`<tr><td>${esc(d.fecha)}</td><td><b>${esc(m.codigo)}</b>${d.entrada_id!=null?`<br><small>Entrada #${esc(d.entrada_id)}</small>`:""}<br><small>${esc(d.folio||folioSalida(d.t))}</small></td><td>${esc(surTxt(m,d))}</td><td><button type="button" class="ic" data-action="pdf" data-folio="${esc(d.folio||folioSalida(d.t))}" title="PDF / Imprimir salida completa">📄</button>${esAdmin?` <button type="button" class="ic" data-action="anular" data-i="${i}" data-j="${j}" title="Anular este renglón">↩️</button>`:""}</td></tr>`).join("");
     return`<details class="sur-group"><summary><span class="sur-date">${esc(ultima)}</span><span class="sur-order">Orden: ${esc(g.orden||"Sin orden")}</span><span class="sur-count">${g.items.length} surtido(s) · ${materiales.size} material(es)</span></summary>
       <div class="sur-group-body"><table><thead><tr><th>Fecha</th><th>Código / folio</th><th>Surtido</th><th>Acciones</th></tr></thead><tbody>${detalles}</tbody></table></div></details>`;
   }).join("");
@@ -18210,8 +18331,8 @@ $("hBody").addEventListener("click",async e=>{
 $("bCsvS").onclick=()=>{
   if(!esAdmin){toast("Solo el administrador puede exportar información.",1);return}
   const c=v=>{let t=String(v??"");if(/^[=+\-@\t\r]/.test(t))t="'"+t;return `"${t.replace(/"/g,'""')}"`};
-  const f=movs().map(({m,d})=>{const p=d.modo==="longitud"?pesoSurtido(m,d):null;return[d.folio||folioSalida(d.t),d.fecha,d.orden,d.entrega,d.recibe,d.maquina,d.motivo,d.observaciones,m.codigo,m.descripcion,d.modo,d.cantidad,m.um,d.longitud??"",d.unidad??"",p?.peso??"",p?.u??"",(d.piezas||[]).join(" ")].map(c).join(",")});
-  bajar("surtidos.csv","\ufeff"+["folio,fecha,orden,entrega,recibe,maquina,motivo,observaciones,codigo,descripcion,modo,cantidad,um,longitud,unidad,peso_equivalente,peso_um,piezas",...f].join("\r\n"),"text/csv;charset=utf-8");toast("CSV exportado ⬇️");
+  const f=movs().map(({m,d})=>{const p=d.modo==="longitud"?pesoSurtido(m,d):null;return[d.folio||folioSalida(d.t),d.fecha,d.orden,d.entrega,d.recibe,d.maquina,d.motivo,d.observaciones,m.codigo,m.descripcion,d.entrada_id??"",d.modo,d.cantidad,m.um,d.longitud??"",d.unidad??"",p?.peso??"",p?.u??"",(d.piezas||[]).join(" ")].map(c).join(",")});
+  bajar("surtidos.csv","\ufeff"+["folio,fecha,orden,entrega,recibe,maquina,motivo,observaciones,codigo,descripcion,entrada,modo,cantidad,um,longitud,unidad,peso_equivalente,peso_um,piezas",...f].join("\r\n"),"text/csv;charset=utf-8");toast("CSV exportado ⬇️");
 };
 
 // --- Ficha: página que se abre al escanear el QR con la cámara del celular ---

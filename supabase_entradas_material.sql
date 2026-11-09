@@ -1,5 +1,5 @@
 -- ============================================================================
--- ENTRADAS DE MATERIAL (FASE 1)
+-- ENTRADAS DE MATERIAL POR LOTE (FASES 1 Y 2)
 -- ============================================================================
 -- Objetivo:
 --   * Un material (código) puede tener varias recepciones/lotes.
@@ -8,6 +8,8 @@
 --     ubicación y fecha de recibo).
 --   * La existencia del código es la suma de sus entradas menos surtidos y
 --     ajustes.
+--   * El surtido valida la existencia y las piezas contra el lote elegido; si
+--     el material tiene varios lotes, la salida debe indicar cuál se surte.
 --
 -- Este script es idempotente: se puede ejecutar varias veces.
 --
@@ -210,6 +212,11 @@ base as (
   select
     e.*,
     mat.es_mp,
+    (
+      select count(*)
+      from public.entradas_material e2
+      where e2.codigo_material = e.codigo_material
+    ) as entradas_codigo,
     case
       when mat.es_mp and coalesce(e.longitud_individual, 0) > 0 then 'longitud'
       when mat.es_mp and coalesce(e.longitud, 0) > 0 then 'longitud'
@@ -257,6 +264,11 @@ surtido as (
     ) as base
   from base b
   join public.despachos d on d.entrada_id = b.id
+    or (
+      d.entrada_id is null
+      and b.entradas_codigo = 1
+      and d.codigo = b.codigo_material
+    )
   group by b.id
 ),
 ajustes as (
@@ -272,6 +284,11 @@ ajustes as (
     ) as base
   from base b
   join public.ajustes_inventario_ciclico a on a.entrada_id = b.id
+    or (
+      a.entrada_id is null
+      and b.entradas_codigo = 1
+      and a.codigo_material = b.codigo_material
+    )
   group by b.id
 )
 select
@@ -806,11 +823,15 @@ end;
 $$;
 
 -- ----------------------------------------------------------------------------
--- PASO 12: Actualizar registrar_salida para etiquetar la entrada
+-- PASO 12: registrar_salida con surtido por entrada/lote (Fase 2)
 -- ----------------------------------------------------------------------------
--- Se conserva la validación por código (la validación estricta por entrada se
--- hará en la Fase 2). Si el renglón trae entrada_id, se usa; si el material
--- tiene una sola entrada, se etiqueta automáticamente.
+-- * Si el renglón trae entrada_id, la existencia y las piezas se validan
+--   estrictamente contra esa entrada/lote.
+-- * Si el material tiene una sola entrada, se etiqueta automáticamente.
+-- * Si el material tiene varias entradas y no se indica entrada_id, se
+--   rechaza con ENTRADA_REQUERIDA para no dejar salidas sin lote.
+-- * Los materiales sin entradas registradas (cantidad inicial 0) conservan el
+--   cálculo anterior por código.
 create or replace function public.registrar_salida(
   p_folio text,
   p_items jsonb
@@ -837,7 +858,6 @@ declare
   v_total_longitud numeric;
   v_total_piezas numeric;
   v_entradas_count integer;
-  v_tiene_longitud boolean;
   v_surtido_longitud numeric;
   v_surtido_piezas numeric;
   v_ajustes numeric;
@@ -882,63 +902,95 @@ begin
       raise exception 'MATERIAL_NO_ENCONTRADO: %', v_codigo;
     end if;
 
-    if v_entrada_id is not null then
+    -- Resolver la entrada/lote del renglón.
+    if v_entrada_id is null then
+      select count(*) into v_entradas_count
+      from public.entradas_material
+      where codigo_material = v_codigo;
+
+      if v_entradas_count = 1 then
+        select id into v_entrada_id
+        from public.entradas_material
+        where codigo_material = v_codigo
+        order by id
+        limit 1;
+      elsif v_entradas_count > 1 then
+        raise exception 'ENTRADA_REQUERIDA: % · Seleccione el lote/entrada a surtir', v_codigo;
+      end if;
+    else
       if not exists (
         select 1 from public.entradas_material
         where id = v_entrada_id and codigo_material = v_codigo
       ) then
         raise exception 'ENTRADA_NO_ENCONTRADA: %', v_entrada_id;
       end if;
-    else
-      select id into v_entrada_id
-      from public.entradas_material
-      where codigo_material = v_codigo
-      order by id
-      limit 1;
-
-      if (select count(*) from public.entradas_material where codigo_material = v_codigo) > 1 then
-        v_entrada_id := null;
-      end if;
     end if;
 
-    v_es_mp := lower(coalesce(v_material.data->>'tipoRegistro', '')) in ('mp', 'materia prima')
-      or lower(coalesce(v_material.data->>'esMP', 'false')) = 'true';
+    if v_entrada_id is not null then
+      -- Validación estricta contra la entrada/lote seleccionada.
+      select ee.modo, ee.unidad, ee.existencia
+      into v_modo, v_unidad_longitud, v_existencia_piezas
+      from public.existencias_entradas ee
+      where ee.id = v_entrada_id;
 
-    select count(*) into v_entradas_count
-    from public.entradas_material
-    where codigo_material = v_codigo;
+      if not found then
+        raise exception 'ENTRADA_NO_ENCONTRADA: %', v_entrada_id;
+      end if;
 
-    if v_entradas_count > 0 then
-      -- La existencia real es la suma de las entradas/lotes, igual que la vista.
-      v_longitud_individual := 0;
-      v_longitud_base := 0;
-      select
-        coalesce(sum(e.cantidad), 0),
-        coalesce(sum(
-          e.cantidad * case
-            when coalesce(e.longitud_individual, 0) > 0 then e.longitud_individual
-            when coalesce(e.longitud, 0) > 0
-              then e.longitud * public.factor_longitud(coalesce(nullif(e.longitud_unidad, ''), 'mm'))
-            else 0
-          end
-        ), 0),
-        bool_or(
-          coalesce(e.longitud_individual, 0) > 0
-          or coalesce(e.longitud, 0) > 0
-        )
-      into v_total_piezas, v_total_longitud, v_tiene_longitud
-      from public.entradas_material e
-      where e.codigo_material = v_codigo;
+      if v_modo = 'longitud' then
+        v_unidad := coalesce(nullif(v_item->'data'->>'unidad', ''), v_unidad_longitud);
+        if v_unidad not in ('mm', 'cm', 'm', 'in') then
+          v_unidad := v_unidad_longitud;
+        end if;
 
-      if v_es_mp and coalesce(v_tiene_longitud, false) then
-        v_modo := 'longitud';
-        v_factor := 1;
-        v_unidad_longitud := 'mm';
+        v_longitud := coalesce(nullif(v_item->'data'->>'longitud', '')::numeric, 0);
+        v_surtido_longitud := v_longitud
+          * public.factor_longitud(v_unidad)
+          / public.factor_longitud(v_unidad_longitud);
+
+        if v_surtido_longitud > v_existencia_piezas + 0.0001 then
+          raise exception 'EXISTENCIA_INSUFICIENTE_ENTRADA: % · Entrada #% · Disponible: % % · Solicitado: % %',
+            v_codigo,
+            v_entrada_id,
+            round(v_existencia_piezas, 4),
+            v_unidad_longitud,
+            round(v_longitud, 4),
+            v_unidad;
+        end if;
       else
-        v_modo := 'piezas';
-        v_factor := 1;
+        v_cantidad := coalesce(nullif(v_item->'data'->>'cantidad', '')::numeric, 0);
+        if v_cantidad > v_existencia_piezas + 0.0001 then
+          raise exception 'EXISTENCIA_INSUFICIENTE_ENTRADA: % · Entrada #% · Disponible: % PZ · Solicitado: % PZ',
+            v_codigo,
+            v_entrada_id,
+            round(v_existencia_piezas, 4),
+            round(v_cantidad, 4);
+        end if;
+      end if;
+
+      if cardinality(v_piezas) > 0 then
+        select array_agg(distinct pieza_num)
+        into v_piezas_surtidas
+        from public.despachos d,
+             lateral unnest(d.piezas) as pieza_num
+        where d.entrada_id = v_entrada_id;
+
+        if exists (
+          select 1
+          from unnest(v_piezas) as nueva_pieza
+          where nueva_pieza = any(coalesce(v_piezas_surtidas, '{}'::integer[]))
+        ) then
+          raise exception 'PIEZA_YA_SURTIDA: % · Piezas duplicadas en: %',
+            v_codigo,
+            (select array_agg(p) from unnest(v_piezas) p where p = any(coalesce(v_piezas_surtidas, '{}'::integer[])));
+        end if;
       end if;
     else
+      -- Material sin entradas registradas (cantidad inicial 0): cálculo por
+      -- código, igual que la versión anterior.
+      v_es_mp := lower(coalesce(v_material.data->>'tipoRegistro', '')) in ('mp', 'materia prima')
+        or lower(coalesce(v_material.data->>'esMP', 'false')) = 'true';
+
       v_total_piezas := coalesce(nullif(v_material.data->>'cantidad', '')::numeric, 0);
       v_longitud_individual := coalesce(nullif(v_material.data->>'longitudIndividual', '')::numeric, 0);
       v_longitud_base := coalesce(nullif(v_material.data->>'longitud', '')::numeric, 0);
@@ -967,104 +1019,101 @@ begin
         v_modo := 'piezas';
         v_factor := 1;
       end if;
-    end if;
 
-    if v_modo = 'longitud' then
-      if v_entradas_count = 0 then
+      if v_modo = 'longitud' then
         v_total_longitud := v_total_piezas * v_longitud_base;
-      end if;
 
-      select coalesce(sum(
-        coalesce(nullif(d.data->>'longitud', '')::numeric, 0)
-        * (case
-            when coalesce(d.data->>'unidad', '') in ('mm', 'cm', 'm', 'in')
-            then case d.data->>'unidad'
+        select coalesce(sum(
+          coalesce(nullif(d.data->>'longitud', '')::numeric, 0)
+          * (case
+              when coalesce(d.data->>'unidad', '') in ('mm', 'cm', 'm', 'in')
+              then case d.data->>'unidad'
+                when 'cm' then 10
+                when 'm' then 1000
+                when 'in' then 25.4
+                else 1
+              end
+              else v_factor
+            end)
+          / v_factor
+        ), 0)
+        into v_surtido_longitud
+        from public.despachos d
+        where d.codigo = v_codigo;
+
+        select coalesce(sum(
+          (a.diferencia)::numeric
+          * public.factor_longitud(a.unidad)
+          / v_factor
+        ), 0)
+        into v_ajustes
+        from public.ajustes_inventario_ciclico a
+        where a.codigo_material = v_codigo
+          and a.unidad in ('mm', 'cm', 'm', 'in');
+
+        v_existencia_longitud := v_total_longitud - v_surtido_longitud + v_ajustes;
+
+        v_longitud := coalesce(nullif(v_item->'data'->>'longitud', '')::numeric, 0);
+        v_unidad := coalesce(
+          nullif(v_item->'data'->>'unidad', ''),
+          case when v_longitud_individual > 0 then 'mm' else v_unidad_longitud end
+        );
+        if v_unidad not in ('mm', 'cm', 'm', 'in') then
+          v_unidad := case when v_longitud_individual > 0 then 'mm' else v_unidad_longitud end;
+        end if;
+
+        if (v_longitud * (case v_unidad
               when 'cm' then 10
               when 'm' then 1000
               when 'in' then 25.4
               else 1
-            end
-            else v_factor
-          end)
-        / v_factor
-      ), 0)
-      into v_surtido_longitud
-      from public.despachos d
-      where d.codigo = v_codigo;
-
-      select coalesce(sum(
-        (a.diferencia)::numeric
-        * public.factor_longitud(a.unidad)
-        / v_factor
-      ), 0)
-      into v_ajustes
-      from public.ajustes_inventario_ciclico a
-      where a.codigo_material = v_codigo
-        and a.unidad in ('mm', 'cm', 'm', 'in');
-
-      v_existencia_longitud := v_total_longitud - v_surtido_longitud + v_ajustes;
-
-      v_longitud := coalesce(nullif(v_item->'data'->>'longitud', '')::numeric, 0);
-      v_unidad := coalesce(
-        nullif(v_item->'data'->>'unidad', ''),
-        case when v_longitud_individual > 0 then 'mm' else v_unidad_longitud end
-      );
-      if v_unidad not in ('mm', 'cm', 'm', 'in') then
-        v_unidad := case when v_longitud_individual > 0 then 'mm' else v_unidad_longitud end;
-      end if;
-
-      if (v_longitud * (case v_unidad
-            when 'cm' then 10
-            when 'm' then 1000
-            when 'in' then 25.4
-            else 1
-          end) / v_factor) > v_existencia_longitud + 0.0001 then
-        raise exception 'EXISTENCIA_INSUFICIENTE: % · Disponible: % % · Solicitado: % %',
-          v_codigo,
-          round(v_existencia_longitud, 4),
-          case when v_factor = 1 then 'mm' else v_unidad_longitud end,
-          round(v_longitud, 4),
-          v_unidad;
-      end if;
-
-    else
-      select coalesce(sum((d.data->>'cantidad')::numeric), 0)
-      into v_surtido_piezas
-      from public.despachos d
-      where d.codigo = v_codigo;
-
-      select coalesce(sum((a.diferencia)::numeric), 0)
-      into v_ajustes
-      from public.ajustes_inventario_ciclico a
-      where a.codigo_material = v_codigo
-        and a.unidad = 'PZ';
-
-      v_existencia_piezas := v_total_piezas - v_surtido_piezas + v_ajustes;
-
-      v_cantidad := (v_item->'data'->>'cantidad')::numeric;
-      if v_cantidad > v_existencia_piezas + 0.0001 then
-        raise exception 'EXISTENCIA_INSUFICIENTE: % · Disponible: % PZ · Solicitado: %',
-          v_codigo,
-          round(v_existencia_piezas, 4),
-          round(v_cantidad, 4);
-      end if;
-
-      if cardinality(v_piezas) > 0 then
-        select array_agg(distinct pieza_num)
-        into v_piezas_surtidas
-        from public.despachos d,
-             lateral unnest(d.piezas) as pieza_num
-        where d.codigo = v_codigo
-          and (v_entrada_id is null or d.entrada_id = v_entrada_id);
-
-        if exists (
-          select 1
-          from unnest(v_piezas) as nueva_pieza
-          where nueva_pieza = any(coalesce(v_piezas_surtidas, '{}'::integer[]))
-        ) then
-          raise exception 'PIEZA_YA_SURTIDA: % · Piezas duplicadas en: %',
+            end) / v_factor) > v_existencia_longitud + 0.0001 then
+          raise exception 'EXISTENCIA_INSUFICIENTE: % · Disponible: % % · Solicitado: % %',
             v_codigo,
-            (select array_agg(p) from unnest(v_piezas) p where p = any(coalesce(v_piezas_surtidas, '{}'::integer[])));
+            round(v_existencia_longitud, 4),
+            case when v_factor = 1 then 'mm' else v_unidad_longitud end,
+            round(v_longitud, 4),
+            v_unidad;
+        end if;
+
+      else
+        select coalesce(sum((d.data->>'cantidad')::numeric), 0)
+        into v_surtido_piezas
+        from public.despachos d
+        where d.codigo = v_codigo;
+
+        select coalesce(sum((a.diferencia)::numeric), 0)
+        into v_ajustes
+        from public.ajustes_inventario_ciclico a
+        where a.codigo_material = v_codigo
+          and a.unidad = 'PZ';
+
+        v_existencia_piezas := v_total_piezas - v_surtido_piezas + v_ajustes;
+
+        v_cantidad := (v_item->'data'->>'cantidad')::numeric;
+        if v_cantidad > v_existencia_piezas + 0.0001 then
+          raise exception 'EXISTENCIA_INSUFICIENTE: % · Disponible: % PZ · Solicitado: %',
+            v_codigo,
+            round(v_existencia_piezas, 4),
+            round(v_cantidad, 4);
+        end if;
+
+        if cardinality(v_piezas) > 0 then
+          select array_agg(distinct pieza_num)
+          into v_piezas_surtidas
+          from public.despachos d,
+               lateral unnest(d.piezas) as pieza_num
+          where d.codigo = v_codigo;
+
+          if exists (
+            select 1
+            from unnest(v_piezas) as nueva_pieza
+            where nueva_pieza = any(coalesce(v_piezas_surtidas, '{}'::integer[]))
+          ) then
+            raise exception 'PIEZA_YA_SURTIDA: % · Piezas duplicadas en: %',
+              v_codigo,
+              (select array_agg(p) from unnest(v_piezas) p where p = any(coalesce(v_piezas_surtidas, '{}'::integer[])));
+          end if;
         end if;
       end if;
     end if;
@@ -1092,7 +1141,7 @@ revoke all on function public.registrar_salida(text, jsonb) from public, anon;
 grant execute on function public.registrar_salida(text, jsonb) to authenticated;
 
 comment on function public.registrar_salida(text, jsonb) is
-  'Registra salidas de material de forma atómica. Etiqueta la entrada/lote cuando se indica o cuando el material solo tiene una entrada.';
+  'Registra salidas de material de forma atómica. Con entrada_id valida existencia y piezas contra ese lote; si el material tiene una sola entrada la etiqueta automáticamente y si tiene varias exige elegir el lote.';
 
 commit;
 
