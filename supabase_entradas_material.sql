@@ -10,8 +10,17 @@
 --     ajustes.
 --
 -- Este script es idempotente: se puede ejecutar varias veces.
--- Ejecutar DESPUÉS de supabase_almacenes.sql, supabase_ubicaciones.sql y
--- supabase_existencias_vista.sql.
+--
+-- BASE EXISTENTE (caso normal): ejecutar solamente
+--   1) supabase_almacenes.sql          (idempotente; ya incluye ubicaciones)
+--   2) supabase_entradas_material.sql  (este script, al final)
+-- No vuelva a ejecutar supabase_ubicaciones.sql: es solo para una instalación
+-- nueva y se niega a correr cuando public.almacenes ya existe.
+-- Tampoco ejecute supabase_existencias_vista.sql ni supabase_surtido_atomico.sql
+-- después de este script: revertirían la vista y las funciones por lote.
+--
+-- INSTALACIÓN NUEVA: supabase_ubicaciones.sql, luego supabase_almacenes.sql,
+-- opcionalmente supabase_existencias_vista.sql y al final este script.
 -- ============================================================================
 
 begin;
