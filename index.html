@@ -15342,6 +15342,25 @@ td small{color:var(--mut)}
 .filtro-tag button:hover{background:var(--soft2)}
 @media(max-width:560px){.home-grid{grid-template-columns:1fr}}
 
+/* ---------- Registro múltiple ---------- */
+.reg-modo{display:inline-flex;gap:4px;padding:4px;border-radius:10px;background:var(--soft);border:1px solid var(--line);margin:4px 0 10px;flex-wrap:wrap}
+.reg-modo-btn{background:transparent;border:0;border-radius:7px;padding:8px 14px;font-size:.84rem;font-weight:600;color:var(--mut);transition:background .15s,color .15s;min-height:0}
+.reg-modo-btn:hover{color:var(--tx);background:rgba(127,140,165,.14)}
+.reg-modo-btn[aria-pressed="true"]{background:var(--card);color:var(--pri);box-shadow:0 1px 2px rgba(16,30,60,.12),0 0 0 1px var(--line)}
+.reg-modo-hint{font-size:.8rem;color:var(--mut);margin:0 0 6px}
+.reg-multi-head{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin:16px 0 8px}
+.reg-multi-head b{font-size:.92rem}
+#regMultiCount{background:var(--soft);border:1px solid var(--line);color:var(--mut);font-weight:600}
+.reg-multi-tw{max-height:340px;overflow:auto}
+.reg-multi-tw table{min-width:760px}
+.reg-multi-tw .num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.reg-multi-tw td:first-child{color:var(--mut);font-variant-numeric:tabular-nums}
+.reg-multi-del{background:transparent;border:0;color:var(--bad);font-weight:700;padding:4px 8px;border-radius:6px;line-height:1}
+.reg-multi-del:hover{background:var(--badbg)}
+.reg-multi-aviso{font-size:.76rem;color:var(--mut);margin:8px 0 0;line-height:1.5}
+@media(max-width:700px){.reg-modo{width:100%}.reg-modo-btn{flex:1 1 auto}}
+
+
 </style>
 </head>
 <body>
@@ -15387,10 +15406,15 @@ td small{color:var(--mut)}
   <button type="button" class="section-tab" data-module="vReg" data-page="historial"><strong>Historial</strong></button>
 </nav>
 <div>
-  <div class="section-title" data-module-screen="captura"><div><h3>Alta de material</h3><p>Completa los datos de identificación, dimensiones y existencia.</p></div></div>
+  <div class="section-title" data-module-screen="captura"><div><h3>Alta de material</h3><p>Completa los datos de identificación, dimensiones y existencia, o registra hasta 50 materiales en un solo lote.</p></div></div>
   <section class="card section-content" data-module-screen="captura">
     <h2 id="tituloForm" class="form-toggle" role="button" tabindex="0" aria-controls="f" aria-expanded="false">Registro de material</h2>
     <div class="acts"><button type="button" class="bp" id="bCamReg">📷 Escanear código y ver información</button></div>
+    <div class="reg-modo" id="regModo" role="group" aria-label="Modo de registro">
+      <button type="button" class="reg-modo-btn" data-modo="unico" aria-pressed="true">Registro individual</button>
+      <button type="button" class="reg-modo-btn" data-modo="multiple" aria-pressed="false">Registro múltiple · máx. 50</button>
+    </div>
+    <p class="reg-modo-hint" id="regModoHint">Captura un material a la vez; al guardar se genera su QR.</p>
     <div class="res bad" id="regCamAviso" hidden>⚠ El escáner con cámara requiere HTTPS (o localhost).</div>
     <p id="registroAdminAviso" class="res bad" hidden>Solo el administrador puede registrar o editar materiales.</p>
     <form id="f" autocomplete="off" hidden>
@@ -15428,6 +15452,20 @@ td small{color:var(--mut)}
         <button type="button" class="bd" id="btnCancelar" hidden>✖ Cancelar edición</button>
       </div>
     </form>
+    <div id="regMultipleBox" hidden>
+      <div class="reg-multi-head">
+        <div><b>Materiales por guardar</b> <span class="chip" id="regMultiCount">0 / 50</span></div>
+        <button type="button" class="bs" id="btnLimpiarLista">🗑️ Limpiar lista</button>
+      </div>
+      <div class="tw reg-multi-tw"><table>
+        <thead><tr><th>#</th><th>Código</th><th>Descripción</th><th>Clasificación</th><th>Ubicación</th><th class="num">Cantidad</th><th>Recibo</th><th></th></tr></thead>
+        <tbody id="regMultiBody"></tbody>
+      </table><div class="empty" id="regMultiVacio">Aún no hay filas. Completa el formulario y usa «Agregar a la lista».</div></div>
+      <div class="acts">
+        <button type="button" class="bp" id="btnGuardarLista" disabled>💾 Guardar los materiales</button>
+      </div>
+      <p class="reg-multi-aviso">Máximo <b>50 filas</b> por lote. Puedes cambiar ubicación, clasificación, fecha o datos de trazabilidad antes de agregar cada fila. Después de guardar, cada material puede ajustarse desde el historial.</p>
+    </div>
   </section>
 
   <div class="section-title" data-module-screen="historial" hidden><div><h3>Materiales registrados</h3><p>Busca y exporta el catálogo. La edición y eliminación están reservadas al administrador; todo el personal puede seleccionar materiales e imprimir sus etiquetas.</p></div></div>
@@ -15680,6 +15718,9 @@ function ubicacionDe(m){return m?ubicacionesPorCodigo.get(m.ubicacionCodigo):und
 function almacenDe(m){const loc=ubicacionDe(m);const almCodigo=loc?.almacen_codigo||m?.ubicacionAlmacenCodigo;return almCodigo?almacenesPorCodigo.get(almCodigo):undefined}
 function tagTipo(m){return m.esMP?'<span class="tag t1">M. PRIMA</span>':m.tipoRegistro==="CONSUMIBLES"?'<span class="tag t2">CONSUMIBLES</span>':'<span class="tag t2">GENERAL</span>'}
 const seleccionados=new Set();
+// --- Registro múltiple (hasta 50 filas por lote) ---
+const MAX_REGISTRO_MULTIPLE=50;
+let modoRegistro="unico",regMulti=[];
 
 // --- Supabase ---
 const SB_URL="https://olbcepxgzqtmiqdqpbha.supabase.co",SB_KEY="sb_publishable_kdySoe6yEpOSmx4-zEOk-w_EHIMnaEC";
@@ -15920,8 +15961,8 @@ function lgMostrar(msg){$("lgCarga").hidden=true;$("lgF").hidden=false;$("lgMsg"
 function limpiarSesionLocal(){try{Object.keys(localStorage).filter(k=>k.indexOf("sb-")===0&&k.indexOf("-auth-token")>0).forEach(k=>localStorage.removeItem(k))}catch{}}
 function errorSesion(e){const c=Number(e?.status||e?.code||0);return c===401||c===403||/jwt|token|session|sesi[oó]n/i.test(String(e?.message||""))}
 async function cerrarSesion(){try{const{error}=await sb.auth.signOut();if(error)throw error}catch(e){console.warn("No se pudo revocar la sesión en el servidor; se cierra localmente.",e)}limpiarSesionLocal();salirUI()}
-function actualizarVisibilidadAdmin(){["bJson","bCsv","bImp","bExcel","bCsvS","bUbiExportar","ubicacionesImportar","btnGuardar"].forEach(id=>$(id).hidden=!esAdmin);$("registroAdminAviso").hidden=esAdmin}
-function salirUI(){esStaff=false;esAdmin=false;actualizarVisibilidadAdmin();seleccionados.clear();$("rolUsuario").hidden=true;$("conteoEstado").hidden=true;document.body.classList.remove("auth");dejarCanal();camOff();if($("conteoDialog").open)$("conteoDialog").close();mats=[];surItems=[];almacenes=[];ubicaciones=[];ubicacionesAlias=[];movimientosUbicacion=[];reconstruirIndices();ajustesInventarioError="";almacenesError="";ubicacionesError="";ubicacionesAliasError="";movimientosError="";ubicacionDestino=null;asignacionItems=[];actual=null;render();renderInicio();lgMostrar()}
+function actualizarVisibilidadAdmin(){["bJson","bCsv","bImp","bExcel","bCsvS","bUbiExportar","ubicacionesImportar","btnGuardar","btnGuardarLista","regModo","regModoHint"].forEach(id=>$(id).hidden=!esAdmin);$("registroAdminAviso").hidden=esAdmin}
+function salirUI(){esStaff=false;esAdmin=false;actualizarVisibilidadAdmin();seleccionados.clear();$("rolUsuario").hidden=true;$("conteoEstado").hidden=true;document.body.classList.remove("auth");dejarCanal();camOff();if($("conteoDialog").open)$("conteoDialog").close();mats=[];surItems=[];almacenes=[];ubicaciones=[];ubicacionesAlias=[];movimientosUbicacion=[];reconstruirIndices();ajustesInventarioError="";almacenesError="";ubicacionesError="";ubicacionesAliasError="";movimientosError="";ubicacionDestino=null;asignacionItems=[];actual=null;regMulti=[];modoRegistro="unico";resetForm();renderRegMulti();actualizarModoRegistroUI();render();renderInicio();lgMostrar()}
 let entrando=false;
 async function entrar(){
   if(!sb||entrando)return false;
@@ -16004,23 +16045,20 @@ function actualizarCamposSeccion(){
   $("dimensionRedonda").hidden=seccion!=="RND";
 }
 $("seccionMaterial").addEventListener("change",actualizarCamposSeccion);
-$("btnAuto").onclick=()=>{let n=0;mats.forEach(m=>{const x=/^MAT-(\d+)$/i.exec(m.codigo);if(x)n=Math.max(n,+x[1])});$("codigo").value="MAT-"+String(n+1).padStart(4,"0")};
+$("btnAuto").onclick=()=>{let n=0;const usados=[...mats,...regMulti].map(m=>String(m.codigo||"").toLowerCase());usados.forEach(cod=>{const x=/^MAT-(\d+)$/i.exec(cod);if(x)n=Math.max(n,+x[1])});let codigo;do{n++;codigo="MAT-"+String(n).padStart(4,"0")}while(usados.includes(codigo.toLowerCase()));$("codigo").value=codigo};
 
 function establecerFormularioAbierto(abierto){$("f").hidden=!abierto;$("tituloForm").setAttribute("aria-expanded",String(abierto))}
 $("tituloForm").addEventListener("click",()=>establecerFormularioAbierto($("f").hidden));
 $("tituloForm").addEventListener("keydown",e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();establecerFormularioAbierto($("f").hidden)}});
-function resetForm(){$("f").reset();document.querySelectorAll("[data-na]").forEach(c=>{c.checked=false;$(c.dataset.na).closest(".na-field").querySelector(".na-value-wrap")?.removeAttribute("hidden");$(c.dataset.na).hidden=false});CAMPOS_EXTRA.forEach(([,id])=>$(id).hidden=false);actualizarCamposSeccion();$("editIndex").value="";$("fechaRecibo").value=hoy();$("tituloForm").textContent="Registro de material";$("btnGuardar").textContent="💾 Guardar y generar QR";$("btnCancelar").hidden=true;$("detTraza").open=false;establecerFormularioAbierto(false)}
+function resetForm(){$("f").reset();document.querySelectorAll("[data-na]").forEach(c=>{c.checked=false;$(c.dataset.na).closest(".na-field").querySelector(".na-value-wrap")?.removeAttribute("hidden");$(c.dataset.na).hidden=false});CAMPOS_EXTRA.forEach(([,id])=>$(id).hidden=false);actualizarCamposSeccion();$("editIndex").value="";$("fechaRecibo").value=hoy();$("tituloForm").textContent=modoRegistro==="multiple"?"Registro múltiple de materiales":"Registro de material";$("btnGuardar").textContent=modoRegistro==="multiple"?"➕ Agregar a la lista":"💾 Guardar y generar QR";$("btnCancelar").hidden=true;$("detTraza").open=false;establecerFormularioAbierto(modoRegistro==="multiple")}
 
-$("f").addEventListener("invalid",()=>{$("detTraza").open=true},true);
-$("f").addEventListener("submit",async e=>{
-  e.preventDefault();
-  if(!esAdmin){toast("Solo el administrador puede registrar o editar materiales.",1);return}
+function materialDesdeFormulario(){
   recalcularTotalMM();
   const idx=$("editIndex").value;
   const noAplica=Object.fromEntries(CAMPOS_EXTRA.map(([key,id])=>[key,document.querySelector(`input[data-na="${id}"]`).checked]));
   noAplica.seccionMaterial=document.querySelector('input[data-na="seccionMaterial"]').checked;
   const extra=Object.fromEntries(CAMPOS_EXTRA.map(([key,id])=>[key,noAplica[key]?(["totalMM","longitudIndividual","peso"].includes(key)?null:""): (["totalMM","longitudIndividual","peso"].includes(key)?($(id).value===""?null:Number($(id).value)):$(id).value.trim())]));
-  const tipoMaterial=noAplica.tipoMaterial?"":$("tipoMaterial").value.trim(),tipoRegistro=$("tipoRegistro").value;
+  const tipoRegistro=$("tipoRegistro").value;
   const anterior=idx!==""?mats[idx]:null;
   const m={codigo:$("codigo").value.trim(),descripcion:$("descripcion").value.trim(),lote:extra.numeroLoteMP||"",proveedor:"",
     um:$("um").value,cantidad:parseFloat($("cantidad").value),ubicacion:$("ubicacion").value.trim(),fechaRecibo:$("fechaRecibo").value,
@@ -16037,12 +16075,20 @@ $("f").addEventListener("submit",async e=>{
     ancho:tipoRegistro==="MP"&&["SQ","FLAT"].includes($("seccionMaterial").value)?numeroCampo("anchoMaterial"):null,
     ...extra,noAplica};
   m.despachos=anterior?(anterior.despachos||[]):[];
+  return {m,idx,anterior};
+}
+$("f").addEventListener("invalid",()=>{$("detTraza").open=true},true);
+$("f").addEventListener("submit",async e=>{
+  e.preventDefault();
+  if(!esAdmin){toast("Solo el administrador puede registrar o editar materiales.",1);return}
+  if(modoRegistro==="multiple"){agregarFilaMultiple();return}
+  const {m,idx,anterior}=materialDesdeFormulario();
   const dup=mats.findIndex(x=>x.codigo.toLowerCase()===m.codigo.toLowerCase());
   if(dup!==-1&&String(dup)!==idx){toast("⚠ El código ya existe, use otro.",1);return}
   const oldCod=idx!==""?mats[idx].codigo:null;$("btnGuardar").disabled=true;
   let registrandoUbicacion=true,ubicacionCreada=false,ubicacionCorregida=false;
   try{
-    const destino=await resolverUbicacionRegistro(m.ubicacion,tipoRegistro,anterior?.ubicacionCodigo);
+    const destino=await resolverUbicacionRegistro(m.ubicacion,m.tipoRegistro,anterior?.ubicacionCodigo);
     registrandoUbicacion=false;
     if(destino){m.ubicacion=destino.ubicacion.nombre;m.ubicacionCodigo=destino.ubicacion.codigo;m.ubicacionAlmacenCodigo=destino.ubicacion.almacen_codigo;m.ubicacionAlmacenNombre=destino.almacen.nombre;ubicacionCreada=destino.creada;ubicacionCorregida=!!destino.corregida}
     if(idx!==""){
@@ -16054,6 +16100,125 @@ $("f").addEventListener("submit",async e=>{
   const m2=mats.find(x=>x.codigo===m.codigo)||m;resetForm();render();try{mostrar(m2)}catch(err){console.error(err);toast("Guardado, pero falló el QR",1)}
 });
 $("btnCancelar").onclick=()=>{resetForm();toast("Edición cancelada")};
+
+// --- Registro múltiple: lista temporal de hasta 50 materiales ---
+function actualizarModoRegistroUI(){
+  const multi=modoRegistro==="multiple";
+  document.querySelectorAll(".reg-modo-btn").forEach(b=>{
+    const activo=b.dataset.modo===modoRegistro;
+    b.setAttribute("aria-pressed",String(activo));
+    b.classList.toggle("activo",activo);
+  });
+  $("regMultipleBox").hidden=!multi;
+  $("regModoHint").textContent=multi?`Captura cada material y agrégalo a la lista (máximo ${MAX_REGISTRO_MULTIPLE} filas). Al final guarda todo el lote de una vez.`:"Captura un material a la vez; al guardar se genera su QR.";
+  $("btnGuardar").textContent=multi?`➕ Agregar a la lista (${regMulti.length}/${MAX_REGISTRO_MULTIPLE})`:"💾 Guardar y generar QR";
+  $("btnCancelar").hidden=multi||$("editIndex").value==="";
+  $("tituloForm").textContent=multi?"Registro múltiple de materiales":"Registro de material";
+}
+function establecerModoRegistro(modo){
+  modo=modo==="multiple"?"multiple":"unico";
+  if(modo===modoRegistro){actualizarModoRegistroUI();return}
+  if(modo==="unico"&&regMulti.length&&!confirm(`Hay ${regMulti.length} material(es) en la lista sin guardar. ¿Descartarlos?`))return;
+  modoRegistro=modo;
+  if(modo==="unico"){regMulti=[];renderRegMulti()}
+  resetForm();
+  actualizarModoRegistroUI();
+}
+function renderRegMulti(){
+  $("regMultiBody").innerHTML=regMulti.map((m,i)=>`<tr>
+    <td>${i+1}</td>
+    <td><b>${esc(m.codigo)}</b></td>
+    <td>${esc(m.descripcion)}</td>
+    <td>${esc(nombreTipoRegistro(m.tipoRegistro))}</td>
+    <td>${esc(m.ubicacion)}</td>
+    <td class="num">${esc(m.cantidad)} ${esc(m.um||"PZ")}</td>
+    <td>${esc(m.fechaRecibo)}</td>
+    <td><button type="button" class="reg-multi-del" data-quitar="${i}" title="Quitar fila" aria-label="Quitar ${esc(m.codigo)}">✕</button></td>
+  </tr>`).join("");
+  $("regMultiVacio").hidden=regMulti.length>0;
+  $("regMultiCount").textContent=`${regMulti.length} / ${MAX_REGISTRO_MULTIPLE}`;
+  $("btnGuardarLista").disabled=!regMulti.length;
+  $("btnGuardarLista").textContent=regMulti.length?`💾 Guardar ${regMulti.length} material(es)`:"💾 Guardar los materiales";
+  if(modoRegistro==="multiple")$("btnGuardar").textContent=`➕ Agregar a la lista (${regMulti.length}/${MAX_REGISTRO_MULTIPLE})`;
+}
+function limpiarCamposFilaMultiple(){
+  ["codigo","descripcion","cantidad"].forEach(id=>$(id).value="");
+  if(!document.querySelector('input[data-na="peso"]').checked)$("peso").value="";
+  $("totalMM").value="";
+  $("codigo").focus();
+}
+function agregarFilaMultiple(){
+  if(regMulti.length>=MAX_REGISTRO_MULTIPLE){toast(`Máximo ${MAX_REGISTRO_MULTIPLE} filas por lote. Guarda la lista antes de agregar más.`,1);return}
+  const {m}=materialDesdeFormulario();
+  const clave=String(m.codigo||"").toLowerCase();
+  if(!clave){toast("El código es obligatorio.",1);return}
+  if(mats.some(x=>String(x.codigo).toLowerCase()===clave)){toast("⚠ El código ya existe, use otro.",1);return}
+  if(regMulti.some(x=>String(x.codigo).toLowerCase()===clave)){toast("⚠ Ese código ya está en la lista.",1);return}
+  regMulti.push(m);
+  renderRegMulti();
+  limpiarCamposFilaMultiple();
+  toast(`Fila ${regMulti.length} agregada a la lista ✔`);
+}
+$("regMultiBody").addEventListener("click",e=>{
+  const b=e.target.closest("[data-quitar]");if(!b)return;
+  const i=Number(b.dataset.quitar);
+  if(!Number.isInteger(i)||i<0||i>=regMulti.length)return;
+  regMulti.splice(i,1);renderRegMulti();
+});
+$("btnLimpiarLista").onclick=()=>{
+  if(!regMulti.length)return;
+  if(!confirm(`¿Quitar las ${regMulti.length} fila(s) de la lista?`))return;
+  regMulti=[];renderRegMulti();toast("Lista vacía");
+};
+$("btnGuardarLista").onclick=async()=>{
+  if(!esAdmin){toast("Solo el administrador puede registrar materiales.",1);return}
+  if(!regMulti.length){toast("Agrega al menos una fila a la lista.",1);return}
+  const vistos=new Set();
+  for(const m of regMulti){
+    const clave=String(m.codigo).toLowerCase();
+    if(vistos.has(clave)){toast(`⚠ El código ${m.codigo} está repetido en la lista.`,1);return}
+    vistos.add(clave);
+    if(mats.some(x=>String(x.codigo).toLowerCase()===clave)){toast(`⚠ El código ${m.codigo} ya existe en el catálogo.`,1);return}
+  }
+  const btn=$("btnGuardarLista");btn.disabled=true;
+  let ubicacionCreada=false,ubicacionCorregida=false,resolviendoUbicacion=true;
+  const cache=new Map();
+  try{
+    for(const m of regMulti){
+      const clave=`${m.tipoRegistro}|${String(m.ubicacion).trim().toLowerCase()}`;
+      let destino=cache.get(clave);
+      if(destino===undefined){
+        resolviendoUbicacion=true;
+        destino=await resolverUbicacionRegistro(m.ubicacion,m.tipoRegistro,null);
+        cache.set(clave,destino);
+      }
+      resolviendoUbicacion=false;
+      if(destino){
+        m.ubicacion=destino.ubicacion.nombre;m.ubicacionCodigo=destino.ubicacion.codigo;
+        m.ubicacionAlmacenCodigo=destino.ubicacion.almacen_codigo;m.ubicacionAlmacenNombre=destino.almacen.nombre;
+        if(destino.creada)ubicacionCreada=true;
+        if(destino.corregida)ubicacionCorregida=true;
+      }
+    }
+    const filas=regMulti.map(m=>({codigo:m.codigo,data:matData(m)}));
+    for(let i=0;i<filas.length;i+=200){const{error}=await sb.from("materiales").insert(filas.slice(i,i+200));if(error)throw error}
+  }catch(err){
+    errDB(err,resolviendoUbicacion?"No se pudo registrar una de las ubicaciones":ubicacionCreada?"No se pudieron guardar todos los materiales; algunas ubicaciones quedaron registradas":"No se pudieron guardar los materiales");
+    await cargar().catch(()=>{});
+    regMulti=regMulti.filter(m=>!mats.some(x=>String(x.codigo).toLowerCase()===String(m.codigo).toLowerCase()));
+    renderRegMulti();
+    return;
+  }
+  const total=regMulti.length;
+  regMulti=[];
+  renderRegMulti();
+  await cargar().catch(()=>{});
+  limpiarCamposFilaMultiple();
+  render();
+  toast(`${total} material(es) guardados${ubicacionCreada?" · ubicación agregada a Ubicaciones y QR":""}${ubicacionCorregida?" · código de ubicación corregido":""} ✔`);
+};
+document.querySelectorAll(".reg-modo-btn").forEach(b=>b.addEventListener("click",()=>establecerModoRegistro(b.dataset.modo)));
+renderRegMulti();
 
 // --- QR ---
 function dimsTxt(m){
@@ -17034,6 +17199,7 @@ $("bDelAll").onclick=async()=>{
 };
 function editar(i){
   if(!esAdmin){toast("Solo el administrador puede editar materiales.",1);return}
+  if(modoRegistro!=="unico"){modoRegistro="unico";actualizarModoRegistroUI()}
   activarSubpantalla("vReg","captura");
   const m=mats[i];resetForm();$("editIndex").value=i;
   const values={codigo:m.codigo,descripcion:m.descripcion,um:m.um,cantidad:m.cantidad,ubicacion:m.ubicacion,fechaRecibo:m.fechaRecibo,tipoRegistro:m.tipoRegistro|| (m.esMP?"MP":"GENERAL"),seccionMaterial:m.noAplica?.seccionMaterial?"":m.seccionMaterial,altoMaterial:m.alto,anchoMaterial:m.ancho,diametroMaterial:m.diametro,
