@@ -17911,6 +17911,9 @@ function existencia(m){
 function entradaValida(m,id){
   return id!=null&&(m?.entradas||[]).some(e=>Number(e.id)===Number(id));
 }
+function entradaDeSurtido(m,item){
+  return m?.esMP?entradaDeItem(m,item):null;
+}
 function entradaDeItem(m,item){
   if(!m||item?.entradaId==null)return null;
   return(m.entradas||[]).find(e=>Number(e.id)===Number(item.entradaId))||null;
@@ -17921,11 +17924,11 @@ function resolverEntradaQR(m,entradaId){
   return es.length===1?es[0]:null;
 }
 function existenciaItem(m,item){
-  const e=entradaDeItem(m,item);
+  const e=entradaDeSurtido(m,item);
   return e?existenciaEntrada(m,e):existencia(m);
 }
-function claveSurItem(item){
-  return item?.entradaId!=null?`e:${item.entradaId}`:`c:${String(item?.codigo||"").toLowerCase()}`;
+function claveSurItem(item,m){
+  return m?.esMP&&item?.entradaId!=null?`e:${item.entradaId}`:`c:${String(item?.codigo||"").toLowerCase()}`;
 }
 function esIndividualEntrada(e){
   return !!e&&Number.isInteger(Number(e.cantidad))&&Number(e.cantidad)>=1&&Number(e.cantidad)<=MAX_IND;
@@ -18012,6 +18015,9 @@ function restaurarBorradorSur(){
       if(!it||!it.codigo)return false;
       const m=mats.find(x=>x.codigo.toLowerCase()===String(it.codigo).toLowerCase());
       return !!m&&(it.entradaId==null||entradaValida(m,it.entradaId));
+    }).map(it=>{
+      const m=mats.find(x=>x.codigo.toLowerCase()===String(it.codigo).toLowerCase());
+      return m&&!m.esMP?{...it,entradaId:null}:it;
     });
     const next=Math.max(Number(d.next)||1,items.reduce((s,it)=>Math.max(s,Number(it.id)||0),0)+1);
     return{id:String(d.id||`borrador-${i+1}`),items,next,campos};
@@ -18043,7 +18049,8 @@ function sincronizarBorradoresSur(){
     if(b.items.length!==anteriores)cambio=true;
     b.items.forEach(item=>{
       const m=mats.find(x=>String(x.codigo).toLowerCase()===String(item.codigo).toLowerCase());
-      if(m&&item.piezas?.some(n=>piezasSurt(m,item.entradaId).has(n)))item.errorPieza=true;
+      if(m&&!m.esMP&&item.entradaId!=null){item.entradaId=null;cambio=true}
+      if(m&&item.piezas?.some(n=>piezasSurt(m,m.esMP?item.entradaId:null).has(n)))item.errorPieza=true;
     });
   });
   const activo=borradorSurActual();if(activo)surItems=activo.items;
@@ -18195,14 +18202,14 @@ function escanear(txt){
   }
   const pz=pzDe(txt);if(pz){escanearPieza(i,pz.n,txt,entradaQr);return}
   camUltimo(txt);
-  agregarSurItem(i,null,entradaQr);renderSur();
+  agregarSurItem(i,null,m.esMP?entradaQr:null);renderSur();
 }
 // Los QR de pieza se acumulan en un solo renglón por material/entrada y no permiten duplicados.
 function escanearPieza(i,n,txt,entradaId=null){
   const m=mats[i];
   camUltimo(txt||String(n));
-  const entrada=resolverEntradaQR(m,entradaId);
-  if((m.entradas||[]).length>1&&!entrada){
+  const entrada=m.esMP?resolverEntradaQR(m,entradaId):null;
+  if(m.esMP&&(m.entradas||[]).length>1&&!entrada){
     camAvisoSc(`El QR no indica el lote. Escanee la etiqueta de la entrada de ${m.codigo}`);
     return;
   }
@@ -18230,7 +18237,7 @@ function recalcularPiezasSur(item,m){
 }
 function agregarSurItem(i,pieza=null,entradaId=null){
   if(!surDraftId){toast("Seleccione o cree primero una lista de entrega.",1);return}
-  const m=mats[i],entrada=resolverEntradaQR(m,entradaId);
+  const m=mats[i],entrada=m.esMP?resolverEntradaQR(m,entradaId):null;
   const eid=entrada?Number(entrada.id):null;
   const e=entrada?existenciaEntrada(m,entrada):existencia(m);
   if(pieza!=null){
@@ -18327,11 +18334,11 @@ function renderSur(){
   let h="";
   h+=surItems.map((item,n)=>{
     const m=mats.find(x=>x.codigo.toLowerCase()===item.codigo.toLowerCase());if(!m)return"";
-    const entradas=m.entradas||[];
-    const entrada=entradaDeItem(m,item);
+    const entradas=m.esMP?(m.entradas||[]):[];
+    const entrada=entradaDeSurtido(m,item);
     const e=entrada?existenciaEntrada(m,entrada):existencia(m);
-    const lote=entrada?(entrada.numeroLoteMP||entrada.lote||""):(m.numeroLoteMP||m.lote||"");
-    const heat=entrada?entrada.numeroHeat:m.numeroHeat;
+    const lote=m.esMP?(entrada?(entrada.numeroLoteMP||entrada.lote||""):(m.numeroLoteMP||m.lote||"")):"";
+    const heat=m.esMP?(entrada?entrada.numeroHeat:m.numeroHeat):"";
     const selector=entradas.length?`<div class="sur-entry"><label for="sEnt-${item.id}">Entrada / lote</label><select id="sEnt-${item.id}"><option value="">— Seleccione lote —</option>${entradas.map(x=>`<option value="${esc(x.id)}"${Number(item.entradaId)===Number(x.id)?" selected":""}>#${esc(x.id)}${resumenEntrada(x)?` · ${esc(resumenEntrada(x))}`:""} · disp. ${esc(existEntradaTxt(m,x))}</option>`).join("")}</select></div>`:"";
     return`<section class="mp"><div class="sur-item-head"><b>${n+1}. ${esc(m.codigo)} · ${esc(m.descripcion)}</b><button type="button" class="bd" data-quitar="${item.id}">Quitar</button></div>
       ${selector}
@@ -18378,19 +18385,19 @@ function calcSur(){
     const m=mats.find(x=>x.codigo.toLowerCase()===item.codigo.toLowerCase());
     if(!m){errores.push(`${esc(item.codigo)} ya no está registrado`);item.d=null;return}
     const entradas=m.entradas||[];
-    const entrada=entradaDeItem(m,item);
-    if(item.entradaId!=null&&!entrada){
+    const entrada=entradaDeSurtido(m,item);
+    if(m.esMP&&item.entradaId!=null&&!entrada){
       errores.push(`${esc(m.codigo)}: la entrada #${item.entradaId} ya no existe`);
       const R=$(`sItemRes-${item.id}`);if(R){R.innerHTML="La entrada seleccionada ya no existe. Elija otro lote.";R.classList.add("bad")}
       item.d=null;return;
     }
-    if(entradas.length>1&&!entrada){
+    if(m.esMP&&entradas.length>1&&!entrada){
       errores.push(`${esc(m.codigo)}: seleccione la entrada/lote`);
       const R=$(`sItemRes-${item.id}`);if(R){R.innerHTML="Seleccione la entrada / lote a surtir.";R.classList.add("bad")}
       item.d=null;return;
     }
     const e=entrada?existenciaEntrada(m,entrada):existencia(m);
-    const clave=claveSurItem(item),anterior=totalPorClave.get(clave)||0;
+    const clave=claveSurItem(item,m),anterior=totalPorClave.get(clave)||0;
     if(item.piezas?.length){
       const surtidas=piezasSurt(m,entrada?entrada.id:null);
       if(item.piezas.some(n=>surtidas.has(n))){
@@ -18447,7 +18454,7 @@ async function confirmarSur(){
   guardarDatosSur();
   const t=Date.now(),folio=folioSalida(t),fecha=new Date(t).toLocaleString("es-MX"),registros=[];
   lineas.forEach(({item,m,d},i)=>{
-    const entrada=entradaDeItem(m,item);
+    const entrada=entradaDeSurtido(m,item);
     const reg={...d,t:t+i,folio,fecha,orden,
       entrega:$("entrega").value.trim(),recibe:$("recibe").value.trim(),maquina:(campoSur("maquina")?.value||"").trim(),
       motivo:$("motivo").value.trim(),observaciones:$("observaciones").value.trim(),

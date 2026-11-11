@@ -8,8 +8,8 @@
 --     ubicación y fecha de recibo).
 --   * La existencia del código es la suma de sus entradas menos surtidos y
 --     ajustes.
---   * El surtido valida la existencia y las piezas contra el lote elegido; si
---     el material tiene varios lotes, la salida debe indicar cuál se surte.
+--   * El surtido valida entrada/lote solo para materia prima; consumibles y
+--     materiales generales se validan contra la existencia total del código.
 --
 -- Este script es idempotente: se puede ejecutar varias veces.
 --
@@ -825,13 +825,11 @@ $$;
 -- ----------------------------------------------------------------------------
 -- PASO 12: registrar_salida con surtido por entrada/lote (Fase 2)
 -- ----------------------------------------------------------------------------
--- * Si el renglón trae entrada_id, la existencia y las piezas se validan
---   estrictamente contra esa entrada/lote.
--- * Si el material tiene una sola entrada, se etiqueta automáticamente.
--- * Si el material tiene varias entradas y no se indica entrada_id, se
---   rechaza con ENTRADA_REQUERIDA para no dejar salidas sin lote.
--- * Los materiales sin entradas registradas (cantidad inicial 0) conservan el
---   cálculo anterior por código.
+-- * Solo materia prima se valida estrictamente contra una entrada/lote.
+-- * Si MP tiene una sola entrada, se etiqueta automáticamente; si tiene varias,
+--   se requiere entrada_id.
+-- * Consumibles y materiales generales se validan por existencia total del
+--   código, sin asociar la salida a una entrada.
 create or replace function public.registrar_salida(
   p_folio text,
   p_items jsonb
@@ -902,28 +900,35 @@ begin
       raise exception 'MATERIAL_NO_ENCONTRADO: %', v_codigo;
     end if;
 
-    -- Resolver la entrada/lote del renglón.
-    if v_entrada_id is null then
-      select count(*) into v_entradas_count
-      from public.entradas_material
-      where codigo_material = v_codigo;
+    v_es_mp := lower(coalesce(v_material.data->>'tipoRegistro', '')) in ('mp', 'materia prima')
+      or lower(coalesce(v_material.data->>'esMP', 'false')) = 'true';
 
-      if v_entradas_count = 1 then
-        select id into v_entrada_id
+    -- Solo materia prima requiere rastrear el surtido contra una entrada/lote.
+    if v_es_mp then
+      if v_entrada_id is null then
+        select count(*) into v_entradas_count
         from public.entradas_material
-        where codigo_material = v_codigo
-        order by id
-        limit 1;
-      elsif v_entradas_count > 1 then
-        raise exception 'ENTRADA_REQUERIDA: % · Seleccione el lote/entrada a surtir', v_codigo;
+        where codigo_material = v_codigo;
+
+        if v_entradas_count = 1 then
+          select id into v_entrada_id
+          from public.entradas_material
+          where codigo_material = v_codigo
+          order by id
+          limit 1;
+        elsif v_entradas_count > 1 then
+          raise exception 'ENTRADA_REQUERIDA: % · Seleccione el lote/entrada a surtir', v_codigo;
+        end if;
+      else
+        if not exists (
+          select 1 from public.entradas_material
+          where id = v_entrada_id and codigo_material = v_codigo
+        ) then
+          raise exception 'ENTRADA_NO_ENCONTRADA: %', v_entrada_id;
+        end if;
       end if;
     else
-      if not exists (
-        select 1 from public.entradas_material
-        where id = v_entrada_id and codigo_material = v_codigo
-      ) then
-        raise exception 'ENTRADA_NO_ENCONTRADA: %', v_entrada_id;
-      end if;
+      v_entrada_id := null;
     end if;
 
     if v_entrada_id is not null then
@@ -1141,7 +1146,7 @@ revoke all on function public.registrar_salida(text, jsonb) from public, anon;
 grant execute on function public.registrar_salida(text, jsonb) to authenticated;
 
 comment on function public.registrar_salida(text, jsonb) is
-  'Registra salidas de material de forma atómica. Con entrada_id valida existencia y piezas contra ese lote; si el material tiene una sola entrada la etiqueta automáticamente y si tiene varias exige elegir el lote.';
+  'Registra salidas de forma atómica. Para materia prima valida entrada/lote; consumibles y materiales generales se validan contra la existencia total del código.';
 
 commit;
 
